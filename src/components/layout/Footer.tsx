@@ -14,6 +14,12 @@ const links = [
   { label: "Search", href: "/search" },
 ];
 
+const legal = [
+  { label: "Terms of Service", href: "/terms" },
+  { label: "Privacy Policy", href: "/privacy" },
+  { label: "Content Warning", href: "/content-warning" },
+];
+
 export function Footer() {
   return (
     <footer
@@ -24,9 +30,9 @@ export function Footer() {
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-8">
           {/* Brand */}
-          <div className="sm:col-span-2 md:col-span-1">
+          <div className="col-span-2 sm:col-span-3 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-3">
               <BookOpen size={20} style={{ color: "#c4426a" }} />
               <span
@@ -101,32 +107,39 @@ export function Footer() {
             </h3>
             <ul className="space-y-2">
               <li>
-                <Link
-                  href="/register"
-                  className="text-sm transition-colors hover:opacity-75"
-                  style={{ color: "var(--muted-foreground)" }}
-                >
+                <Link href="/register" className="text-sm transition-colors hover:opacity-75" style={{ color: "var(--muted-foreground)" }}>
                   Join Free
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/login"
-                  className="text-sm transition-colors hover:opacity-75"
-                  style={{ color: "var(--muted-foreground)" }}
-                >
+                <Link href="/login" className="text-sm transition-colors hover:opacity-75" style={{ color: "var(--muted-foreground)" }}>
                   Sign In
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/profile"
-                  className="text-sm transition-colors hover:opacity-75"
-                  style={{ color: "var(--muted-foreground)" }}
-                >
+                <Link href="/profile" className="text-sm transition-colors hover:opacity-75" style={{ color: "var(--muted-foreground)" }}>
                   My Profile
                 </Link>
               </li>
+            </ul>
+          </div>
+
+          {/* Legal */}
+          <div>
+            <h3
+              className="text-sm font-semibold uppercase tracking-wider mb-4"
+              style={{ color: "var(--foreground)" }}
+            >
+              Legal
+            </h3>
+            <ul className="space-y-2">
+              {legal.map((l) => (
+                <li key={l.href}>
+                  <Link href={l.href} className="text-sm transition-colors hover:opacity-75" style={{ color: "var(--muted-foreground)" }}>
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
