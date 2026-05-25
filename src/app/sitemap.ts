@@ -6,7 +6,7 @@ import {
   makeTagCollectionSlug,
 } from "@/lib/collections";
 
-const BASE = process.env.NEXTAUTH_URL ?? "https://lustpages.com";
+const BASE = "https://lustpages.com";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [stories, categories, authors, series, tags, collections] = await Promise.all([
