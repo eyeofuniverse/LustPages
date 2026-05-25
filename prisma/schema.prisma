@@ -1,0 +1,504 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id              String            @id @default(cuid())
+  email           String            @unique
+  name            String
+  password        String
+  role            String            @default("user")
+  image           String?
+  bio             String?
+  coinBalance     Int               @default(0)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  likes           Like[]
+  bookmarks       Bookmark[]
+  comments        Comment[]
+  author          Author?
+  coinTransactions  CoinTransaction[]
+  storyUnlocks      StoryUnlock[]
+  seriesUnlocks     SeriesUnlock[]
+  subscription      Subscription?
+  tipsGiven         Tip[]             @relation("TipsFromUser")
+  authorLikes       AuthorLike[]
+  reports           Report[]
+  tagRequests       TagRequest[]
+  readingHistory    ReadingHistory[]
+  pushSubscriptions PushSubscription[]
+  ratings           Rating[]
+  cryptoPayments    CryptoPayment[]
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  image       String?
+  color       String   @default("#c4426a")
+  stories     Story[]
+  createdAt   DateTime @default(now())
+}
+
+
+model Author {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  bio          String?
+  image        String?
+  website      String?
+  userId       String?  @unique
+  coinEarnings Int      @default(0)
+  stories      Story[]
+  seriesList   Series[]
+  promotions   FeaturedPromotion[]
+  createdAt    DateTime @default(now())
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  tipsReceived Tip[]    @relation("TipsToAuthor")
+  likes        AuthorLike[]
+}
+
+model Story {
+  id              String     @id @default(cuid())
+  title           String
+  slug            String     @unique
+  excerpt         String
+  content         String
+  coverImage      String?
+  published       Boolean    @default(false)
+  featured        Boolean    @default(false)
+  views           Int        @default(0)
+  readingTime     Int        @default(5)
+  tags            String     @default("[]")
+  authorId        String
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  // Classification
+  series          String?
+  seriesId        String?
+  seriesInfo      Series?    @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  chapterNumber   Int?
+  language        String     @default("English")
+  pov             String     @default("Third Person")
+  genderPairing   String?
+  // Content & Access
+  contentWarnings String     @default("[]")
+  maturityRating  String     @default("Explicit")
+  accessLevel     String     @default("Free")
+  // Publishing
+  scheduledAt     DateTime?
+  visibility      String     @default("Public")
+  commentsEnabled Boolean    @default(true)
+  // SEO
+  metaTitle       String?
+  metaDescription String?
+  canonicalUrl    String?
+  noIndex         Boolean    @default(false)
+  // Approval workflow
+  status          String    @default("draft")
+  rejectionReason String?
+  submittedAt     DateTime?
+  // Coins
+  coinPrice       Int?
+  // Extras
+  authorNote      String?
+  adminNotes      String?
+  categories         Category[]
+  author             Author     @relation(fields: [authorId], references: [id])
+  ratingAvg          Float  @default(0)
+  ratingCount        Int    @default(0)
+  likes              Like[]
+  bookmarks          Bookmark[]
+  comments           Comment[]
+  unlocks            StoryUnlock[]
+  tips               Tip[]
+  promotions         FeaturedPromotion[]
+  adminFeaturedItems AdminFeaturedItem[]
+  reports            Report[]
+  storyTags          Tag[]
+  readingHistory     ReadingHistory[]
+  storyViews         StoryView[]
+  ratings            Rating[]
+  collections        CollectionStory[]
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  storyId   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, storyId])
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  storyId   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, storyId])
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  content   String
+  userId    String
+  storyId   String
+  parentId  String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  story     Story     @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("CommentReplies")
+  reports   Report[]
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  type        String
+  reason      String
+  description String?
+  status      String   @default("pending")
+  userId      String
+  storyId     String?
+  commentId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  story       Story?   @relation(fields: [storyId], references: [id], onDelete: SetNull)
+  comment     Comment? @relation(fields: [commentId], references: [id], onDelete: SetNull)
+}
+
+model AuthorLike {
+  userId    String
+  authorId  String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  author    Author   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, authorId])
+}
+
+model CoinPackage {
+  id                 String   @id @default(cuid())
+  name               String
+  description        String?
+  coins              Int
+  bonusCoins         Int      @default(0)
+  price              Float
+  subscriberDiscount Float    @default(0)
+  isActive           Boolean  @default(true)
+  order              Int      @default(0)
+  createdAt          DateTime @default(now())
+}
+
+model Subscription {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  tier               String
+  status             String   @default("active")
+  coinsPerMonth      Int
+  currentPeriodStart DateTime @default(now())
+  currentPeriodEnd   DateTime
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CoinTransaction {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Int
+  type        String
+  description String?
+  packageId   String?
+  storyId     String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model StoryUnlock {
+  id         String   @id @default(cuid())
+  userId     String
+  storyId    String
+  coinsSpent Int
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  story      Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, storyId])
+}
+
+model SeriesUnlock {
+  id         String   @id @default(cuid())
+  userId     String
+  seriesId   String
+  coinsSpent Int
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  series     Series   @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, seriesId])
+}
+
+model Tip {
+  id            String   @id @default(cuid())
+  fromUserId    String
+  toAuthorId    String
+  storyId       String?
+  amount        Int
+  authorShare   Int
+  platformShare Int
+  message       String?
+  createdAt     DateTime @default(now())
+  fromUser      User     @relation("TipsFromUser", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toAuthor      Author   @relation("TipsToAuthor", fields: [toAuthorId], references: [id], onDelete: Cascade)
+  story         Story?   @relation(fields: [storyId], references: [id], onDelete: SetNull)
+}
+
+model Series {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  description  String?
+  coverImage   String?
+  authorId     String
+  isPremium    Boolean  @default(false)
+  coinPrice    Int?
+  freeChapters Int      @default(1)
+  author             Author   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  stories            Story[]
+  unlocks            SeriesUnlock[]
+  promotions         FeaturedPromotion[]
+  adminFeaturedItems AdminFeaturedItem[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Ad {
+  id            String   @id @default(cuid())
+  slot          String
+  name          String
+  type          String   @default("affiliate")
+  networkCode   String?
+  imageUrl      String?
+  linkUrl       String?
+  altText       String?
+  adTitle       String?
+  adDescription String?
+  isActive      Boolean  @default(true)
+  priority      Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([slot, isActive])
+}
+
+model FeaturedPromotion {
+  id         String    @id @default(cuid())
+  type       String
+  storyId    String?
+  seriesId   String?
+  authorId   String
+  coinsSpent Int
+  status     String    @default("queued")
+  startedAt  DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  story   Story?  @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  series  Series? @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  author  Author  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([type, status])
+}
+
+model AdminFeaturedItem {
+  id        String   @id @default(cuid())
+  type      String
+  storyId   String?  @unique
+  seriesId  String?  @unique
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  story   Story?  @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  series  Series? @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+
+  @@index([type, order])
+}
+
+model Tag {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  slug        String       @unique
+  tier        Int
+  description String?
+  isApproved  Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  stories     Story[]
+  aliases     TagAlias[]
+  requests    TagRequest[]
+}
+
+model TagAlias {
+  id      String @id @default(cuid())
+  alias   String @unique
+  tagId   String
+  tag     Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+model TagRequest {
+  id              String   @id @default(cuid())
+  requestedName   String
+  slug            String
+  tier            Int      @default(2)
+  requestedById   String
+  status          String   @default("pending")
+  mergedIntoTagId String?
+  adminNote       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  requestedBy     User     @relation(fields: [requestedById], references: [id], onDelete: Cascade)
+  mergedIntoTag   Tag?     @relation(fields: [mergedIntoTagId], references: [id], onDelete: SetNull)
+}
+
+model ReadingHistory {
+  id          String    @id @default(cuid())
+  userId      String
+  storyId     String
+  progress    Int       @default(0)
+  completedAt DateTime?
+  lastReadAt  DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  story       Story     @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, storyId])
+  @@index([userId, lastReadAt])
+}
+
+model StoryView {
+  id       String   @id @default(cuid())
+  storyId  String
+  viewedAt DateTime @default(now())
+  story    Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@index([storyId, viewedAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  userId    String?
+  storyId   String
+  value     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, storyId])
+  @@index([storyId])
+}
+
+model Collection {
+  id              String            @id @default(cuid())
+  slug            String            @unique
+  title           String
+  description     String?
+  metaDescription String?
+  coverImage      String?
+  type            String            @default("editorial")
+  featured        Boolean           @default(false)
+  published       Boolean           @default(true)
+  sortOrder       Int               @default(0)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  stories         CollectionStory[]
+
+  @@index([published, featured, sortOrder])
+}
+
+model CollectionStory {
+  id            String     @id @default(cuid())
+  collectionId  String
+  storyId       String
+  position      Int        @default(0)
+  editorialNote String?
+  addedAt       DateTime   @default(now())
+  collection    Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  story         Story      @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, storyId])
+  @@index([collectionId, position])
+}
+
+model EmailSetting {
+  id         String   @id @default(cuid())
+  type       String   @unique
+  enabled    Boolean  @default(true)
+  subject    String?
+  customNote String?
+  updatedAt  DateTime @updatedAt
+}
+
+model CryptoPayment {
+  id              String    @id @default(cuid())
+  nowPaymentId    String    @unique
+  userId          String
+  packageId       String
+  packageName     String
+  totalCoins      Int
+  subscriberBonus Int       @default(0)
+  amountUsd       Float
+  payCurrency     String
+  payAddress      String
+  payAmount       Float
+  status          String    @default("waiting")
+  creditedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}

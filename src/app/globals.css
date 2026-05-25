@@ -1,26 +1,189 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-rose: #c4426a;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --background: #0d0d0f;
+  --foreground: #f0edf4;
+  --card: #16141a;
+  --card-foreground: #f0edf4;
+  --border: #2a2530;
+  --muted: #1e1c24;
+  --muted-foreground: #8b8099;
+  --primary: #c4426a;
+  --primary-foreground: #ffffff;
+  --secondary: #1e1c24;
+  --accent: #c4426a;
+}
+
+* {
+  box-sizing: border-box;
+  border-color: var(--border);
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Prose styles for story content */
+.prose-story {
+  --tw-prose-body: #d4cfe0;
+  --tw-prose-headings: #f0edf4;
+  --tw-prose-lead: #b8b0c8;
+  --tw-prose-links: #c4426a;
+  --tw-prose-bold: #f0edf4;
+  --tw-prose-counters: #8b8099;
+  --tw-prose-bullets: #8b8099;
+  --tw-prose-hr: #2a2530;
+  --tw-prose-quotes: #d4cfe0;
+  --tw-prose-quote-borders: #c4426a;
+  --tw-prose-captions: #8b8099;
+  --tw-prose-code: #f0edf4;
+  --tw-prose-pre-code: #d4cfe0;
+  --tw-prose-pre-bg: #16141a;
+  --tw-prose-th-borders: #2a2530;
+  --tw-prose-td-borders: #2a2530;
+  color: var(--tw-prose-body);
+  font-size: 1.125rem;
+  line-height: 1.85;
+  max-width: 75ch;
+}
+
+.prose-story p {
+  margin-top: 1.4em;
+  margin-bottom: 1.4em;
+}
+
+.prose-story h2,
+.prose-story h3 {
+  color: var(--tw-prose-headings);
+  font-weight: 700;
+  margin-top: 2em;
+  margin-bottom: 0.75em;
+}
+
+.prose-story h2 { font-size: 1.5rem; }
+.prose-story h3 { font-size: 1.25rem; }
+
+.prose-story blockquote {
+  border-left: 3px solid #c4426a;
+  padding-left: 1.25rem;
+  color: var(--tw-prose-quotes);
+  font-style: italic;
+  margin: 1.75em 0;
+}
+
+.prose-story a {
+  color: #c4426a;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.prose-story strong { color: var(--tw-prose-bold); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--background); }
+::-webkit-scrollbar-thumb { background: #2a2530; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #c4426a; }
+
+/* Selection */
+::selection { background: rgba(196, 66, 106, 0.35); color: #f0edf4; }
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid #c4426a;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Line clamp utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* TipTap editor */
+.tiptap {
+  outline: none;
+  padding: 1.5rem;
+  min-height: 400px;
+  color: var(--foreground);
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--muted-foreground);
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
+
+/* Push notification prompt */
+@keyframes push-slide-up {
+  from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.tiptap p { margin-bottom: 1rem; }
+.tiptap h2 { font-size: 1.5rem; font-weight: 700; margin: 1.5rem 0 0.75rem; color: var(--foreground); }
+.tiptap h3 { font-size: 1.25rem; font-weight: 600; margin: 1.25rem 0 0.5rem; color: var(--foreground); }
+.tiptap blockquote { border-left: 3px solid #c4426a; padding-left: 1rem; color: var(--muted-foreground); font-style: italic; margin: 1rem 0; }
+.tiptap strong { font-weight: 700; }
+.tiptap em { font-style: italic; }
+.tiptap u { text-decoration: underline; }
+
+/* Animations */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in { animation: fade-in 0.4s ease-out; }
+
+@keyframes shimmer {
+  from { background-position: -200px 0; }
+  to { background-position: 200px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--muted) 0px, #252030 40px, var(--muted) 80px);
+  background-size: 600px;
+  animation: shimmer 1.5s infinite linear;
+  border-radius: 6px;
 }

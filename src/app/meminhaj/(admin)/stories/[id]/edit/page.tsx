@@ -1,0 +1,66 @@
+import { getAdminStoryById, getCategories, getAuthors } from "@/lib/queries";
+import { StoryForm } from "@/components/admin/StoryForm";
+import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Edit Story" };
+
+export default async function EditStoryPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const [story, categories, authors] = await Promise.all([
+    getAdminStoryById(id),
+    getCategories(),
+    getAuthors(),
+  ]);
+
+  if (!story) notFound();
+
+  return (
+    <div>
+      <h1
+        className="text-2xl font-bold mb-8"
+        style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
+      >
+        Edit Story
+      </h1>
+      <StoryForm
+        categories={categories}
+        authors={authors}
+        initialData={{
+          id: story.id,
+          title: story.title,
+          slug: story.slug,
+          excerpt: story.excerpt,
+          content: story.content,
+          coverImage: story.coverImage,
+          published: story.published,
+          featured: story.featured,
+          tags: story.tags,
+          categoryIds: story.categories.map((c) => c.id),
+          authorId: story.authorId,
+          readingTime: story.readingTime,
+          views: story.views,
+          series: story.seriesInfo?.name ?? story.series,
+          seriesId: story.seriesId,
+          chapterNumber: story.chapterNumber,
+          language: story.language,
+          pov: story.pov,
+          genderPairing: story.genderPairing,
+          contentWarnings: story.contentWarnings,
+          maturityRating: story.maturityRating,
+          accessLevel: story.accessLevel,
+          scheduledAt: story.scheduledAt,
+          visibility: story.visibility,
+          commentsEnabled: story.commentsEnabled,
+          metaTitle: story.metaTitle,
+          metaDescription: story.metaDescription,
+          canonicalUrl: story.canonicalUrl,
+          noIndex: story.noIndex,
+          authorNote: story.authorNote,
+          adminNotes: story.adminNotes,
+          _count: story._count,
+        }}
+      />
+    </div>
+  );
+}
