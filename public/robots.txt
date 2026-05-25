@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+Disallow: /api/
+Disallow: /meminhaj/
+Disallow: /author-dashboard/
+Disallow: /profile
+Disallow: /store/
+
+Sitemap: https://lustpages.com/sitemap.xml
