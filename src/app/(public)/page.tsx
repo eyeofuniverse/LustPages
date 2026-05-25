@@ -24,7 +24,7 @@ export const revalidate = 120;
 const siteUrl = process.env.NEXTAUTH_URL ?? "https://lustpages.com";
 
 export const metadata: Metadata = {
-  title: "LustPages — Premium Adult Fiction & Erotica Stories",
+  title: { absolute: "LustPages — Premium Adult Fiction & Erotica Stories" },
   description:
     "Discover thousands of premium adult fiction stories across romance, fantasy, thriller, and contemporary genres. Written by passionate authors. Free to read.",
   keywords: [
