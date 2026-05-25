@@ -1,6 +1,6 @@
 import { MetadataRoute } from "next";
 
-const BASE = process.env.NEXTAUTH_URL ?? "https://lustpages.com";
+const BASE = "https://lustpages.com";
 
 export default function robots(): MetadataRoute.Robots {
   return {
