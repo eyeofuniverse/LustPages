@@ -40,6 +40,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/search`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
     { url: `${BASE}/premium/stories`, lastModified: new Date(), changeFrequency: "daily", priority: 0.6 },
     { url: `${BASE}/store`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.4 },
+    { url: `${BASE}/terms`, lastModified: new Date("2026-05-26"), changeFrequency: "monthly", priority: 0.3 },
+    { url: `${BASE}/privacy`, lastModified: new Date("2026-05-26"), changeFrequency: "monthly", priority: 0.3 },
+    { url: `${BASE}/content-warning`, lastModified: new Date("2026-05-26"), changeFrequency: "monthly", priority: 0.3 },
   ];
 
   const storyPages: MetadataRoute.Sitemap = stories.map((s) => ({
