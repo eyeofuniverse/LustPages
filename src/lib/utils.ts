@@ -70,6 +70,28 @@ export function calculateReadingTime(content: string): number {
   return Math.max(1, Math.ceil(countWords(content) / 225));
 }
 
+export function splitHtmlAtParagraph(html: string, fraction = 0.4, minWords = 400): [string, string] {
+  const totalWords = countWords(html);
+  if (totalWords < minWords) return [html, ""];
+
+  const target = Math.floor(totalWords * fraction);
+  const regex = /<\/(p|h[1-6]|li|blockquote|pre)>/gi;
+  let lastIndex = 0;
+  let accumulated = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(html)) !== null) {
+    accumulated += countWords(html.slice(lastIndex, regex.lastIndex));
+    lastIndex = regex.lastIndex;
+    if (accumulated >= target) {
+      const second = html.slice(regex.lastIndex);
+      if (countWords(second) < 100) return [html, ""];
+      return [html.slice(0, regex.lastIndex), second];
+    }
+  }
+  return [html, ""];
+}
+
 export function getTextPreview(html: string, maxWords = 150): string {
   const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
   const words = text.split(" ").filter(Boolean);

@@ -25,8 +25,13 @@ export const AD_SLOTS = {
     recommended: "728×90 or responsive",
   },
   story_detail_before_content: {
-    label: "Story Detail — Before Content",
-    description: "Between story metadata/actions and the story body",
+    label: "Story Detail — Before Content (deprecated)",
+    description: "No longer rendered on the page. Replaced by Mid Content slot.",
+    recommended: "728×90 or 300×250",
+  },
+  story_detail_mid_content: {
+    label: "Story Detail — Mid Content",
+    description: "Injected at ~40% through the story body, at a natural paragraph break",
     recommended: "728×90 or 300×250",
   },
   story_detail_after_content: {
@@ -52,6 +57,21 @@ export const AD_SLOTS = {
   tags_page_banner: {
     label: "Tags Page — Banner",
     description: "Below filter bar on tag listing pages",
+    recommended: "728×90 or responsive",
+  },
+  series_detail_banner: {
+    label: "Series Detail — Banner",
+    description: "Below the chapter list on individual series pages",
+    recommended: "728×90 or 300×250",
+  },
+  trending_page_banner: {
+    label: "Trending Page — Banner",
+    description: "Between the header and the trending story list",
+    recommended: "728×90 or responsive",
+  },
+  search_results_banner: {
+    label: "Search Results — Banner",
+    description: "Between story results and series results on the search page",
     recommended: "728×90 or responsive",
   },
 } as const;

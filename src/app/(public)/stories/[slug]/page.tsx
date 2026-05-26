@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getStoryBySlug, getStoryRecommendations, incrementViews, getStoryUnlock, getSeriesUnlock, getUserCoinBalance } from "@/lib/queries";
 import { auth } from "@/auth";
-import { formatDate, getTags, getTextPreview, countWords } from "@/lib/utils";
+import { formatDate, getTags, getTextPreview, countWords, splitHtmlAtParagraph } from "@/lib/utils";
 import { sanitizeStoryContent } from "@/lib/sanitize";
 import { StoryCard } from "@/components/story/StoryCard";
 import { StoryActions } from "@/components/story/StoryActions";
@@ -275,15 +275,26 @@ export default async function StoryPage({ params }: Props) {
           />
         )}
 
-        {/* Ad: before content */}
-        <AdSlot identifier="story_detail_before_content" />
-
         {/* Content — gated if premium and not unlocked */}
-        {isUnlocked ? (
-          <div className="my-10 prose-story mx-auto">
-            <div dangerouslySetInnerHTML={{ __html: sanitizeStoryContent(story.content) }} />
-          </div>
-        ) : (
+        {isUnlocked ? (() => {
+          const sanitized = sanitizeStoryContent(story.content);
+          const [first, second] = splitHtmlAtParagraph(sanitized, 0.4, 400);
+          return (
+            <>
+              <div className="my-10 prose-story mx-auto">
+                <div dangerouslySetInnerHTML={{ __html: first }} />
+              </div>
+              {second && (
+                <>
+                  <AdSlot identifier="story_detail_mid_content" />
+                  <div className="prose-story mx-auto mb-10">
+                    <div dangerouslySetInnerHTML={{ __html: second }} />
+                  </div>
+                </>
+              )}
+            </>
+          );
+        })() : (
           <div className="my-10">
             {/* Server-truncated preview — full HTML never sent to client */}
             <div

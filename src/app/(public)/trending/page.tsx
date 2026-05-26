@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTrendingStories } from "@/lib/queries";
 import { SafeImage } from "@/components/ui/SafeImage";
+import { AdSlot } from "@/components/ads/AdSlot";
 import { TrendingUp, Eye, Heart, Clock, Star } from "lucide-react";
 import type { Metadata } from "next";
 
@@ -37,6 +38,8 @@ export default async function TrendingPage() {
           Ranked by reader engagement over the past 7 days — views, likes, and recency combined.
         </p>
       </div>
+
+      <AdSlot identifier="trending_page_banner" className="mb-6" />
 
       {stories.length === 0 ? (
         <div className="text-center py-20">

@@ -1424,10 +1424,14 @@ export async function getPremiumSeriesList(take = 20) {
 }
 
 export async function getActiveAdForSlot(slot: string) {
-  return prisma.ad.findFirst({
+  const ads = await prisma.ad.findMany({
     where: { slot, isActive: true },
     orderBy: { priority: "desc" },
   });
+  if (ads.length === 0) return null;
+  const topPriority = ads[0].priority;
+  const topAds = ads.filter((a) => a.priority === topPriority);
+  return topAds[Math.floor(Math.random() * topAds.length)];
 }
 
 export async function getAllAds() {

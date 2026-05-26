@@ -203,9 +203,6 @@ export default async function StoriesPage({ searchParams }: Props) {
           <TrendingCarousel stories={trendingStories} />
         )}
 
-        {/* Ad: above list */}
-        <AdSlot identifier="stories_list_top" />
-
         {/* Results */}
         <section aria-labelledby="results-heading">
           <div className="flex items-center justify-between mb-1">
@@ -279,14 +276,21 @@ export default async function StoriesPage({ searchParams }: Props) {
             </div>
           ) : (
             <div>
-              {stories.slice(0, 8).map((story) => (
+              {stories.slice(0, 3).map((story) => (
                 <StoryListItem
                   key={story.id}
                   story={story as Parameters<typeof StoryListItem>[0]["story"]}
                 />
               ))}
-              {stories.length > 8 && <AdSlot identifier="stories_list_mid" />}
-              {stories.slice(8).map((story) => (
+              {stories.length > 3 && <AdSlot identifier="stories_list_top" />}
+              {stories.slice(3, 11).map((story) => (
+                <StoryListItem
+                  key={story.id}
+                  story={story as Parameters<typeof StoryListItem>[0]["story"]}
+                />
+              ))}
+              {stories.length > 11 && <AdSlot identifier="stories_list_mid" />}
+              {stories.slice(11).map((story) => (
                 <StoryListItem
                   key={story.id}
                   story={story as Parameters<typeof StoryListItem>[0]["story"]}

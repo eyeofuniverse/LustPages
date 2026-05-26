@@ -6,6 +6,7 @@ import { formatDate } from "@/lib/utils";
 import { auth } from "@/auth";
 import { SeriesUnlockGate } from "@/components/coins/SeriesUnlockGate";
 import { BookOpen, Clock, Heart, Lock, ArrowLeft, MessageCircle, Star, Coins } from "lucide-react";
+import { AdSlot } from "@/components/ads/AdSlot";
 import type { Metadata } from "next";
 
 interface Props {
@@ -343,6 +344,8 @@ export default async function SeriesPage({ params }: Props) {
           <p style={{ color: "var(--muted-foreground)" }}>No published parts yet. Check back soon.</p>
         </div>
       )}
+
+      <AdSlot identifier="series_detail_banner" />
     </div>
     </>
   );
