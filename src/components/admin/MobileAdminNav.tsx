@@ -2,31 +2,64 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { BookOpen, LayoutDashboard, PenSquare, Home, Menu, X, FolderOpen, Tag, Tags, CheckSquare, Megaphone, MessageCircle, Flag, Receipt, Mail, Coins } from "lucide-react";
+import {
+  BookOpen, LayoutDashboard, PenSquare, Home, Menu, X, FolderOpen, Tag,
+  Tags, CheckSquare, Megaphone, MessageCircle, Flag, Receipt, Mail, Coins,
+  Sparkles, Layers, Library, UserCircle, Users,
+} from "lucide-react";
+import type { AdminPermissionKey } from "@/lib/admin-permissions";
 
-const NAV_LINKS = [
-  { href: "/meminhaj", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/meminhaj/stories", icon: BookOpen, label: "Stories" },
-  { href: "/meminhaj/stories/new", icon: PenSquare, label: "New Story" },
-  { href: "/meminhaj/approvals", icon: CheckSquare, label: "Approvals" },
-  { href: "/meminhaj/categories", icon: FolderOpen, label: "Categories" },
-  { href: "/meminhaj/tags", icon: Tag, label: "Tags" },
-  { href: "/meminhaj/tag-requests", icon: Tags, label: "Tag Requests" },
-  { href: "/meminhaj/ads", icon: Megaphone, label: "Ads" },
-  { href: "/meminhaj/accounts", icon: Receipt, label: "Accounts" },
-  { href: "/meminhaj/coin-packages", icon: Coins, label: "Coin Packages" },
-  { href: "/meminhaj/comments", icon: MessageCircle, label: "Comments" },
-  { href: "/meminhaj/reports", icon: Flag, label: "Reports" },
-  { href: "/meminhaj/emails", icon: Mail, label: "Emails" },
+type PendingCounts = { approvals: number; reports: number; tagRequests: number };
+
+type NavItem = {
+  href: string;
+  icon: React.ElementType;
+  label: string;
+  permission: AdminPermissionKey | "super_admin" | null;
+  badgeKey?: keyof PendingCounts;
+};
+
+const NAV_ITEMS: NavItem[] = [
+  { href: "/meminhaj", icon: LayoutDashboard, label: "Dashboard", permission: null },
+  { href: "/meminhaj/stories", icon: BookOpen, label: "Stories", permission: "stories" },
+  { href: "/meminhaj/series", icon: Layers, label: "Series", permission: "stories" },
+  { href: "/meminhaj/collections", icon: Library, label: "Collections", permission: "stories" },
+  { href: "/meminhaj/stories/new", icon: PenSquare, label: "New Story", permission: "stories" },
+  { href: "/meminhaj/categories", icon: FolderOpen, label: "Categories", permission: "categories" },
+  { href: "/meminhaj/tags", icon: Tag, label: "Tags", permission: "tags" },
+  { href: "/meminhaj/tag-requests", icon: Tags, label: "Tag Requests", permission: "tags", badgeKey: "tagRequests" },
+  { href: "/meminhaj/approvals", icon: CheckSquare, label: "Approvals", permission: "approvals", badgeKey: "approvals" },
+  { href: "/meminhaj/ads", icon: Megaphone, label: "Ads", permission: "ads" },
+  { href: "/meminhaj/featured", icon: Sparkles, label: "Featured", permission: "featured" },
+  { href: "/meminhaj/accounts", icon: Receipt, label: "Accounts", permission: "accounts" },
+  { href: "/meminhaj/coin-packages", icon: Coins, label: "Coin Packages", permission: "coin_packages" },
+  { href: "/meminhaj/comments", icon: MessageCircle, label: "Comments", permission: "comments" },
+  { href: "/meminhaj/reports", icon: Flag, label: "Reports", permission: "reports", badgeKey: "reports" },
+  { href: "/meminhaj/emails", icon: Mail, label: "Emails", permission: "emails" },
 ];
 
-export function MobileAdminNav({ userName }: { userName?: string | null }) {
+export function MobileAdminNav({
+  userName,
+  isSuperAdmin = false,
+  adminPermissions = [],
+  pendingCounts = { approvals: 0, reports: 0, tagRequests: 0 },
+}: {
+  userName?: string | null;
+  isSuperAdmin?: boolean;
+  adminPermissions?: string[];
+  pendingCounts?: PendingCounts;
+}) {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
 
+  const visibleItems = NAV_ITEMS.filter(({ permission }) => {
+    if (permission === null) return true;
+    if (isSuperAdmin) return true;
+    return adminPermissions.includes(permission);
+  });
+
   return (
     <>
-      {/* Fixed top bar — mobile only */}
       <header
         className="lg:hidden fixed top-0 inset-x-0 z-40 flex items-center justify-between px-4 h-14"
         style={{ background: "var(--card)", borderBottom: "1px solid var(--border)" }}
@@ -54,15 +87,8 @@ export function MobileAdminNav({ userName }: { userName?: string | null }) {
         </button>
       </header>
 
-      {/* Backdrop */}
-      {open && (
-        <div
-          className="lg:hidden fixed inset-0 z-40 bg-black/60"
-          onClick={close}
-        />
-      )}
+      {open && <div className="lg:hidden fixed inset-0 z-40 bg-black/60" onClick={close} />}
 
-      {/* Drawer */}
       <div
         className="lg:hidden fixed inset-y-0 left-0 z-50 w-64 flex flex-col py-6 overflow-y-auto"
         style={{
@@ -75,59 +101,66 @@ export function MobileAdminNav({ userName }: { userName?: string | null }) {
         <div className="flex items-center justify-between px-6 mb-8">
           <Link href="/" className="flex items-center gap-2" onClick={close}>
             <BookOpen size={18} style={{ color: "#c4426a" }} />
-            <span
-              className="font-bold text-base"
-              style={{ fontFamily: "var(--font-playfair), serif", color: "#c4426a" }}
-            >
+            <span className="font-bold text-base" style={{ fontFamily: "var(--font-playfair), serif", color: "#c4426a" }}>
               LustPages
             </span>
           </Link>
-          <button
-            type="button"
-            aria-label="Close navigation"
-            onClick={close}
-            className="p-1 rounded-lg"
-            style={{ color: "var(--muted-foreground)" }}
-          >
+          <button type="button" aria-label="Close navigation" onClick={close} className="p-1 rounded-lg" style={{ color: "var(--muted-foreground)" }}>
             <X size={18} />
           </button>
         </div>
 
         <nav className="flex-1 px-3">
           <div className="space-y-1">
-            {NAV_LINKS.map(({ href, icon: Icon, label }) => (
-              <Link
-                key={href}
-                href={href}
-                onClick={close}
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-75"
-                style={{ color: "var(--muted-foreground)" }}
-              >
-                <Icon size={16} />
-                {label}
+            {visibleItems.map(({ href, icon: Icon, label, badgeKey }) => {
+              const badge = badgeKey ? pendingCounts[badgeKey] : undefined;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={close}
+                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-75"
+                  style={{ color: "var(--muted-foreground)" }}
+                >
+                  <Icon size={16} />
+                  <span className="flex-1">{label}</span>
+                  {badge != null && badge > 0 && (
+                    <span className="text-xs font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(99,102,241,0.15)", color: "#6366f1" }}>
+                      {badge}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+            {isSuperAdmin && (
+              <Link href="/meminhaj/admins" onClick={close} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-75" style={{ color: "var(--muted-foreground)" }}>
+                <Users size={16} />
+                Admin Team
               </Link>
-            ))}
+            )}
           </div>
 
           <div className="mt-6 pt-6" style={{ borderTop: "1px solid var(--border)" }}>
-            <Link
-              href="/"
-              onClick={close}
-              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-75"
-              style={{ color: "var(--muted-foreground)" }}
-            >
+            <Link href="/" onClick={close} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-75" style={{ color: "var(--muted-foreground)" }}>
               <Home size={16} />
               View Site
             </Link>
           </div>
         </nav>
 
-        {userName && (
-          <div className="px-6 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
-            <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>Signed in as</p>
-            <p className="text-sm font-medium truncate" style={{ color: "var(--foreground)" }}>{userName}</p>
-          </div>
-        )}
+        <div className="px-3 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
+          <Link
+            href="/meminhaj/profile"
+            onClick={close}
+            className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all hover:opacity-75"
+          >
+            <UserCircle size={16} style={{ color: "#c4426a" }} />
+            <div className="min-w-0">
+              <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>Signed in as</p>
+              <p className="text-sm font-medium truncate" style={{ color: "var(--foreground)" }}>{userName}</p>
+            </div>
+          </Link>
+        </div>
       </div>
     </>
   );
