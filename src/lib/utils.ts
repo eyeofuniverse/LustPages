@@ -55,10 +55,12 @@ export function truncate(str: string, length: number): string {
   return str.slice(0, length).trimEnd() + "…";
 }
 
+export function countWords(html: string): number {
+  return html.replace(/<[^>]*>/g, " ").trim().split(/\s+/).filter(Boolean).length;
+}
+
 export function calculateReadingTime(content: string): number {
-  const wordsPerMinute = 225;
-  const wordCount = content.replace(/<[^>]*>/g, "").split(/\s+/).length;
-  return Math.max(1, Math.ceil(wordCount / wordsPerMinute));
+  return Math.max(1, Math.ceil(countWords(content) / 225));
 }
 
 export function getTextPreview(html: string, maxWords = 150): string {
