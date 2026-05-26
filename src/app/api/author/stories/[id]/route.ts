@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { sanitizeStoryContent } from "@/lib/sanitize";
 
 async function requireStoryOwner(storyId: string) {
   const session = await auth();
@@ -35,6 +36,7 @@ export async function PATCH(
 
   try {
     const { categoryIds, tagIds, action, coinPrice: incomingCoinPrice, ...rest } = await req.json();
+    if (rest.content) rest.content = sanitizeStoryContent(rest.content);
 
     // Series stories cannot have individual coin prices — premium is series-level
     let coinPrice: number | null = null;

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { sanitizeStoryContent } from "@/lib/sanitize";
 
 async function requireAuthor() {
   const session = await auth();
@@ -19,6 +20,7 @@ export async function POST(req: Request) {
 
   try {
     const { categoryIds, tagIds, action, coinPrice: incomingCoinPrice, ...data } = await req.json();
+    if (data.content) data.content = sanitizeStoryContent(data.content);
     const status = action === "submit" ? "pending" : "draft";
     // Series stories cannot have individual coin prices — premium is series-level
     const coinPrice = data.seriesId ? null : (incomingCoinPrice ?? null);

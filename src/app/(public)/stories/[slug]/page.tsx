@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getStoryBySlug, getStoryRecommendations, incrementViews, getStoryUnlock, getSeriesUnlock, getUserCoinBalance } from "@/lib/queries";
 import { auth } from "@/auth";
 import { formatDate, getTags, getTextPreview } from "@/lib/utils";
+import { sanitizeStoryContent } from "@/lib/sanitize";
 import { StoryCard } from "@/components/story/StoryCard";
 import { StoryActions } from "@/components/story/StoryActions";
 import { StoryRating } from "@/components/story/StoryRating";
@@ -280,7 +281,7 @@ export default async function StoryPage({ params }: Props) {
         {/* Content — gated if premium and not unlocked */}
         {isUnlocked ? (
           <div className="my-10 prose-story mx-auto">
-            <div dangerouslySetInnerHTML={{ __html: story.content }} />
+            <div dangerouslySetInnerHTML={{ __html: sanitizeStoryContent(story.content) }} />
           </div>
         ) : (
           <div className="my-10">
