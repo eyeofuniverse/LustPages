@@ -32,10 +32,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const user = await prisma.user.findUnique({ where: { email } });
           if (!user || user.role !== "admin") return null;
 
-          const author = await prisma.author.findUnique({
-            where: { userId: user.id },
-            select: { id: true, slug: true },
-          });
+          const isSuperAdmin = user.email === "admin@lustpages.com";
+
+          const [author, adminProfile] = await Promise.all([
+            prisma.author.findUnique({ where: { userId: user.id }, select: { id: true, slug: true } }),
+            prisma.adminProfile.findUnique({ where: { userId: user.id }, select: { permissions: true, nickname: true } }),
+          ]);
 
           return {
             id: user.id,
@@ -45,6 +47,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             role: user.role,
             authorId: author?.id ?? null,
             authorSlug: author?.slug ?? null,
+            isSuperAdmin,
+            adminPermissions: isSuperAdmin ? [] : (adminProfile?.permissions ?? []),
+            adminNickname: adminProfile?.nickname ?? null,
           };
         }
 
@@ -80,6 +85,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           role: user.role,
           authorId: author?.id ?? null,
           authorSlug: author?.slug ?? null,
+          isSuperAdmin: false,
+          adminPermissions: [],
+          adminNickname: null,
         };
       },
     }),

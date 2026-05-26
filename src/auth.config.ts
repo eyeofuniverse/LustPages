@@ -35,6 +35,9 @@ export const authConfig: NextAuthConfig = {
         token.role = (user as { role?: string }).role ?? "user";
         token.authorId = (user as { authorId?: string | null }).authorId ?? null;
         token.authorSlug = (user as { authorSlug?: string | null }).authorSlug ?? null;
+        token.isSuperAdmin = (user as { isSuperAdmin?: boolean }).isSuperAdmin ?? false;
+        token.adminPermissions = (user as { adminPermissions?: string[] }).adminPermissions ?? [];
+        token.adminNickname = (user as { adminNickname?: string | null }).adminNickname ?? null;
       }
       return token;
     },
@@ -44,6 +47,9 @@ export const authConfig: NextAuthConfig = {
         (session.user as { role?: string }).role = token.role as string;
         (session.user as { authorId?: string | null }).authorId = token.authorId as string | null;
         (session.user as { authorSlug?: string | null }).authorSlug = token.authorSlug as string | null;
+        (session.user as { isSuperAdmin?: boolean }).isSuperAdmin = token.isSuperAdmin as boolean;
+        (session.user as { adminPermissions?: string[] }).adminPermissions = token.adminPermissions as string[];
+        (session.user as { adminNickname?: string | null }).adminNickname = token.adminNickname as string | null;
       }
       return session;
     },

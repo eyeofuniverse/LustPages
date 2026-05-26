@@ -27,6 +27,7 @@ model User {
   bookmarks       Bookmark[]
   comments        Comment[]
   author          Author?
+  adminProfile    AdminProfile?
   coinTransactions  CoinTransaction[]
   storyUnlocks      StoryUnlock[]
   seriesUnlocks     SeriesUnlock[]
@@ -479,6 +480,31 @@ model EmailSetting {
   subject    String?
   customNote String?
   updatedAt  DateTime @updatedAt
+}
+
+model AdminProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isSuperAdmin Boolean  @default(false)
+  nickname     String?
+  permissions  String[] @default([])
+  invitedById  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model AdminPasswordOtp {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
 }
 
 model AdminOtp {

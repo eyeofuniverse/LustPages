@@ -2,32 +2,78 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { getPendingStoriesCount, getPendingReportsCount, getPendingTagRequestsCount } from "@/lib/queries";
-import { BookOpen, LayoutDashboard, PenSquare, Home, FolderOpen, Tag, CheckSquare, Megaphone, Sparkles, MessageCircle, Flag, Tags, Receipt, Mail, Coins, Layers, Library } from "lucide-react";
+import {
+  BookOpen, LayoutDashboard, PenSquare, Home, FolderOpen, Tag, CheckSquare,
+  Megaphone, Sparkles, MessageCircle, Flag, Tags, Receipt, Mail, Coins,
+  Layers, Library, UserCircle, Users,
+} from "lucide-react";
 import { MobileAdminNav } from "@/components/admin/MobileAdminNav";
 import type { Metadata } from "next";
+import type { AdminPermissionKey } from "@/lib/admin-permissions";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+type AdminUser = {
+  name?: string | null;
+  role?: string;
+  isSuperAdmin?: boolean;
+  adminPermissions?: string[];
+  adminNickname?: string | null;
+};
+
+type NavItem = {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+  badge?: number;
+  permission: AdminPermissionKey | "super_admin" | null;
+};
+
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
-  if (!session || (session.user as { role?: string })?.role !== "admin") {
-    redirect("/meminhaj/login");
-  }
+  const user = session?.user as AdminUser | undefined;
+  if (!user || user.role !== "admin") redirect("/meminhaj/login");
+
+  const isSuperAdmin = user.isSuperAdmin ?? false;
+  const permissions = user.adminPermissions ?? [];
+  const displayName = user.adminNickname ?? user.name;
+
   const [pendingCount, pendingReports, pendingTagRequests] = await Promise.all([
     getPendingStoriesCount(),
     getPendingReportsCount(),
     getPendingTagRequestsCount(),
   ]);
 
+  const NAV: NavItem[] = [
+    { href: "/meminhaj", icon: <LayoutDashboard size={16} />, label: "Dashboard", permission: null },
+    { href: "/meminhaj/stories", icon: <BookOpen size={16} />, label: "Stories", permission: "stories" },
+    { href: "/meminhaj/series", icon: <Layers size={16} />, label: "Series", permission: "stories" },
+    { href: "/meminhaj/collections", icon: <Library size={16} />, label: "Collections", permission: "stories" },
+    { href: "/meminhaj/stories/new", icon: <PenSquare size={16} />, label: "New Story", permission: "stories" },
+    { href: "/meminhaj/categories", icon: <FolderOpen size={16} />, label: "Categories", permission: "categories" },
+    { href: "/meminhaj/tags", icon: <Tag size={16} />, label: "Tags", permission: "tags" },
+    { href: "/meminhaj/tag-requests", icon: <Tags size={16} />, label: "Tag Requests", badge: pendingTagRequests, permission: "tags" },
+    { href: "/meminhaj/approvals", icon: <CheckSquare size={16} />, label: "Approvals", badge: pendingCount, permission: "approvals" },
+    { href: "/meminhaj/ads", icon: <Megaphone size={16} />, label: "Ads", permission: "ads" },
+    { href: "/meminhaj/featured", icon: <Sparkles size={16} />, label: "Featured", permission: "featured" },
+    { href: "/meminhaj/accounts", icon: <Receipt size={16} />, label: "Accounts", permission: "accounts" },
+    { href: "/meminhaj/coin-packages", icon: <Coins size={16} />, label: "Coin Packages", permission: "coin_packages" },
+    { href: "/meminhaj/comments", icon: <MessageCircle size={16} />, label: "Comments", permission: "comments" },
+    { href: "/meminhaj/reports", icon: <Flag size={16} />, label: "Reports", badge: pendingReports, permission: "reports" },
+    { href: "/meminhaj/emails", icon: <Mail size={16} />, label: "Emails", permission: "emails" },
+  ];
+
+  const visibleNav = NAV.filter(({ permission }) => {
+    if (permission === null) return true;
+    if (isSuperAdmin) return true;
+    return permissions.includes(permission);
+  });
+
   return (
     <div className="min-h-screen" style={{ background: "var(--background)" }}>
-      {/* Desktop sidebar — hidden on mobile, fixed on lg+ */}
+      {/* Desktop sidebar */}
       <aside
         className="hidden lg:flex w-60 fixed inset-y-0 left-0 z-30 flex-col py-6"
         style={{ background: "var(--card)", borderRight: "1px solid var(--border)" }}
@@ -42,63 +88,49 @@ export default async function AdminLayout({
               LustPages
             </span>
           </Link>
-          <p className="text-xs mt-1" style={{ color: "var(--muted-foreground)" }}>
-            Admin Panel
-          </p>
+          <p className="text-xs mt-1" style={{ color: "var(--muted-foreground)" }}>Admin Panel</p>
         </div>
 
         <nav className="flex-1 px-3 overflow-y-auto" style={{ scrollbarWidth: "thin", scrollbarColor: "var(--border) transparent" }}>
           <div className="space-y-1">
-            <AdminLink href="/meminhaj" icon={<LayoutDashboard size={16} />} label="Dashboard" />
-            <AdminLink href="/meminhaj/stories" icon={<BookOpen size={16} />} label="Stories" />
-            <AdminLink href="/meminhaj/series" icon={<Layers size={16} />} label="Series" />
-            <AdminLink href="/meminhaj/collections" icon={<Library size={16} />} label="Collections" />
-            <AdminLink href="/meminhaj/stories/new" icon={<PenSquare size={16} />} label="New Story" />
-            <AdminLink href="/meminhaj/categories" icon={<FolderOpen size={16} />} label="Categories" />
-            <AdminLink href="/meminhaj/tags" icon={<Tag size={16} />} label="Tags" />
-            <AdminLink
-              href="/meminhaj/tag-requests"
-              icon={<Tags size={16} />}
-              label="Tag Requests"
-              badge={pendingTagRequests}
-            />
-            <AdminLink
-              href="/meminhaj/approvals"
-              icon={<CheckSquare size={16} />}
-              label="Approvals"
-              badge={pendingCount}
-            />
-            <AdminLink href="/meminhaj/ads" icon={<Megaphone size={16} />} label="Ads" />
-            <AdminLink href="/meminhaj/featured" icon={<Sparkles size={16} />} label="Featured" />
-            <AdminLink href="/meminhaj/accounts" icon={<Receipt size={16} />} label="Accounts" />
-            <AdminLink href="/meminhaj/coin-packages" icon={<Coins size={16} />} label="Coin Packages" />
-            <AdminLink href="/meminhaj/comments" icon={<MessageCircle size={16} />} label="Comments" />
-            <AdminLink
-              href="/meminhaj/reports"
-              icon={<Flag size={16} />}
-              label="Reports"
-              badge={pendingReports}
-            />
-            <AdminLink href="/meminhaj/emails" icon={<Mail size={16} />} label="Emails" />
+            {visibleNav.map((item) => (
+              <AdminLink key={item.href} {...item} />
+            ))}
+            {isSuperAdmin && (
+              <AdminLink href="/meminhaj/admins" icon={<Users size={16} />} label="Admin Team" permission={null} />
+            )}
           </div>
 
           <div className="mt-6 pt-6" style={{ borderTop: "1px solid var(--border)" }}>
-            <AdminLink href="/" icon={<Home size={16} />} label="View Site" />
+            <AdminLink href="/" icon={<Home size={16} />} label="View Site" permission={null} />
           </div>
         </nav>
 
-        <div className="px-6 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
-          <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>Signed in as</p>
-          <p className="text-sm font-medium truncate" style={{ color: "var(--foreground)" }}>
-            {session.user?.name}
-          </p>
+        <div className="px-3 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
+          <Link
+            href="/meminhaj/profile"
+            className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all hover:opacity-75"
+          >
+            <UserCircle size={16} style={{ color: "#c4426a" }} />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>Signed in as</p>
+              <p className="text-sm font-medium truncate" style={{ color: "var(--foreground)" }}>
+                {displayName}
+              </p>
+            </div>
+          </Link>
         </div>
       </aside>
 
-      {/* Mobile top bar + drawer */}
-      <MobileAdminNav userName={session.user?.name} />
+      {/* Mobile nav */}
+      <MobileAdminNav
+        userName={displayName}
+        isSuperAdmin={isSuperAdmin}
+        adminPermissions={permissions}
+        pendingCounts={{ approvals: pendingCount, reports: pendingReports, tagRequests: pendingTagRequests }}
+      />
 
-      {/* Main content — offset for desktop sidebar, top-padded for mobile header */}
+      {/* Main */}
       <main className="lg:ml-60 min-h-screen">
         <div className="px-4 pt-18 pb-8 lg:p-8">
           {children}
@@ -113,12 +145,7 @@ function AdminLink({
   icon,
   label,
   badge,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  label: string;
-  badge?: number;
-}) {
+}: NavItem) {
   return (
     <Link
       href={href}
