@@ -98,19 +98,41 @@ export default async function HomePage() {
       />
 
       {/* ── HERO ─────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden" aria-labelledby="hero-heading">
-        {/* Top glow */}
+      <section
+        className="relative overflow-hidden flex items-center"
+        style={{ minHeight: "90vh" }}
+        aria-labelledby="hero-heading"
+      >
+        {/* Primary crown glow */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              "radial-gradient(ellipse 90% 60% at 50% -10%, rgba(196,66,106,0.22) 0%, transparent 65%)",
+              "radial-gradient(ellipse 110% 65% at 50% -8%, rgba(196,66,106,0.32) 0%, transparent 60%)",
+          }}
+          aria-hidden="true"
+        />
+        {/* Secondary ambient glow — bottom-left */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse 55% 45% at -5% 85%, rgba(196,66,106,0.10) 0%, transparent 60%)",
+          }}
+          aria-hidden="true"
+        />
+        {/* Tertiary accent — bottom-right */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse 45% 40% at 105% 90%, rgba(168,49,90,0.08) 0%, transparent 60%)",
           }}
           aria-hidden="true"
         />
         {/* Bottom fade */}
         <div
-          className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
+          className="absolute bottom-0 left-0 right-0 h-48 pointer-events-none"
           style={{
             background:
               "linear-gradient(to bottom, transparent, var(--background))",
@@ -118,15 +140,16 @@ export default async function HomePage() {
           aria-hidden="true"
         />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-16 relative">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-28 sm:py-36 relative w-full text-center">
           {/* Badge */}
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-8">
             <div
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-widest"
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.18em]"
               style={{
-                background: "rgba(196,66,106,0.15)",
+                background: "rgba(196,66,106,0.12)",
                 color: "#c4426a",
-                border: "1px solid rgba(196,66,106,0.3)",
+                border: "1px solid rgba(196,66,106,0.28)",
+                boxShadow: "0 0 20px rgba(196,66,106,0.12)",
               }}
             >
               <Sparkles size={11} />
@@ -137,21 +160,65 @@ export default async function HomePage() {
           {/* Headline */}
           <h1
             id="hero-heading"
-            className="text-center text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.08] mb-6 max-w-4xl mx-auto"
+            className="font-bold leading-[1.06] mb-6 mx-auto"
             style={{
               fontFamily: "var(--font-playfair), serif",
               color: "var(--foreground)",
+              fontSize: "clamp(2.6rem, 6.5vw, 5.25rem)",
+              letterSpacing: "-0.025em",
+              maxWidth: "860px",
             }}
           >
             Stories That{" "}
-            <em className="not-italic" style={{ color: "#c4426a" }}>
+            <em
+              className="not-italic"
+              style={{
+                background:
+                  "linear-gradient(135deg, #e8547a 0%, #c4426a 45%, #a8315a 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
               Ignite
             </em>{" "}
             Your Imagination
           </h1>
 
+          {/* Ornamental divider */}
+          <div
+            className="flex items-center justify-center gap-3 mb-7"
+            aria-hidden="true"
+          >
+            <div
+              style={{
+                width: "64px",
+                height: "1px",
+                background:
+                  "linear-gradient(to right, transparent, rgba(196,66,106,0.45))",
+              }}
+            />
+            <div
+              style={{
+                width: "5px",
+                height: "5px",
+                background: "#c4426a",
+                transform: "rotate(45deg)",
+                opacity: 0.7,
+              }}
+            />
+            <div
+              style={{
+                width: "64px",
+                height: "1px",
+                background:
+                  "linear-gradient(to left, transparent, rgba(196,66,106,0.45))",
+              }}
+            />
+          </div>
+
           <p
-            className="text-center text-base sm:text-lg mb-10 max-w-xl mx-auto"
+            className="text-base sm:text-lg mb-10 max-w-lg mx-auto leading-relaxed"
             style={{ color: "var(--muted-foreground)" }}
           >
             Thousands of premium adult fiction stories — romance, fantasy,
@@ -160,18 +227,36 @@ export default async function HomePage() {
           </p>
 
           {/* CTAs */}
-          <div className="flex flex-wrap items-center justify-center gap-3 mb-16">
+          <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
             <Link
               href="/stories"
-              className="flex items-center gap-2 px-7 py-3.5 rounded-xl font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98] text-sm sm:text-base"
-              style={{ background: "#c4426a" }}
+              className="flex items-center gap-2 px-8 py-3.5 rounded-xl font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98] text-sm sm:text-base"
+              style={{
+                background: "linear-gradient(135deg, #d44d77 0%, #a8315a 100%)",
+                boxShadow:
+                  "0 0 32px rgba(196,66,106,0.40), 0 4px 16px rgba(196,66,106,0.28)",
+              }}
             >
               <BookOpen size={17} />
-              Start Reading
+              Start Reading Free
             </Link>
             <HeroJoinButton />
           </div>
 
+          {/* Trust strip */}
+          <div
+            className="flex items-center justify-center flex-wrap gap-x-5 gap-y-1.5 text-xs"
+            style={{ color: "var(--muted-foreground)" }}
+          >
+            {["100% Free Forever", "New Stories Daily", "No Credit Card"].map(
+              (item) => (
+                <span key={item} className="flex items-center gap-1.5">
+                  <span style={{ color: "#c4426a", fontWeight: 700 }}>✓</span>
+                  {item}
+                </span>
+              )
+            )}
+          </div>
         </div>
       </section>
 
