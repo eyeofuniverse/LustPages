@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getStoryBySlug, getStoryRecommendations, incrementViews, getStoryUnlock, getSeriesUnlock, getUserCoinBalance } from "@/lib/queries";
 import { auth } from "@/auth";
-import { formatDate, getTags, getTextPreview } from "@/lib/utils";
+import { formatDate, getTags, getTextPreview, countWords } from "@/lib/utils";
 import { sanitizeStoryContent } from "@/lib/sanitize";
 import { StoryCard } from "@/components/story/StoryCard";
 import { StoryActions } from "@/components/story/StoryActions";
@@ -138,7 +138,7 @@ export default async function StoryPage({ params }: Props) {
     genre: story.categories.map((c) => c.name),
     keywords: tags.join(", "),
     timeRequired: `PT${story.readingTime}M`,
-    wordCount: story.readingTime * 200,
+    wordCount: countWords(story.content),
     interactionStatistic: [
       {
         "@type": "InteractionCounter",

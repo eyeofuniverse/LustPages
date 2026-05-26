@@ -59,7 +59,7 @@ export default async function SeriesPage({ params }: Props) {
 
   const totalLikes = series.stories.reduce((sum, s) => sum + s._count.likes, 0);
   const totalReadingTime = series.stories.reduce((sum, s) => sum + s.readingTime, 0);
-  const totalWordCount = totalReadingTime * 200;
+  const totalWordCount = totalReadingTime * 225;
   const seriesRating = computeSeriesRating(
     series.stories.map((s) => ({ ratingAvg: s.ratingAvg, ratingCount: s.ratingCount }))
   );
@@ -95,7 +95,7 @@ export default async function SeriesPage({ params }: Props) {
       url: `${SITE}/stories/${part.slug}`,
       position: part.chapterNumber ?? idx + 1,
       ...(part.excerpt && { description: part.excerpt }),
-      wordCount: part.readingTime * 200,
+      wordCount: part.readingTime * 225,
       datePublished: part.createdAt.toISOString(),
     })),
   };
