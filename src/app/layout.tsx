@@ -4,6 +4,9 @@ import "./globals.css";
 import { SessionProvider } from "@/components/layout/SessionProvider";
 import { AgeGate } from "@/components/layout/AgeGate";
 import { auth } from "@/auth";
+import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
+import { AnalyticsEvents } from "@/components/analytics/AnalyticsEvents";
+import { Suspense } from "react";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -84,6 +87,10 @@ export default async function RootLayout({
   return (
     <html lang="en" className={`${geist.variable} ${playfair.variable}`} suppressHydrationWarning>
       <body suppressHydrationWarning>
+        <GoogleAnalytics />
+        <Suspense fallback={null}>
+          <AnalyticsEvents />
+        </Suspense>
         <SessionProvider session={session}>
           <AgeGate />
           {children}
