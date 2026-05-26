@@ -10,6 +10,7 @@ import {
   Save, Send, AlertTriangle, ChevronDown, ChevronUp,
   BookOpen, Tag, Info,
 } from "lucide-react";
+import { FieldInfo } from "@/components/ui/FieldInfo";
 import { calculateReadingTime } from "@/lib/utils";
 import { SeriesCombobox } from "@/components/series/SeriesCombobox";
 import { PAYMENTS_ENABLED } from "@/lib/feature-flags";
@@ -107,7 +108,9 @@ const inputStyle = {
   padding: "8px 12px",
 };
 const labelStyle = {
-  display: "block",
+  display: "flex",
+  alignItems: "center",
+  gap: "5px",
   fontSize: "12px",
   fontWeight: 600,
   color: "var(--muted-foreground)",
@@ -302,7 +305,7 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
           style={{ background: "var(--card)", border: "1px solid var(--border)" }}
         >
           <div>
-            <label style={labelStyle}>Title *</label>
+            <label style={labelStyle}>Title * <FieldInfo text="Your story's public title shown in listings, cards, and search results. Make it evocative, specific, and memorable." /></label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -311,7 +314,7 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
             />
           </div>
           <div>
-            <label style={labelStyle}>Slug *</label>
+            <label style={labelStyle}>Slug * <FieldInfo text="The URL path for your story: /stories/[slug]. Auto-generated from your title — customise only if needed. Lowercase letters, numbers, and hyphens." /></label>
             <div className="flex items-center gap-2">
               <input
                 value={slug}
@@ -330,7 +333,7 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
             </div>
           </div>
           <div>
-            <label style={labelStyle}>Excerpt / Teaser *</label>
+            <label style={labelStyle}>Excerpt / Teaser * <FieldInfo text="A short hook (1–3 sentences) shown in story cards and search results. This is your best chance to grab a reader's attention before they click." /></label>
             <textarea
               value={excerpt}
               onChange={(e) => setExcerpt(e.target.value)}
@@ -358,7 +361,7 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
         </div>
 
         {/* Series (optional) */}
-        <Panel title="Series" icon={BookOpen} defaultOpen={false} allowOverflow>
+        <Panel title="Series" icon={BookOpen} defaultOpen={false} allowOverflow={true}>
           <SeriesCombobox
             selectedSeries={seriesId && series ? { id: seriesId, name: series } : null}
             chapterNumber={chapterNumber}
@@ -374,7 +377,7 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
         </Panel>
 
         {/* Author Note */}
-        <Panel title="Author's Note" icon={Info} defaultOpen={false}>
+        <Panel title="Author's Note" icon={Info} defaultOpen={false} allowOverflow={true}>
           <textarea
             value={authorNote}
             onChange={(e) => setAuthorNote(e.target.value)}
@@ -434,7 +437,7 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
           className="rounded-2xl p-4"
           style={{ background: "var(--card)", border: "1px solid var(--border)" }}
         >
-          <label style={{ ...labelStyle, marginBottom: "10px" }}>Cover Image</label>
+          <label style={{ ...labelStyle, marginBottom: "10px" }}>Cover Image <FieldInfo text="Your story's main visual, shown in listing cards and at the top of the story page. Recommended: 800×1200px portrait, JPG or PNG." /></label>
           <CoverImageUpload value={coverImage ?? ""} onChange={setCoverImage} signUrl="/api/author/upload/sign" />
         </div>
 
@@ -443,7 +446,7 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
           className="rounded-2xl p-4"
           style={{ background: "var(--card)", border: "1px solid var(--border)" }}
         >
-          <label style={{ ...labelStyle, marginBottom: "8px" }}>Categories *</label>
+          <label style={{ ...labelStyle, marginBottom: "8px" }}>Categories * <FieldInfo text="Broad genre labels for your story (e.g. Romance, Thriller). Select all that apply — readers use these to browse the site." /></label>
 
           <div
             className="flex flex-wrap gap-1.5 p-2.5 rounded-xl min-h-[44px]"
@@ -481,6 +484,7 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
           <label style={{ ...labelStyle, marginBottom: "10px" }}>
             <Tag size={11} className="inline mr-1" />
             Tags
+            <FieldInfo text="Specific descriptors that help readers find your story (e.g. 'enemies to lovers', 'slow burn'). Choose from approved tags or request new ones." />
           </label>
           {tagRequestSuccess && (
             <p
@@ -499,10 +503,10 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
         </div>
 
         {/* Content details */}
-        <Panel title="Content Details" icon={BookOpen} defaultOpen={true}>
+        <Panel title="Content Details" icon={BookOpen} defaultOpen={true} allowOverflow={true}>
           <div className="space-y-4">
             <div>
-              <label style={labelStyle}>Maturity Rating</label>
+              <label style={labelStyle}>Maturity Rating <FieldInfo text="Mild: sensual but not graphically explicit. Explicit: full sexual content. Hardcore: very graphic adult content with extreme themes." /></label>
               <div className="flex gap-2">
                 {MATURITY_RATINGS.map((r) => (
                   <button
@@ -538,7 +542,7 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
             ) : PAYMENTS_ENABLED ? (
               <>
                 <div>
-                  <label style={labelStyle}>Access Level</label>
+                  <label style={labelStyle}>Access Level <FieldInfo text="Free: anyone can read your story at no cost. Premium: readers spend coins to unlock it. You earn 80% of every coin spent on your work." /></label>
                   <div className="flex gap-2">
                     {(["Free", "Premium"] as const).map((l) => (
                       <button
@@ -562,7 +566,7 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
                 </div>
                 {accessLevel === "Premium" && (
                   <div>
-                    <label style={labelStyle}>Coin Price *</label>
+                    <label style={labelStyle}>Coin Price * <FieldInfo text="How many coins readers pay to unlock your story. 1 coin ≈ $1. You earn 80% of each purchase. Cannot be changed once readers have unlocked it." /></label>
                     {isPriceLocked ? (
                       <div
                         className="w-full px-3 py-2 rounded-xl text-sm flex items-center justify-between"
@@ -605,7 +609,7 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
             )}
 
             <div>
-              <label style={labelStyle}>Content Warnings</label>
+              <label style={labelStyle}>Content Warnings <FieldInfo text="Flag specific content types so readers can decide what they're comfortable with. Recommended for non-consent, BDSM, age gap, and dark themes." /></label>
               <div className="flex flex-wrap gap-1.5">
                 {CONTENT_WARNINGS.map((w) => {
                   const active = contentWarnings.includes(w);
@@ -631,10 +635,10 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
         </Panel>
 
         {/* Classification */}
-        <Panel title="Classification" icon={Info} defaultOpen={false}>
+        <Panel title="Classification" icon={Info} defaultOpen={false} allowOverflow={true}>
           <div className="space-y-3">
             <div>
-              <label style={labelStyle}>Language</label>
+              <label style={labelStyle}>Language <FieldInfo text="The primary language your story is written in. Helps readers find content in their preferred language." /></label>
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
@@ -644,7 +648,7 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
               </select>
             </div>
             <div>
-              <label style={labelStyle}>Point of View</label>
+              <label style={labelStyle}>Point of View <FieldInfo text="First Person (I/me), Second Person (you), or Third Person (he/she/they). Describes how the narrator addresses the reader." /></label>
               <select
                 value={pov}
                 onChange={(e) => setPov(e.target.value)}
@@ -654,7 +658,7 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
               </select>
             </div>
             <div>
-              <label style={labelStyle}>Gender Pairing</label>
+              <label style={labelStyle}>Gender Pairing <FieldInfo text="The genders of the main romantic or sexual pairing. Helps readers filter content for the pairings they enjoy most." /></label>
               <select
                 value={genderPairing}
                 onChange={(e) => setGenderPairing(e.target.value)}

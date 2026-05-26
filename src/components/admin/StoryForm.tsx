@@ -10,6 +10,7 @@ import {
   Save, ChevronDown, ChevronUp, Star, MessageSquare,
   Lock, Search, BookOpen, Eye, Heart, Bookmark, Plus, X,
 } from "lucide-react";
+import { FieldInfo } from "@/components/ui/FieldInfo";
 import { calculateReadingTime } from "@/lib/utils";
 import { SeriesCombobox } from "@/components/series/SeriesCombobox";
 
@@ -87,7 +88,7 @@ function Panel({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+    <div className="rounded-2xl" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -327,7 +328,9 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
 
   const labelStyle: React.CSSProperties = {
     color: "var(--foreground)",
-    display: "block",
+    display: "flex",
+    alignItems: "center",
+    gap: "5px",
     fontSize: "0.875rem",
     fontWeight: 500,
     marginBottom: "0.375rem",
@@ -380,7 +383,7 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
           {/* Core fields */}
           <div className="rounded-2xl p-6 space-y-5" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
             <div>
-              <label style={labelStyle}>Title *</label>
+              <label style={labelStyle}>Title * <FieldInfo text="The public-facing story title shown in listings, cards, and search results. Make it evocative and memorable." /></label>
               <input
                 type="text"
                 value={title}
@@ -393,7 +396,7 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
             </div>
 
             <div>
-              <label style={labelStyle}>Slug</label>
+              <label style={labelStyle}>Slug <FieldInfo text="The URL path for this story, e.g. /stories/my-title. Auto-generated from the title. Use lowercase letters, numbers, and hyphens only." /></label>
               <div className="flex items-center rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
                 <span
                   className="px-3 py-2.5 text-sm shrink-0"
@@ -415,9 +418,10 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
             <div>
               <label style={labelStyle}>
                 Excerpt / Blurb *
-                <span className="ml-2 text-xs font-normal" style={{ color: "var(--muted-foreground)" }}>
+                <span className="text-xs font-normal" style={{ color: "var(--muted-foreground)" }}>
                   ({excerpt.length} chars — used as default meta description)
                 </span>
+                <FieldInfo text="A 1–3 sentence hook shown in story cards and search results, and used as the default meta description. Hook the reader immediately." />
               </label>
               <textarea
                 value={excerpt}
@@ -433,7 +437,7 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
 
           {/* Story content */}
           <div>
-            <label style={{ ...labelStyle, marginBottom: "0.5rem" }}>Story Content *</label>
+            <label style={{ ...labelStyle, marginBottom: "0.5rem" }}>Story Content * <FieldInfo text="The full text of the story. Use the rich editor for headings, bold, italic, block quotes, images, and other formatting." /></label>
             <StoryEditor content={content} onChange={setContent} />
           </div>
 
@@ -458,11 +462,12 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
               <label style={labelStyle}>
                 Meta Title
                 <span
-                  className="ml-2 text-xs font-normal"
+                  className="text-xs font-normal"
                   style={{ color: metaTitle.length > 60 ? "#c4426a" : "var(--muted-foreground)" }}
                 >
                   {metaTitle.length}/60
                 </span>
+                <FieldInfo text="Custom title shown in browser tabs and search engine results. Defaults to the story title if left blank. Keep under 60 characters." />
               </label>
               <input
                 type="text"
@@ -477,11 +482,12 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
               <label style={labelStyle}>
                 Meta Description
                 <span
-                  className="ml-2 text-xs font-normal"
+                  className="text-xs font-normal"
                   style={{ color: metaDescription.length > 160 ? "#c4426a" : "var(--muted-foreground)" }}
                 >
                   {metaDescription.length}/160
                 </span>
+                <FieldInfo text="Custom snippet shown in search engine results pages. Defaults to the excerpt if left blank. Keep under 160 characters." />
               </label>
               <textarea
                 value={metaDescription}
@@ -493,7 +499,7 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
               />
             </div>
             <div>
-              <label style={labelStyle}>Canonical URL</label>
+              <label style={labelStyle}>Canonical URL <FieldInfo text="If this story was originally published elsewhere, paste the original URL here to prevent duplicate-content penalties in search engines." /></label>
               <input
                 type="url"
                 value={canonicalUrl}
@@ -536,7 +542,7 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
           {/* Publish Settings */}
           <Card title="Publish Settings">
             <div>
-              <label style={labelStyle}>Status</label>
+              <label style={labelStyle}>Status <FieldInfo text="Draft: saved but not live. Scheduled: publishes automatically at a chosen date and time. Published: immediately visible to readers." /></label>
               <div className="grid grid-cols-3 gap-1 rounded-xl p-1" style={{ background: "var(--muted)" }}>
                 {(["draft", "scheduled", "published"] as const).map((s) => (
                   <button
@@ -554,7 +560,7 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
 
             {status === "scheduled" && (
               <div>
-                <label style={labelStyle}>Publish Date & Time</label>
+                <label style={labelStyle}>Publish Date & Time <FieldInfo text="The story will go live automatically at this date and time (server time). Must be set when status is Scheduled." /></label>
                 <input
                   type="datetime-local"
                   value={scheduledAt}
@@ -566,7 +572,7 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
             )}
 
             <div>
-              <label style={labelStyle}>Visibility</label>
+              <label style={labelStyle}>Visibility <FieldInfo text="Public: visible to everyone. Unlisted: accessible only via direct link, not shown in listings. Members Only: requires a registered account to view." /></label>
               <select
                 value={visibility}
                 onChange={(e) => setVisibility(e.target.value)}
@@ -599,7 +605,7 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
           <Card title="Classification">
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label style={{ ...labelStyle, marginBottom: 0 }}>Categories *</label>
+                <label style={{ ...labelStyle, marginBottom: 0 }}>Categories * <FieldInfo text="Broad genre labels (e.g. Romance, Thriller). A story needs at least one. Readers use these to browse and filter content." /></label>
                 <button
                   type="button"
                   onClick={() => { setShowCatForm((v) => !v); setNewCatError(""); }}
@@ -691,7 +697,7 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
               )}
             </div>
             <div>
-              <label style={labelStyle}>Author *</label>
+              <label style={labelStyle}>Author * <FieldInfo text="The author this story is attributed to. Changing the author also resets the series picker, since series belong to specific authors." /></label>
               <select
                 value={authorId}
                 onChange={(e) => handleAuthorChange(e.target.value)}
@@ -703,7 +709,7 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
               </select>
             </div>
             <div>
-              <label style={labelStyle}>Tags</label>
+              <label style={labelStyle}>Tags <FieldInfo text="Specific descriptors for search and discovery (e.g. 'slow burn', 'age gap'). More granular than categories — add as many as are relevant." /></label>
               <TagInput value={tags} onChange={setTags} suggestions={tagSuggestions} />
             </div>
             <SeriesCombobox
@@ -723,11 +729,11 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
           {/* Content Details */}
           <Card title="Content Details">
             <div>
-              <label style={labelStyle}>Cover Image</label>
+              <label style={labelStyle}>Cover Image <FieldInfo text="The main visual for this story, shown in listing cards and at the top of the story page. Recommended: 800×1200px portrait, JPG or PNG." /></label>
               <CoverImageUpload value={coverImage} onChange={setCoverImage} />
             </div>
             <div>
-              <label style={labelStyle}>Maturity Rating</label>
+              <label style={labelStyle}>Maturity Rating <FieldInfo text="Mild: sensual but not graphically explicit. Explicit: full sexual content. Hardcore: very graphic adult content including extreme themes." /></label>
               <div className="grid grid-cols-3 gap-1 rounded-xl p-1" style={{ background: "var(--muted)" }}>
                 {MATURITY_RATINGS.map((r) => (
                   <button
@@ -755,7 +761,7 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
             ) : (
               <>
                 <div>
-                  <label style={labelStyle}>Access Level</label>
+                  <label style={labelStyle}>Access Level <FieldInfo text="Free: any visitor can read. Premium: readers spend coins to unlock — set a coin price below. Series pricing overrides this setting." /></label>
                   <div className="grid grid-cols-2 gap-1 rounded-xl p-1" style={{ background: "var(--muted)" }}>
                     {ACCESS_LEVELS.map((l) => (
                       <button
@@ -775,7 +781,7 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
                 </div>
                 {accessLevel === "Premium" && (
                   <div>
-                    <label style={labelStyle}>Coin Price *</label>
+                    <label style={labelStyle}>Coin Price * <FieldInfo text="How many coins a reader spends to unlock this story. 1 coin ≈ $1. Earnings split: 80% to the author, 20% to the platform." /></label>
                     <input
                       type="number"
                       min={1}
@@ -795,7 +801,7 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
             )}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label style={labelStyle}>Language</label>
+                <label style={labelStyle}>Language <FieldInfo text="The primary language this story is written in. Used for filtering and to help non-English readers find content." /></label>
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
@@ -806,7 +812,7 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>POV</label>
+                <label style={labelStyle}>POV <FieldInfo text="Point of view: First Person (I/me), Second Person (you), or Third Person (he/she/they). Describes how the narrator relates to the story." /></label>
                 <select
                   value={pov}
                   onChange={(e) => setPov(e.target.value)}
@@ -818,7 +824,7 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
               </div>
             </div>
             <div>
-              <label style={labelStyle}>Gender Pairing</label>
+              <label style={labelStyle}>Gender Pairing <FieldInfo text="The genders of the main romantic or sexual pairing (e.g. M/F, M/M). Helps readers filter content and find what they prefer." /></label>
               <select
                 value={genderPairing}
                 onChange={(e) => setGenderPairing(e.target.value)}
@@ -830,7 +836,7 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
               </select>
             </div>
             <div>
-              <label style={labelStyle}>Content Warnings</label>
+              <label style={labelStyle}>Content Warnings <FieldInfo text="Flag specific content types so readers can make informed choices before reading. Strongly recommended for non-consent, BDSM, age gap, and dark themes." /></label>
               <div className="flex flex-wrap gap-1.5">
                 {CONTENT_WARNINGS.map((w) => {
                   const active = contentWarnings.includes(w);
