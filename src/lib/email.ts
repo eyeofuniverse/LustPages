@@ -423,6 +423,32 @@ export async function sendTestEmail(to: string, type: string) {
   if (error) throw new Error(error.message);
 }
 
+function buildAdminOtpHtml(code: string, expiresMinutes: number): string {
+  return base("Admin login verification", `
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+      <tr><td>
+        <p style="${h1}">Admin Login Verification</p>
+        <p style="${p}">A sign-in attempt was made to the LustPages admin panel. Enter the code below to continue. This code expires in <strong style="color:#f0eeff;">${expiresMinutes} minutes</strong>.</p>
+        <div style="text-align:center;margin:32px 0;">
+          <div style="display:inline-block;background:#12111a;border:2px solid #c4426a;border-radius:16px;padding:20px 40px;">
+            <p style="margin:0 0 6px;font-size:11px;color:#888;letter-spacing:3px;text-transform:uppercase;">One-Time Code</p>
+            <p style="margin:0;font-size:42px;font-weight:900;letter-spacing:10px;color:#f0eeff;font-family:monospace;">${code}</p>
+          </div>
+        </div>
+        <div style="${highlight}">
+          <p style="margin:0;font-size:13px;color:#c4426a;line-height:1.6;">⚠️ Never share this code with anyone. LustPages staff will never ask for this code. If you did not attempt to log in, your admin password may be compromised — change it immediately.</p>
+        </div>
+      </td></tr>
+      ${divider}
+      <tr><td><p style="${muted}">This is a security email sent automatically. Do not reply.</p></td></tr>
+    </table>
+  `);
+}
+
+function buildAdminOtpText(code: string, expiresMinutes: number): string {
+  return `Admin Login Verification\n\nYour one-time code: ${code}\n\nThis code expires in ${expiresMinutes} minutes.\n\nNever share this code with anyone. If you did not attempt to log in, change your admin password immediately.\n\n${FOOTER_TEXT}`;
+}
+
 // ── Public send functions ──────────────────────────────────────────────────────
 
 export async function sendWelcomeEmail(to: string, name: string) {
@@ -497,6 +523,17 @@ export async function sendNewStoryNotification(
     buildNewStoryNotificationText(readerName, authorName, storyTitle, storySlug, excerpt),
     "new_story_notification"
   );
+}
+
+export async function sendAdminOtpEmail(to: string, code: string, expiresMinutes = 10) {
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `[${code}] Your LustPages admin login code`,
+    html: buildAdminOtpHtml(code, expiresMinutes).replace("{{CUSTOM_NOTE}}", ""),
+    text: buildAdminOtpText(code, expiresMinutes),
+  });
+  if (error) throw new Error(error.message);
 }
 
 export async function sendCommentReplyEmail(
