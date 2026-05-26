@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { sanitizeStoryContent } from "@/lib/sanitize";
 
 async function requireAdmin() {
   const session = await auth();
@@ -15,6 +16,7 @@ export async function POST(req: Request) {
 
   try {
     const { categoryIds, ...data } = await req.json();
+    if (data.content) data.content = sanitizeStoryContent(data.content);
     const story = await prisma.story.create({
       data: {
         ...data,
