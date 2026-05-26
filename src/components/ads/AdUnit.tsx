@@ -23,5 +23,9 @@ export function AdUnit({ code }: Props) {
 
   if (!code) return null;
 
-  return <div ref={ref} style={{ overflow: "hidden" }} />;
+  return (
+    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%", overflow: "hidden" }}>
+      <div ref={ref} style={{ maxWidth: "100%", overflow: "hidden" }} />
+    </div>
+  );
 }
