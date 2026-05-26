@@ -113,45 +113,104 @@ export function Header({ categories }: HeaderProps) {
 
                 {browseOpen && (
                   <div
-                    className="absolute left-0 top-full mt-2 w-72 rounded-2xl shadow-2xl overflow-hidden z-50 p-3"
-                    style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+                    className="absolute left-0 top-full mt-2 z-50 rounded-2xl overflow-hidden flex"
+                    style={{
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
+                      width: "660px",
+                      boxShadow: "0 24px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04)",
+                    }}
                   >
-                    <p className="text-xs font-semibold uppercase tracking-widest px-2 mb-2" style={{ color: "var(--muted-foreground)" }}>
-                      Browse by Genre
-                    </p>
-                    <div className="grid grid-cols-2 gap-1">
-                      {categories.map((cat) => (
+                    {/* LEFT — Genres */}
+                    <div className="flex-1 p-5">
+                      <div className="flex items-center justify-between mb-4">
+                        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--muted-foreground)" }}>
+                          Genres
+                        </p>
                         <Link
-                          key={cat.id}
-                          href={`/categories/${cat.slug}`}
-                          className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-opacity hover:opacity-75"
-                          style={{ background: cat.color + "15", color: "var(--foreground)" }}
+                          href="/categories"
+                          className="text-[11px] font-semibold transition-opacity hover:opacity-70"
+                          style={{ color: "#c4426a" }}
                           onClick={() => setBrowseOpen(false)}
                         >
-                          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: cat.color }} />
-                          <span className="flex-1 truncate">{cat.name}</span>
-                          <span className="shrink-0" style={{ color: "var(--muted-foreground)" }}>{cat._count.stories}</span>
+                          All Genres →
                         </Link>
-                      ))}
+                      </div>
+                      <div className="grid grid-cols-3 gap-0.5">
+                        {categories.map((cat) => (
+                          <Link
+                            key={cat.id}
+                            href={`/categories/${cat.slug}`}
+                            onClick={() => setBrowseOpen(false)}
+                            className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-sm transition-colors hover:bg-white/5"
+                            style={{ color: "var(--foreground)" }}
+                          >
+                            <span
+                              className="w-7 h-9 rounded-md shrink-0"
+                              style={{
+                                background: `linear-gradient(160deg, ${cat.color}50 0%, ${cat.color}90 100%)`,
+                                border: `1px solid ${cat.color}35`,
+                              }}
+                            />
+                            <span className="flex-1 min-w-0">
+                              <span className="block truncate font-medium text-[13px]">{cat.name}</span>
+                              <span className="block text-[11px] tabular-nums" style={{ color: "var(--muted-foreground)" }}>
+                                {cat._count.stories} stories
+                              </span>
+                            </span>
+                          </Link>
+                        ))}
+                      </div>
                     </div>
-                    <div className="mt-2 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
-                      <Link
-                        href="/trending"
-                        className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-opacity hover:opacity-75"
-                        style={{ color: "#c4426a" }}
-                        onClick={() => setBrowseOpen(false)}
-                      >
-                        <TrendingUp size={13} />
-                        Trending This Week
-                      </Link>
-                      <Link
-                        href="/stories"
-                        className="flex items-center justify-center gap-1 py-2 text-xs font-semibold rounded-xl transition-opacity hover:opacity-75"
-                        style={{ color: "var(--muted-foreground)" }}
-                        onClick={() => setBrowseOpen(false)}
-                      >
-                        View all stories →
-                      </Link>
+
+                    {/* DIVIDER */}
+                    <div className="w-px shrink-0 my-4" style={{ background: "var(--border)" }} />
+
+                    {/* RIGHT — Discover */}
+                    <div className="w-52 shrink-0 p-5 flex flex-col">
+                      <p className="text-[10px] font-bold uppercase tracking-widest mb-4" style={{ color: "var(--muted-foreground)" }}>
+                        Discover
+                      </p>
+                      <div className="flex flex-col gap-0.5 flex-1">
+                        {[
+                          { href: "/trending",        icon: <TrendingUp size={14} />, label: "Trending",    sub: "Hot this week",       color: "#f59e0b" },
+                          { href: "/series",          icon: <Layers size={14} />,     label: "Series",      sub: "Story collections",   color: "#3b82f6" },
+                          { href: "/premium/stories", icon: <Lock size={14} />,       label: "Premium",     sub: "Exclusive content",   color: "#a855f7" },
+                          { href: "/collections",     icon: <Layers size={14} />,     label: "Collections", sub: "Curated picks",       color: "#22c55e" },
+                          { href: "/authors",         icon: <PenSquare size={14} />,  label: "Authors",     sub: "Meet the writers",    color: "#ec4899" },
+                        ].map(({ href, icon, label, sub, color }) => (
+                          <Link
+                            key={href}
+                            href={href}
+                            onClick={() => setBrowseOpen(false)}
+                            className="flex items-center gap-3 px-2.5 py-2.5 rounded-xl transition-colors hover:bg-white/5"
+                            style={{ color: "var(--foreground)" }}
+                          >
+                            <span
+                              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                              style={{ background: color + "18" }}
+                            >
+                              <span style={{ color }}>{icon}</span>
+                            </span>
+                            <span>
+                              <span className="block text-[13px] font-semibold">{label}</span>
+                              <span className="block text-[11px]" style={{ color: "var(--muted-foreground)" }}>{sub}</span>
+                            </span>
+                          </Link>
+                        ))}
+                      </div>
+
+                      {/* CTA */}
+                      <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
+                        <Link
+                          href="/stories"
+                          onClick={() => setBrowseOpen(false)}
+                          className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                          style={{ background: "#c4426a" }}
+                        >
+                          Browse All Stories →
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 )}
