@@ -481,6 +481,27 @@ model EmailSetting {
   updatedAt  DateTime @updatedAt
 }
 
+model AdminOtp {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+model AdminPreAuth {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
 model CryptoPayment {
   id              String    @id @default(cuid())
   nowPaymentId    String    @unique
