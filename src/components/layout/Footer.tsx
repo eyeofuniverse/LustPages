@@ -1,15 +1,21 @@
 import Link from "next/link";
 import { BookOpen } from "lucide-react";
 
-const categories = [
-  { label: "Romance", href: "/categories/romance" },
-  { label: "Fantasy", href: "/categories/fantasy" },
-  { label: "Thriller", href: "/categories/thriller" },
-  { label: "Contemporary", href: "/categories/contemporary" },
-];
+interface FooterCategory {
+  id: string;
+  name: string;
+  slug: string;
+  _count?: { stories: number };
+}
 
-const links = [
+interface FooterProps {
+  categories?: FooterCategory[];
+}
+
+const explore = [
   { label: "Browse All Stories", href: "/stories" },
+  { label: "Series", href: "/series" },
+  { label: "Trending", href: "/trending" },
   { label: "Authors", href: "/authors" },
   { label: "Search", href: "/search" },
 ];
@@ -20,7 +26,11 @@ const legal = [
   { label: "Content Warning", href: "/content-warning" },
 ];
 
-export function Footer() {
+export function Footer({ categories = [] }: FooterProps) {
+  const topGenres = [...categories]
+    .sort((a, b) => (b._count?.stories ?? 0) - (a._count?.stories ?? 0))
+    .slice(0, 5);
+
   return (
     <footer
       className="mt-auto"
@@ -51,26 +61,35 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Categories */}
+          {/* Categories — dynamic from DB */}
           <div>
             <h3
               className="text-sm font-semibold uppercase tracking-wider mb-4"
               style={{ color: "var(--foreground)" }}
             >
-              Categories
+              Genres
             </h3>
             <ul className="space-y-2">
-              {categories.map((c) => (
-                <li key={c.href}>
+              {topGenres.map((c) => (
+                <li key={c.id}>
                   <Link
-                    href={c.href}
-                    className="text-sm transition-colors hover:opacity-75"
+                    href={`/categories/${c.slug}`}
+                    className="text-sm transition-opacity hover:opacity-75"
                     style={{ color: "var(--muted-foreground)" }}
                   >
-                    {c.label}
+                    {c.name}
                   </Link>
                 </li>
               ))}
+              <li>
+                <Link
+                  href="/categories"
+                  className="text-sm transition-opacity hover:opacity-75 font-medium"
+                  style={{ color: "#c4426a" }}
+                >
+                  All Genres →
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -83,11 +102,11 @@ export function Footer() {
               Explore
             </h3>
             <ul className="space-y-2">
-              {links.map((l) => (
+              {explore.map((l) => (
                 <li key={l.href}>
                   <Link
                     href={l.href}
-                    className="text-sm transition-colors hover:opacity-75"
+                    className="text-sm transition-opacity hover:opacity-75"
                     style={{ color: "var(--muted-foreground)" }}
                   >
                     {l.label}
@@ -107,18 +126,23 @@ export function Footer() {
             </h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/register" className="text-sm transition-colors hover:opacity-75" style={{ color: "var(--muted-foreground)" }}>
+                <Link href="/register" className="text-sm transition-opacity hover:opacity-75" style={{ color: "var(--muted-foreground)" }}>
                   Join Free
                 </Link>
               </li>
               <li>
-                <Link href="/login" className="text-sm transition-colors hover:opacity-75" style={{ color: "var(--muted-foreground)" }}>
+                <Link href="/login" className="text-sm transition-opacity hover:opacity-75" style={{ color: "var(--muted-foreground)" }}>
                   Sign In
                 </Link>
               </li>
               <li>
-                <Link href="/profile" className="text-sm transition-colors hover:opacity-75" style={{ color: "var(--muted-foreground)" }}>
+                <Link href="/profile" className="text-sm transition-opacity hover:opacity-75" style={{ color: "var(--muted-foreground)" }}>
                   My Profile
+                </Link>
+              </li>
+              <li>
+                <Link href="/author-signup" className="text-sm transition-opacity hover:opacity-75" style={{ color: "var(--muted-foreground)" }}>
+                  Become an Author
                 </Link>
               </li>
             </ul>
@@ -135,7 +159,7 @@ export function Footer() {
             <ul className="space-y-2">
               {legal.map((l) => (
                 <li key={l.href}>
-                  <Link href={l.href} className="text-sm transition-colors hover:opacity-75" style={{ color: "var(--muted-foreground)" }}>
+                  <Link href={l.href} className="text-sm transition-opacity hover:opacity-75" style={{ color: "var(--muted-foreground)" }}>
                     {l.label}
                   </Link>
                 </li>
