@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getLatestStories, getLatestSeries, getAuthors, getFeaturedPromotions, getPremiumStories, getCategoriesWithStories, getTrendingStories } from "@/lib/queries";
+import { getLatestStories, getLatestSeries, getAuthors, getFeaturedPromotions, getPremiumStories, getCategoriesWithStories, getTrendingStories, getPublicStats } from "@/lib/queries";
 import { FeaturedCarousel } from "@/components/home/FeaturedCarousel";
 import { PremiumCarousel } from "@/components/home/PremiumCarousel";
 import { LatestCarousel } from "@/components/home/LatestCarousel";
@@ -8,6 +8,7 @@ import { HomeCollectionsSection } from "@/components/home/HomeCollectionsSection
 import { CategoryCarousel } from "@/components/home/CategoryCarousel";
 import { AdSlot } from "@/components/ads/AdSlot";
 import { HeroJoinButton, HomeBottomCTA } from "@/components/home/HomeCTAButtons";
+import { formatStatCount } from "@/lib/utils";
 import {
   BookOpen,
   PenSquare,
@@ -62,11 +63,12 @@ export default async function HomePage() {
   ]);
 
   // Batch 2: below-the-fold content
-  const [premiumStories, categoriesWithStories, authors, trendingStories] = await Promise.all([
+  const [premiumStories, categoriesWithStories, authors, trendingStories, publicStats] = await Promise.all([
     getPremiumStories(20).catch(() => []),
     getCategoriesWithStories().catch(() => []),
     getAuthors().catch(() => []),
     getTrendingStories(10).catch(() => []),
+    getPublicStats().catch(() => ({ publishedStories: 0, totalUsers: 0 })),
   ]);
 
   const spotlightAuthors = authors.slice(0, 4);
@@ -209,9 +211,9 @@ export default async function HomePage() {
             style={{ "--divide-border-color": "var(--border)" } as React.CSSProperties}
           >
             {[
-              { value: "500+", label: "Stories Published", icon: <BookOpen size={14} /> },
-              { value: "10K+", label: "Active Readers", icon: <Users size={14} /> },
-              { value: "8+", label: "Genres", icon: <Flame size={14} /> },
+              { value: publicStats.publishedStories >= 500 ? formatStatCount(publicStats.publishedStories) : "500+", label: "Stories Published", icon: <BookOpen size={14} /> },
+              { value: publicStats.totalUsers >= 1000 ? formatStatCount(publicStats.totalUsers) : "5K+", label: "Active Readers", icon: <Users size={14} /> },
+              { value: String(categoriesWithStories.length), label: "Genres", icon: <Flame size={14} /> },
               { value: "100%", label: "Free to Read", icon: <Eye size={14} /> },
             ].map((stat, i) => (
               <div

@@ -670,6 +670,14 @@ export async function getAdminStoryById(id: string) {
   });
 }
 
+export async function getPublicStats() {
+  const [publishedStories, totalUsers] = await Promise.all([
+    prisma.story.count({ where: { published: true } }),
+    prisma.user.count(),
+  ]);
+  return { publishedStories, totalUsers };
+}
+
 export async function getDashboardStats() {
   const [totalStories, publishedStories, totalUsers, totalLikes, totalViews] =
     await Promise.all([
