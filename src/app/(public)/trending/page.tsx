@@ -39,7 +39,7 @@ export default async function TrendingPage() {
         </p>
       </div>
 
-      <AdSlot identifier="trending_page_banner" className="mb-6" />
+      <AdSlot identifier="trending_page_banner" />
 
       {stories.length === 0 ? (
         <div className="text-center py-20">

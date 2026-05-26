@@ -14,32 +14,58 @@ export async function AdSlot({ identifier, className }: Props) {
   return (
     <div
       className={className}
-      style={{ textAlign: "center", padding: "1rem 0" }}
+      style={{ margin: "2rem 0", padding: "0 1rem" }}
       aria-label="Advertisement"
     >
-      <p
+      {/* ——— Advertisement ——— divider */}
+      <div
         style={{
-          fontSize: "0.625rem",
-          textTransform: "uppercase",
-          letterSpacing: "0.1em",
-          color: "var(--muted-foreground)",
-          opacity: 0.5,
-          marginBottom: "0.5rem",
+          display: "flex",
+          alignItems: "center",
+          gap: "0.625rem",
+          marginBottom: "0.875rem",
         }}
       >
-        Advertisement
-      </p>
-      {ad.type === "network" ? (
-        <AdUnit code={ad.networkCode ?? ""} />
-      ) : (
-        <AffiliateAd
-          imageUrl={ad.imageUrl ?? ""}
-          linkUrl={ad.linkUrl ?? "#"}
-          altText={ad.altText ?? ""}
-          title={ad.adTitle}
-          description={ad.adDescription}
-        />
-      )}
+        <div style={{ flex: 1, height: "1px", background: "var(--border)", opacity: 0.6 }} />
+        <span
+          style={{
+            fontSize: "0.575rem",
+            textTransform: "uppercase",
+            letterSpacing: "0.15em",
+            color: "var(--muted-foreground)",
+            opacity: 0.4,
+            padding: "0.2rem 0.625rem",
+            border: "1px solid var(--border)",
+            borderRadius: "9999px",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Advertisement
+        </span>
+        <div style={{ flex: 1, height: "1px", background: "var(--border)", opacity: 0.6 }} />
+      </div>
+
+      {/* Ad content — centered, max 728px */}
+      <div
+        style={{
+          maxWidth: "728px",
+          margin: "0 auto",
+          width: "100%",
+          overflow: "hidden",
+        }}
+      >
+        {ad.type === "network" ? (
+          <AdUnit code={ad.networkCode ?? ""} />
+        ) : (
+          <AffiliateAd
+            imageUrl={ad.imageUrl ?? ""}
+            linkUrl={ad.linkUrl ?? "#"}
+            altText={ad.altText ?? ""}
+            title={ad.adTitle}
+            description={ad.adDescription}
+          />
+        )}
+      </div>
     </div>
   );
 }

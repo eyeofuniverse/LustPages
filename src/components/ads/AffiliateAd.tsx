@@ -17,13 +17,21 @@ export function AffiliateAd({ imageUrl, linkUrl, altText, title, description }: 
       target="_blank"
       rel="noopener noreferrer nofollow sponsored"
       aria-label={altText || title || "Sponsored"}
-      style={{ display: "inline-block", maxWidth: "100%" }}
+      style={{ display: "block", width: "100%" }}
     >
       <img
         src={imageUrl}
         alt={altText || "Advertisement"}
-        style={{ maxWidth: "100%", height: "auto", display: "block" }}
+        style={{
+          width: "100%",
+          height: "auto",
+          display: "block",
+          borderRadius: "0.5rem",
+          transition: "opacity 0.2s ease",
+        }}
         onError={(e) => (e.currentTarget.style.display = "none")}
+        onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.88")}
+        onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
       />
       {title && (
         <p
@@ -31,7 +39,8 @@ export function AffiliateAd({ imageUrl, linkUrl, altText, title, description }: 
             fontSize: "0.8125rem",
             fontWeight: 600,
             color: "var(--foreground)",
-            marginTop: "0.375rem",
+            marginTop: "0.5rem",
+            textAlign: "center",
           }}
         >
           {title}
@@ -42,7 +51,8 @@ export function AffiliateAd({ imageUrl, linkUrl, altText, title, description }: 
           style={{
             fontSize: "0.75rem",
             color: "var(--muted-foreground)",
-            marginTop: "0.125rem",
+            marginTop: "0.2rem",
+            textAlign: "center",
           }}
         >
           {description}
