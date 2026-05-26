@@ -35,7 +35,11 @@ export const metadata: Metadata = {
   creator: "LustPages",
   publisher: "LustPages",
   icons: {
-    icon: [{ url: "/icon.png", type: "image/png" }],
+    shortcut: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon.png", type: "image/png" },
+    ],
     apple: [{ url: "/icon-192.png", type: "image/png", sizes: "192x192" }],
   },
   openGraph: {
