@@ -8,6 +8,7 @@ import {
 } from "@/lib/queries";
 import { SearchInput } from "@/components/search/SearchInput";
 import { StoryListItem } from "@/components/story/StoryListItem";
+import { AdSlot } from "@/components/ads/AdSlot";
 import Link from "next/link";
 import { SafeImage } from "@/components/ui/SafeImage";
 import { BookOpen, Layers, TrendingUp, Hash, Search } from "lucide-react";
@@ -278,6 +279,10 @@ export default async function SearchPage({ searchParams }: Props) {
                       </div>
                     )}
                   </section>
+                )}
+
+                {stories.length > 0 && seriesResults.length > 0 && (
+                  <AdSlot identifier="search_results_banner" />
                 )}
 
                 {/* Series results */}

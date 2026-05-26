@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { AD_SLOTS, AdSlotId } from "@/lib/ad-slots";
 import {
   Plus, Edit2, Trash2, X, Monitor, Link as LinkIcon,
-  ToggleLeft, ToggleRight, Megaphone,
+  ToggleLeft, ToggleRight, Megaphone, Info,
 } from "lucide-react";
 
 interface Ad {
@@ -50,6 +50,60 @@ const inputStyle: React.CSSProperties = {
   outline: "none",
 };
 
+function InfoTooltip({ text }: { text: string }) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <span
+      style={{ position: "relative", display: "inline-flex", alignItems: "center" }}
+      onMouseEnter={() => setVisible(true)}
+      onMouseLeave={() => setVisible(false)}
+    >
+      <Info
+        size={11}
+        style={{ color: "var(--muted-foreground)", opacity: 0.55, cursor: "help", flexShrink: 0 }}
+      />
+      {visible && (
+        <span
+          style={{
+            position: "absolute",
+            bottom: "calc(100% + 7px)",
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "var(--card)",
+            border: "1px solid var(--border)",
+            borderRadius: "0.625rem",
+            padding: "0.5rem 0.75rem",
+            fontSize: "0.6875rem",
+            lineHeight: 1.5,
+            color: "var(--foreground)",
+            whiteSpace: "normal",
+            width: "220px",
+            zIndex: 200,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+            pointerEvents: "none",
+          }}
+        >
+          {text}
+          {/* caret */}
+          <span
+            style={{
+              position: "absolute",
+              top: "100%",
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: 0,
+              height: 0,
+              borderLeft: "5px solid transparent",
+              borderRight: "5px solid transparent",
+              borderTop: "5px solid var(--border)",
+            }}
+          />
+        </span>
+      )}
+    </span>
+  );
+}
+
 function Label({ children }: { children: React.ReactNode }) {
   return (
     <label
@@ -60,7 +114,6 @@ function Label({ children }: { children: React.ReactNode }) {
         color: "var(--muted-foreground)",
         textTransform: "uppercase",
         letterSpacing: "0.06em",
-        marginBottom: "0.375rem",
       }}
     >
       {children}
@@ -68,10 +121,13 @@ function Label({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div>
-      <Label>{label}</Label>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", marginBottom: "0.375rem" }}>
+        <Label>{label}</Label>
+        {hint && <InfoTooltip text={hint} />}
+      </div>
       {children}
     </div>
   );
@@ -567,7 +623,10 @@ export function AdsManager() {
 
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
               {/* Name */}
-              <Field label="Ad Name (internal)">
+              <Field
+                label="Ad Name (internal)"
+                hint="Your private reference label — never shown to readers. Be specific, e.g. 'TrafficJunky Leaderboard June' so you can tell ads apart at a glance."
+              >
                 <input
                   type="text"
                   value={form.name}
@@ -578,7 +637,10 @@ export function AdsManager() {
               </Field>
 
               {/* Slot */}
-              <Field label="Ad Slot">
+              <Field
+                label="Ad Slot"
+                hint="The position on the site where this ad will appear. Each slot has a fixed location — see the description below the dropdown for exact placement."
+              >
                 <select
                   value={form.slot}
                   onChange={(e) => setForm((f) => ({ ...f, slot: e.target.value }))}
@@ -597,7 +659,10 @@ export function AdsManager() {
               </Field>
 
               {/* Type selector */}
-              <Field label="Ad Type">
+              <Field
+                label="Ad Type"
+                hint="Affiliate: you supply a banner image and a destination link. Ad Network: paste raw embed code (script tags) from networks like Google AdSense or TrafficJunky."
+              >
                 <div style={{ display: "flex", gap: "0.5rem" }}>
                   {(["affiliate", "network"] as const).map((t) => (
                     <button
@@ -624,7 +689,10 @@ export function AdsManager() {
 
               {/* Network fields */}
               {form.type === "network" && (
-                <Field label="Embed Code (HTML / Script)">
+                <Field
+                  label="Embed Code (HTML / Script)"
+                  hint="Paste the full ad tag from your ad network exactly as provided. Scripts are re-executed on each page load. Use one ad unit per slot — multiple tags in one slot may conflict."
+                >
                   <textarea
                     value={form.networkCode}
                     onChange={(e) => setForm((f) => ({ ...f, networkCode: e.target.value }))}
@@ -638,7 +706,10 @@ export function AdsManager() {
               {/* Affiliate fields */}
               {form.type === "affiliate" && (
                 <>
-                  <Field label="Banner Image URL">
+                  <Field
+                    label="Banner Image URL"
+                    hint="Direct URL to the banner image (JPG, PNG, or GIF). Standard sizes: 728×90 leaderboard, 300×250 medium rectangle, or 320×50 mobile banner. Use a CDN-hosted URL for fast loading."
+                  >
                     <input
                       type="url"
                       value={form.imageUrl}
@@ -663,7 +734,10 @@ export function AdsManager() {
                       />
                     )}
                   </Field>
-                  <Field label="Destination URL">
+                  <Field
+                    label="Destination URL"
+                    hint="The page readers land on when they click the ad. Use your affiliate tracking link here so commissions are credited correctly."
+                  >
                     <input
                       type="url"
                       value={form.linkUrl}
@@ -672,7 +746,10 @@ export function AdsManager() {
                       style={inputStyle}
                     />
                   </Field>
-                  <Field label="Alt Text">
+                  <Field
+                    label="Alt Text"
+                    hint="A short description of the banner for screen readers and accessibility compliance. Keep it neutral and factual, e.g. 'Visit ExampleSite.com'. Shown if the image fails to load."
+                  >
                     <input
                       type="text"
                       value={form.altText}
@@ -681,7 +758,10 @@ export function AdsManager() {
                       style={inputStyle}
                     />
                   </Field>
-                  <Field label="Ad Title (optional)">
+                  <Field
+                    label="Ad Title (optional)"
+                    hint="A short headline displayed below the banner image. Adds context and can improve click-through rate. Leave blank to show the image alone."
+                  >
                     <input
                       type="text"
                       value={form.adTitle}
@@ -690,7 +770,10 @@ export function AdsManager() {
                       style={inputStyle}
                     />
                   </Field>
-                  <Field label="Ad Description (optional)">
+                  <Field
+                    label="Ad Description (optional)"
+                    hint="One line of promotional copy shown below the title. Supports a brief call-to-action or offer highlight. Leave blank if you prefer a clean image-only ad."
+                  >
                     <input
                       type="text"
                       value={form.adDescription}
@@ -704,7 +787,10 @@ export function AdsManager() {
 
               {/* Priority & Active */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
-                <Field label="Priority">
+                <Field
+                  label="Priority"
+                  hint="When multiple ads are assigned to the same slot, the highest priority number wins. Ties are broken by random rotation, so equal-priority ads share impressions evenly."
+                >
                   <input
                     type="number"
                     value={form.priority}
@@ -716,7 +802,10 @@ export function AdsManager() {
                     Higher = shown first
                   </p>
                 </Field>
-                <Field label="Status">
+                <Field
+                  label="Status"
+                  hint="Active ads are eligible to appear on the site. Set to Inactive to pause the ad without deleting it — useful for seasonal campaigns or A/B testing."
+                >
                   <button
                     onClick={() => setForm((f) => ({ ...f, isActive: !f.isActive }))}
                     style={{
