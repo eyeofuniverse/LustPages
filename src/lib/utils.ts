@@ -55,6 +55,13 @@ export function truncate(str: string, length: number): string {
   return str.slice(0, length).trimEnd() + "…";
 }
 
+export function formatStatCount(n: number): string {
+  if (n >= 10_000) return `${Math.floor(n / 1_000)}K+`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, "")}K+`;
+  if (n >= 100)   return `${Math.floor(n / 10) * 10}+`;
+  return String(n);
+}
+
 export function countWords(html: string): number {
   return html.replace(/<[^>]*>/g, " ").trim().split(/\s+/).filter(Boolean).length;
 }
