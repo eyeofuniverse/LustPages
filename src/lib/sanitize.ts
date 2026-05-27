@@ -1,11 +1,12 @@
 import sanitizeHtml from "sanitize-html";
 
-// Exact set of tags TipTap's StarterKit + Underline + TextAlign can produce.
+// Exact set of tags TipTap's StarterKit + Underline + TextAlign + Link can produce.
 // Anything outside this list is stripped entirely.
 const ALLOWED_TAGS = [
   "p", "strong", "em", "u", "s", "code", "pre",
   "h1", "h2", "h3", "h4", "h5", "h6",
   "ul", "ol", "li", "blockquote", "hr", "br",
+  "a",
 ];
 
 export function sanitizeStoryContent(html: string): string {
@@ -20,6 +21,8 @@ export function sanitizeStoryContent(html: string): string {
       h4: ["style"],
       h5: ["style"],
       h6: ["style"],
+      // Link extension — sanitize-html blocks javascript: hrefs by default.
+      a: ["href", "target", "rel"],
     },
     allowedStyles: {
       "*": {
