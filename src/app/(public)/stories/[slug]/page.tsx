@@ -171,87 +171,118 @@ export default async function StoryPage({ params }: Props) {
           <ArrowLeft size={15} /> Back to Stories
         </Link>
 
-        {/* Cover Image */}
-        {story.coverImage && (
-          <div className="w-full aspect-[21/9] rounded-2xl overflow-hidden mb-8 relative" style={{ background: "var(--muted)" }}>
-            <SafeImage
-              src={story.coverImage}
-              alt={story.title}
-              fill
-              priority
-              sizes="(max-width: 896px) 100vw, 896px"
-              className="object-cover"
-            />
-          </div>
-        )}
-
-        {/* Header */}
-        <header className="mb-10">
-          <div className="flex flex-wrap items-center gap-2 mb-4">
-            {story.categories.map((cat) => (
-              <Link
-                key={cat.id ?? cat.slug}
-                href={`/categories/${cat.slug}`}
-                className="px-3 py-1 rounded-full text-sm font-semibold transition-opacity hover:opacity-75"
-                style={{
-                  background: cat.color + "22",
-                  color: cat.color,
-                  border: `1px solid ${cat.color}44`,
-                }}
+        {/* Hero — unified cover + meta card */}
+        <div
+          className="relative mb-10 rounded-2xl overflow-hidden"
+          style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+        >
+          {/* Blurred atmospheric backdrop */}
+          {story.coverImage && (
+            <>
+              <div
+                className="absolute inset-0"
+                aria-hidden
+                style={{ filter: "blur(32px)", transform: "scale(1.15)", opacity: 0.2 }}
               >
-                {cat.name}
-              </Link>
-            ))}
+                <SafeImage src={story.coverImage} alt="" fill className="object-cover" />
+              </div>
+              <div
+                className="absolute inset-0"
+                aria-hidden
+                style={{ background: "linear-gradient(135deg, var(--card) 0%, transparent 60%, var(--card) 100%)" }}
+              />
+            </>
+          )}
+
+          <div className="relative flex flex-col sm:flex-row gap-6 sm:gap-8 p-6 sm:p-8">
+            {/* Portrait cover — shown at natural proportions, no crop */}
+            {story.coverImage && (
+              <div className="shrink-0 mx-auto sm:mx-0 sm:self-start">
+                <div
+                  className="rounded-xl overflow-hidden relative"
+                  style={{
+                    width: 120,
+                    height: 180,
+                    boxShadow: "0 20px 60px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3)",
+                  }}
+                >
+                  <SafeImage
+                    src={story.coverImage}
+                    alt={story.title}
+                    fill
+                    priority
+                    sizes="120px"
+                    className="object-cover"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Meta */}
+            <div className="flex-1 min-w-0">
+              {/* Category pills */}
+              {story.categories.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {story.categories.map((cat) => (
+                    <Link
+                      key={cat.id ?? cat.slug}
+                      href={`/categories/${cat.slug}`}
+                      className="px-2.5 py-0.5 rounded-full text-xs font-semibold transition-opacity hover:opacity-75"
+                      style={{ background: cat.color + "22", color: cat.color, border: `1px solid ${cat.color}44` }}
+                    >
+                      {cat.name}
+                    </Link>
+                  ))}
+                </div>
+              )}
+
+              {/* Title */}
+              <h1
+                className="text-2xl sm:text-3xl md:text-4xl font-bold leading-tight mb-3"
+                style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
+              >
+                {story.title}
+              </h1>
+
+              {/* Excerpt */}
+              <p className="text-base leading-relaxed mb-4" style={{ color: "var(--muted-foreground)", maxWidth: "52ch" }}>
+                {story.excerpt}
+              </p>
+
+              {/* Meta row */}
+              <div
+                className="flex flex-wrap items-center gap-3 sm:gap-5 py-3 text-sm"
+                style={{ borderTop: "1px solid rgba(255,255,255,0.06)", color: "var(--muted-foreground)" }}
+              >
+                <Link
+                  href={`/authors/${story.author.slug}`}
+                  className="font-semibold transition-opacity hover:opacity-75"
+                  style={{ color: "var(--foreground)" }}
+                >
+                  By {story.author.name}
+                </Link>
+                <span className="flex items-center gap-1.5">
+                  <Calendar size={13} /> {formatDate(story.createdAt)}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Clock size={13} /> {story.readingTime} min read
+                </span>
+              </div>
+
+              {/* Share */}
+              <div className="pt-3">
+                <ShareButtons
+                  url={`${siteUrl}/stories/${story.slug}`}
+                  title={story.title}
+                  variant="header"
+                />
+              </div>
+            </div>
           </div>
-
-          <h1
-            className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight mb-5"
-            style={{
-              fontFamily: "var(--font-playfair), serif",
-              color: "var(--foreground)",
-            }}
-          >
-            {story.title}
-          </h1>
-
-          <p className="text-lg leading-relaxed mb-6" style={{ color: "var(--muted-foreground)" }}>
-            {story.excerpt}
-          </p>
-
-          <div
-            className="flex flex-wrap items-center gap-5 py-4 text-sm"
-            style={{
-              borderTop: "1px solid var(--border)",
-              borderBottom: "1px solid var(--border)",
-              color: "var(--muted-foreground)",
-            }}
-          >
-            <Link
-              href={`/authors/${story.author.slug}`}
-              className="font-semibold transition-opacity hover:opacity-75"
-              style={{ color: "var(--foreground)" }}
-            >
-              By {story.author.name}
-            </Link>
-            <span className="flex items-center gap-1.5">
-              <Calendar size={14} /> {formatDate(story.createdAt)}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Clock size={14} /> {story.readingTime} min read
-            </span>
-          </div>
-
-          <div className="pt-4">
-            <ShareButtons
-              url={`${siteUrl}/stories/${story.slug}`}
-              title={story.title}
-              variant="header"
-            />
-          </div>
-        </header>
+        </div>
 
         {/* Story Actions (like, bookmark) + Star Rating */}
-        <div className="flex flex-wrap items-start gap-4">
+        <div className="flex flex-wrap items-center gap-3 mb-2">
           <StoryActions
             storyId={story.id}
             likeCount={story._count.likes}
@@ -280,22 +311,25 @@ export default async function StoryPage({ params }: Props) {
           const sanitized = sanitizeStoryContent(story.content);
           const [first, second] = splitHtmlAtParagraph(sanitized, 0.4, 400);
           return (
-            <>
-              <div className="my-10 prose-story mx-auto">
+            <div
+              className="my-8 rounded-2xl px-5 sm:px-8 py-8"
+              style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+            >
+              <div className="prose-story mx-auto">
                 <div dangerouslySetInnerHTML={{ __html: first }} />
               </div>
               {second && (
                 <>
                   <AdSlot identifier="story_detail_mid_content" />
-                  <div className="prose-story mx-auto mb-10">
+                  <div className="prose-story mx-auto">
                     <div dangerouslySetInnerHTML={{ __html: second }} />
                   </div>
                 </>
               )}
-            </>
+            </div>
           );
         })() : (
-          <div className="my-10">
+          <div className="my-8">
             {/* Server-truncated preview — full HTML never sent to client */}
             <div
               className="prose-story mx-auto text-sm leading-relaxed"
@@ -333,8 +367,8 @@ export default async function StoryPage({ params }: Props) {
 
         {/* Story Actions (bottom) */}
         {isUnlocked && (
-          <div className="mt-8 mb-4">
-            <div className="flex flex-wrap items-start gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div className="flex flex-wrap items-center gap-3">
               <StoryActions
                 storyId={story.id}
                 likeCount={story._count.likes}
@@ -348,9 +382,7 @@ export default async function StoryPage({ params }: Props) {
                 userId={session?.user?.id}
               />
             </div>
-            <div className="flex justify-end">
-              <ReportButton storyId={story.id} isLoggedIn={!!userId} />
-            </div>
+            <ReportButton storyId={story.id} isLoggedIn={!!userId} />
           </div>
         )}
 
@@ -456,16 +488,28 @@ export default async function StoryPage({ params }: Props) {
           style={{ background: "var(--card)", border: "1px solid var(--border)" }}
         >
           <div className="flex items-start gap-4">
-            <div
-              className="w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold shrink-0"
-              style={{
-                background: "rgba(196,66,106,0.15)",
-                color: "#c4426a",
-                fontFamily: "var(--font-playfair), serif",
-              }}
-            >
-              {story.author.name[0]}
-            </div>
+            {story.author.image ? (
+              <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 relative">
+                <SafeImage
+                  src={story.author.image}
+                  alt={story.author.name}
+                  fill
+                  sizes="56px"
+                  className="object-cover"
+                />
+              </div>
+            ) : (
+              <div
+                className="w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold shrink-0"
+                style={{
+                  background: "rgba(196,66,106,0.15)",
+                  color: "#c4426a",
+                  fontFamily: "var(--font-playfair), serif",
+                }}
+              >
+                {story.author.name[0]}
+              </div>
+            )}
             <div>
               <p className="text-xs mb-1" style={{ color: "var(--muted-foreground)" }}>
                 Written by
