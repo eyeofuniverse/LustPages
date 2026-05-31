@@ -1,4 +1,4 @@
-import { getAdminStoryById, getCategories, getAuthors } from "@/lib/queries";
+import { getAdminStoryById, getCategories, getAuthors, getAllStructuredTags } from "@/lib/queries";
 import { StoryForm } from "@/components/admin/StoryForm";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -7,10 +7,11 @@ export const metadata: Metadata = { title: "Edit Story" };
 
 export default async function EditStoryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [story, categories, authors] = await Promise.all([
+  const [story, categories, authors, availableTags] = await Promise.all([
     getAdminStoryById(id),
     getCategories(),
     getAuthors(),
+    getAllStructuredTags(),
   ]);
 
   if (!story) notFound();
@@ -26,6 +27,7 @@ export default async function EditStoryPage({ params }: { params: Promise<{ id: 
       <StoryForm
         categories={categories}
         authors={authors}
+        availableTags={availableTags}
         initialData={{
           id: story.id,
           title: story.title,
@@ -35,7 +37,7 @@ export default async function EditStoryPage({ params }: { params: Promise<{ id: 
           coverImage: story.coverImage,
           published: story.published,
           featured: story.featured,
-          tags: story.tags,
+          tagIds: story.storyTags.map((t) => t.id),
           categoryIds: story.categories.map((c) => c.id),
           authorId: story.authorId,
           readingTime: story.readingTime,

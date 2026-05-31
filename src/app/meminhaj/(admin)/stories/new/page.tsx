@@ -1,11 +1,11 @@
-import { getCategories, getAuthors } from "@/lib/queries";
+import { getCategories, getAuthors, getAllStructuredTags } from "@/lib/queries";
 import { StoryForm } from "@/components/admin/StoryForm";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "New Story" };
 
 export default async function NewStoryPage() {
-  const [categories, authors] = await Promise.all([getCategories(), getAuthors()]);
+  const [categories, authors, availableTags] = await Promise.all([getCategories(), getAuthors(), getAllStructuredTags()]);
 
   return (
     <div>
@@ -15,7 +15,7 @@ export default async function NewStoryPage() {
       >
         New Story
       </h1>
-      <StoryForm categories={categories} authors={authors} />
+      <StoryForm categories={categories} authors={authors} availableTags={availableTags} />
     </div>
   );
 }

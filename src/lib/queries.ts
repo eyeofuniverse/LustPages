@@ -666,6 +666,7 @@ export async function getAdminStoryById(id: string) {
       author: true,
       _count: { select: { likes: true, comments: true, bookmarks: true } },
       seriesInfo: { select: { id: true, name: true, slug: true } },
+      storyTags: { select: { id: true } },
     },
   });
 }

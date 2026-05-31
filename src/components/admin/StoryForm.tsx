@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { StoryEditor } from "./StoryEditor";
 import { StoryScorePanel } from "./StoryScorePanel";
 import { CoverImageUpload } from "./CoverImageUpload";
-import { TagInput } from "./TagInput";
+import { TierTagSelector, type TagEntry } from "@/components/author/TierTagSelector";
 import {
   Save, ChevronDown, ChevronUp, Star, MessageSquare,
   Lock, Search, BookOpen, Eye, Heart, Bookmark, Plus, X,
@@ -35,6 +35,7 @@ interface Author { id: string; name: string; }
 interface StoryFormProps {
   categories: Category[];
   authors: Author[];
+  availableTags: TagEntry[];
   initialData?: {
     id: string;
     title: string;
@@ -44,7 +45,7 @@ interface StoryFormProps {
     coverImage: string | null;
     published: boolean;
     featured: boolean;
-    tags: string;
+    tagIds?: string[];
     categoryIds: string[];
     authorId: string;
     readingTime: number;
@@ -133,7 +134,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
   );
 }
 
-export function StoryForm({ categories, authors, initialData }: StoryFormProps) {
+export function StoryForm({ categories, authors, availableTags, initialData }: StoryFormProps) {
   const router = useRouter();
   const isEditing = !!initialData;
 
@@ -143,10 +144,7 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
   const [content, setContent] = useState(initialData?.content ?? "");
   const [coverImage, setCoverImage] = useState(initialData?.coverImage ?? "");
   const [featured, setFeatured] = useState(initialData?.featured ?? false);
-  const [tags, setTags] = useState<string[]>(
-    initialData?.tags ? parseJsonArray(initialData.tags) : []
-  );
-  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(initialData?.tagIds ?? []);
   const [localCategories, setLocalCategories] = useState(categories);
   const [categoryIds, setCategoryIds] = useState<string[]>(
     initialData?.categoryIds ?? (categories[0] ? [categories[0].id] : [])
@@ -204,13 +202,7 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-    fetch("/api/admin/tags")
-      .then((r) => r.json())
-      .then((data: Array<{ name: string }>) => setTagSuggestions(data.map((d) => d.name)))
-      .catch(() => {});
-  }, []);
+  useEffect(() => { setMounted(true); }, []);
 
   async function handleCreateCategory() {
     if (!newCatName.trim()) return;
@@ -273,7 +265,7 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
       scheduledAt: status === "scheduled" && scheduledAt ? new Date(scheduledAt).toISOString() : null,
       featured,
       commentsEnabled,
-      tags: JSON.stringify(tags),
+      tagIds: selectedTagIds,
       categoryIds,
       authorId,
       readingTime: calculateReadingTime(content),
@@ -358,7 +350,7 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
 
   const scoreInput = {
     title, slug, excerpt, content, coverImage,
-    tags: tags.join(", "),
+    tags: availableTags.filter(t => selectedTagIds.includes(t.id)).map(t => t.name).join(", "),
     categoryIds, metaTitle, metaDescription, canonicalUrl, noIndex,
     genderPairing, pov, contentWarnings, maturityRating,
     series, authorNote, status, visibility,
@@ -709,8 +701,12 @@ export function StoryForm({ categories, authors, initialData }: StoryFormProps) 
               </select>
             </div>
             <div>
-              <label style={labelStyle}>Tags <FieldInfo text="Specific descriptors for search and discovery (e.g. 'slow burn', 'age gap'). More granular than categories — add as many as are relevant." /></label>
-              <TagInput value={tags} onChange={setTags} suggestions={tagSuggestions} />
+              <label style={{ ...labelStyle, marginBottom: "0.625rem" }}>Tags <FieldInfo text="Tier 1: subgenre (1–2 required) · Tier 2: tropes (2–4 required) · Tier 3: descriptors (up to 5 optional)" /></label>
+              <TierTagSelector
+                availableTags={availableTags}
+                value={selectedTagIds}
+                onChange={setSelectedTagIds}
+              />
             </div>
             <SeriesCombobox
               selectedSeries={seriesId && series ? { id: seriesId, name: series } : null}
