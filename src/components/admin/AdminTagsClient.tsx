@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Search, Plus, Trash2, Edit2, Check, X, Tag, ChevronDown, ChevronUp } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { Search, Plus, Trash2, Edit2, Check, X, Tag, ChevronDown, ChevronUp, GitMerge, Clock } from "lucide-react";
 
 interface TagAlias { id: string; alias: string; }
 interface AdminTag {
@@ -48,7 +48,51 @@ export function AdminTagsClient({ initialTags }: Props) {
   const [addDesc, setAddDesc] = useState("");
   const [addLoading, setAddLoading] = useState(false);
 
-  const filtered = tags.filter((t) => {
+  const pendingTags = useMemo(() => tags.filter((t) => !t.isApproved), [tags]);
+  const approvedTags = useMemo(() => tags.filter((t) => t.isApproved), [tags]);
+
+  const [pendingMergeTarget, setPendingMergeTarget] = useState<Record<string, string>>({});
+  const [pendingApproveTier, setPendingApproveTier] = useState<Record<string, number>>({});
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
+
+  async function handleApprove(tag: AdminTag) {
+    const tier = pendingApproveTier[tag.id] ?? tag.tier;
+    setPendingAction(tag.id + "approve");
+    const res = await fetch(`/api/admin/tags/${tag.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isApproved: true, tier }),
+    });
+    if (res.ok) {
+      setTags((prev) => prev.map((t) => t.id === tag.id ? { ...t, isApproved: true, tier } : t));
+    } else {
+      const d = await res.json();
+      alert(d.error ?? "Error approving tag");
+    }
+    setPendingAction(null);
+  }
+
+  async function handleMergeInto(tag: AdminTag) {
+    const targetId = pendingMergeTarget[tag.id];
+    if (!targetId) return;
+    if (!confirm(`Merge "${tag.name}" into the selected tag? All ${tag._count.stories} stories will be updated. This cannot be undone.`)) return;
+    setPendingAction(tag.id + "merge");
+    const res = await fetch(`/api/admin/tags/${tag.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "mergeInto", targetTagId: targetId }),
+    });
+    if (res.ok) {
+      setTags((prev) => prev.filter((t) => t.id !== tag.id));
+      setPendingMergeTarget((prev) => { const n = { ...prev }; delete n[tag.id]; return n; });
+    } else {
+      const d = await res.json();
+      alert(d.error ?? "Error merging tag");
+    }
+    setPendingAction(null);
+  }
+
+  const filtered = approvedTags.filter((t) => {
     const matchSearch = !search.trim() || t.name.toLowerCase().includes(search.toLowerCase()) || t.slug.includes(search.toLowerCase());
     const matchTier = tierFilter === null || t.tier === tierFilter;
     return matchSearch && matchTier;
@@ -157,6 +201,99 @@ export function AdminTagsClient({ initialTags }: Props) {
 
   return (
     <div>
+      {/* Pending Tags Section */}
+      {pendingTags.length > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <span
+              className="text-xs font-bold px-2.5 py-1 rounded-full"
+              style={{ background: "rgba(245,158,11,0.12)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.35)" }}
+            >
+              Pending Approval
+            </span>
+            <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
+            <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>{pendingTags.length} tag{pendingTags.length !== 1 ? "s" : ""}</span>
+          </div>
+          <div className="space-y-2">
+            {pendingTags.map((tag) => (
+              <div
+                key={tag.id}
+                className="p-4 rounded-xl"
+                style={{ background: "var(--card)", border: "1px solid rgba(245,158,11,0.3)" }}
+              >
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-bold" style={{ color: "var(--foreground)" }}>{tag.name}</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: "rgba(245,158,11,0.12)", color: "#f59e0b" }}>
+                        pending
+                      </span>
+                      <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>/{tag.slug}</span>
+                    </div>
+                    <p className="text-xs mt-1 flex items-center gap-1" style={{ color: "var(--muted-foreground)" }}>
+                      <Clock size={10} />
+                      {tag._count.stories} {tag._count.stories === 1 ? "story" : "stories"} using this tag
+                    </p>
+                  </div>
+                  <button onClick={() => handleDelete(tag.id, tag.name)} className="opacity-40 hover:opacity-100 transition-opacity shrink-0">
+                    <Trash2 size={14} className="text-red-400" />
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap gap-2 items-center">
+                  {/* Approve with tier picker */}
+                  <div className="flex items-center gap-1.5">
+                    <select
+                      value={pendingApproveTier[tag.id] ?? tag.tier}
+                      onChange={(e) => setPendingApproveTier((prev) => ({ ...prev, [tag.id]: Number(e.target.value) }))}
+                      className="px-2 py-1.5 rounded-lg text-xs"
+                      style={{ background: "var(--muted)", border: "1px solid var(--border)", color: "var(--foreground)", outline: "none" }}
+                    >
+                      <option value={1}>Tier 1 — Subgenre</option>
+                      <option value={2}>Tier 2 — Trope</option>
+                      <option value={3}>Tier 3 — Content</option>
+                    </select>
+                    <button
+                      onClick={() => handleApprove(tag)}
+                      disabled={pendingAction === tag.id + "approve"}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white disabled:opacity-50"
+                      style={{ background: "#22c55e" }}
+                    >
+                      <Check size={12} />
+                      {pendingAction === tag.id + "approve" ? "Approving…" : "Approve"}
+                    </button>
+                  </div>
+
+                  {/* Merge into existing */}
+                  <div className="flex items-center gap-1.5">
+                    <select
+                      value={pendingMergeTarget[tag.id] ?? ""}
+                      onChange={(e) => setPendingMergeTarget((prev) => ({ ...prev, [tag.id]: e.target.value }))}
+                      className="px-2 py-1.5 rounded-lg text-xs"
+                      style={{ background: "var(--muted)", border: "1px solid var(--border)", color: "var(--foreground)", outline: "none" }}
+                    >
+                      <option value="">— Merge into existing tag —</option>
+                      {approvedTags.map((t) => (
+                        <option key={t.id} value={t.id}>{t.name} (T{t.tier})</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => handleMergeInto(tag)}
+                      disabled={!pendingMergeTarget[tag.id] || pendingAction === tag.id + "merge"}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-40"
+                      style={{ background: "rgba(99,102,241,0.12)", color: "#6366f1", border: "1px solid rgba(99,102,241,0.3)" }}
+                    >
+                      <GitMerge size={11} />
+                      {pendingAction === tag.id + "merge" ? "Merging…" : "Merge"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
@@ -245,8 +382,8 @@ export function AdminTagsClient({ initialTags }: Props) {
 
       {/* Stats */}
       <p className="text-xs mb-4" style={{ color: "var(--muted-foreground)" }}>
-        {filtered.length} of {tags.length} tags
-        {tags.length === 0 && " — click \"Seed Library\" to load the initial tag set"}
+        {filtered.length} of {approvedTags.length} approved tags
+        {approvedTags.length === 0 && " — click \"Seed Library\" to load the initial tag set"}
       </p>
 
       {/* Tag list grouped by tier */}

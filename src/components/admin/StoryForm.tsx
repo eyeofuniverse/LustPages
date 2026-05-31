@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { StoryEditor } from "./StoryEditor";
 import { StoryScorePanel } from "./StoryScorePanel";
 import { CoverImageUpload } from "./CoverImageUpload";
-import { TierTagSelector, type TagEntry } from "@/components/author/TierTagSelector";
+import { TierTagSelector, type TagEntry, type CustomTag } from "@/components/author/TierTagSelector";
 import {
   Save, ChevronDown, ChevronUp, Star, MessageSquare,
   Lock, Search, BookOpen, Eye, Heart, Bookmark, Plus, X,
@@ -46,6 +46,7 @@ interface StoryFormProps {
     published: boolean;
     featured: boolean;
     tagIds?: string[];
+    customTags?: CustomTag[];
     categoryIds: string[];
     authorId: string;
     readingTime: number;
@@ -145,6 +146,7 @@ export function StoryForm({ categories, authors, availableTags, initialData }: S
   const [coverImage, setCoverImage] = useState(initialData?.coverImage ?? "");
   const [featured, setFeatured] = useState(initialData?.featured ?? false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(initialData?.tagIds ?? []);
+  const [customTags, setCustomTags] = useState<CustomTag[]>(initialData?.customTags ?? []);
   const [localCategories, setLocalCategories] = useState(categories);
   const [categoryIds, setCategoryIds] = useState<string[]>(
     initialData?.categoryIds ?? (categories[0] ? [categories[0].id] : [])
@@ -266,6 +268,7 @@ export function StoryForm({ categories, authors, availableTags, initialData }: S
       featured,
       commentsEnabled,
       tagIds: selectedTagIds,
+      newTagNames: customTags,
       categoryIds,
       authorId,
       readingTime: calculateReadingTime(content),
@@ -350,7 +353,10 @@ export function StoryForm({ categories, authors, availableTags, initialData }: S
 
   const scoreInput = {
     title, slug, excerpt, content, coverImage,
-    tags: availableTags.filter(t => selectedTagIds.includes(t.id)).map(t => t.name).join(", "),
+    tags: [
+      ...availableTags.filter(t => selectedTagIds.includes(t.id)).map(t => t.name),
+      ...customTags.map(t => t.name),
+    ].join(", "),
     categoryIds, metaTitle, metaDescription, canonicalUrl, noIndex,
     genderPairing, pov, contentWarnings, maturityRating,
     series, authorNote, status, visibility,
@@ -701,11 +707,22 @@ export function StoryForm({ categories, authors, availableTags, initialData }: S
               </select>
             </div>
             <div>
-              <label style={{ ...labelStyle, marginBottom: "0.625rem" }}>Tags <FieldInfo text="Tier 1: subgenre (1–2 required) · Tier 2: tropes (2–4 required) · Tier 3: descriptors (up to 5 optional)" /></label>
+              <label style={{ ...labelStyle, marginBottom: "0.625rem" }}>Tags <FieldInfo text="Tier 1: subgenre (1–2 required) · Tier 2: tropes (2–4 required) · Tier 3: descriptors (up to 5 optional). Type a new tag name to add it as pending." /></label>
               <TierTagSelector
                 availableTags={availableTags}
                 value={selectedTagIds}
                 onChange={setSelectedTagIds}
+                allowFreeForm
+                showPendingBadge
+                customTags={customTags}
+                onAddCustomTag={(name, tier) => {
+                  if (!customTags.some((t) => t.name.toLowerCase() === name.toLowerCase())) {
+                    setCustomTags((prev) => [...prev, { name, tier }]);
+                  }
+                }}
+                onRemoveCustomTag={(name) =>
+                  setCustomTags((prev) => prev.filter((t) => t.name !== name))
+                }
               />
             </div>
             <SeriesCombobox

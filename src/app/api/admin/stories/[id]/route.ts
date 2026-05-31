@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sanitizeStoryContent } from "@/lib/sanitize";
+import { resolveNewTags } from "@/lib/tag-helpers";
 
 async function requireAdmin() {
   const session = await auth();
@@ -19,10 +20,14 @@ export async function PATCH(
 
   const { id } = await params;
   try {
-    const { categoryIds, tagIds, ...data } = await req.json();
+    const { categoryIds, tagIds, newTagNames, ...data } = await req.json();
     if (data.content) data.content = sanitizeStoryContent(data.content);
     const statusUpdate =
       "published" in data ? { status: data.published ? "approved" : "draft" } : {};
+    const pendingTagIds = await resolveNewTags(newTagNames ?? []);
+    const allTagIds = tagIds !== undefined
+      ? [...(tagIds as string[]), ...pendingTagIds]
+      : pendingTagIds.length > 0 ? pendingTagIds : undefined;
     const story = await prisma.story.update({
       where: { id },
       data: {
@@ -31,8 +36,8 @@ export async function PATCH(
         ...(categoryIds !== undefined && {
           categories: { set: (categoryIds as string[]).map((cid) => ({ id: cid })) },
         }),
-        ...(tagIds !== undefined && {
-          storyTags: { set: (tagIds as string[]).map((tid) => ({ id: tid })) },
+        ...(allTagIds !== undefined && {
+          storyTags: { set: (allTagIds as string[]).map((tid) => ({ id: tid })) },
         }),
       },
     });

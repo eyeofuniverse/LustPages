@@ -581,7 +581,7 @@ export async function getAuthorStoryById(id: string, authorId: string) {
     include: {
       categories: true,
       seriesInfo: { select: { id: true, name: true, slug: true } },
-      storyTags: { select: { id: true, name: true, slug: true, tier: true } },
+      storyTags: { select: { id: true, name: true, slug: true, tier: true, isApproved: true } },
       _count: { select: { unlocks: true } },
     },
   });
@@ -666,7 +666,7 @@ export async function getAdminStoryById(id: string) {
       author: true,
       _count: { select: { likes: true, comments: true, bookmarks: true } },
       seriesInfo: { select: { id: true, name: true, slug: true } },
-      storyTags: { select: { id: true } },
+      storyTags: { select: { id: true, name: true, tier: true, isApproved: true } },
     },
   });
 }

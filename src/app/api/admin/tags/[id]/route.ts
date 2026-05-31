@@ -12,7 +12,27 @@ async function requireAdmin() {
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await requireAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const { id } = await params;
-  const { name, tier, description, isApproved, addAlias, removeAliasId } = await req.json();
+  const { name, tier, description, isApproved, addAlias, removeAliasId, action, targetTagId } = await req.json();
+
+  // Merge a pending tag into an approved tag — migrates all story connections then deletes it
+  if (action === "mergeInto" && targetTagId) {
+    const merged = await prisma.$transaction(async (tx) => {
+      const pending = await tx.tag.findUnique({
+        where: { id },
+        include: { stories: { select: { id: true } } },
+      });
+      if (!pending) throw new Error("Tag not found");
+      if (pending.stories.length > 0) {
+        await tx.tag.update({
+          where: { id: targetTagId as string },
+          data: { stories: { connect: pending.stories.map((s) => ({ id: s.id })) } },
+        });
+      }
+      await tx.tag.delete({ where: { id } });
+      return { mergedCount: pending.stories.length };
+    });
+    return NextResponse.json(merged);
+  }
 
   const updates: Record<string, unknown> = {};
   if (name !== undefined) { updates.name = name.trim(); updates.slug = slugifyTag(name); }
