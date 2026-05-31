@@ -763,28 +763,43 @@ export async function getDashboardMetrics() {
   const [
     totalStories,
     publishedStories,
+    draftStories,
+    pendingStories,
     totalUsers,
     newUsersToday,
     newUsersWeek,
     newUsersMonth,
     totalLikes,
     totalViewsAgg,
+    totalComments,
+    totalBookmarks,
     activeUsersToday,
-    pendingStories,
-    publishedStoriesData,
-    categoriesWithStories,
-    recentStories,
     newLikesToday,
     newCommentsToday,
+    pendingReports,
+    pendingTagRequests,
+    totalAuthors,
+    avgReadingTimeAgg,
+    topStoriesByViews,
+    recentStories,
+    categoriesWithStories,
+    tagData,
+    topAuthors,
+    coinTransactionsMonth,
+    tipsMonth,
   ] = await Promise.all([
     prisma.story.count(),
     prisma.story.count({ where: { published: true } }),
+    prisma.story.count({ where: { status: "draft" } }),
+    prisma.story.count({ where: { status: "pending" } }),
     prisma.user.count(),
     prisma.user.count({ where: { createdAt: { gte: todayStart } } }),
     prisma.user.count({ where: { createdAt: { gte: weekStart } } }),
     prisma.user.count({ where: { createdAt: { gte: monthStart } } }),
     prisma.like.count(),
     prisma.story.aggregate({ _sum: { views: true } }),
+    prisma.comment.count(),
+    prisma.bookmark.count(),
     prisma.user.count({
       where: {
         OR: [
@@ -794,99 +809,120 @@ export async function getDashboardMetrics() {
         ],
       },
     }),
-    prisma.story.count({ where: { status: "pending" } }),
+    prisma.like.count({ where: { createdAt: { gte: todayStart } } }),
+    prisma.comment.count({ where: { createdAt: { gte: todayStart } } }),
+    prisma.report.count({ where: { status: "pending" } }),
+    prisma.tagRequest.count({ where: { status: "pending" } }),
+    prisma.author.count(),
+    prisma.story.aggregate({ where: { published: true }, _avg: { readingTime: true } }),
     prisma.story.findMany({
       where: { published: true },
-      select: { tags: true, views: true, readingTime: true },
-    }),
-    prisma.category.findMany({
-      include: {
-        stories: { where: { published: true }, select: { views: true } },
+      select: {
+        id: true,
+        title: true,
+        views: true,
+        author: { select: { name: true } },
+        _count: { select: { likes: true, comments: true } },
       },
-      orderBy: { name: "asc" },
+      orderBy: { views: "desc" },
+      take: 5,
     }),
     prisma.story.findMany({
-      take: 5,
-      include: {
-        categories: true,
-        author: true,
-        _count: { select: { likes: true, comments: true, bookmarks: true } },
+      take: 8,
+      select: {
+        id: true,
+        title: true,
+        published: true,
+        status: true,
+        views: true,
+        updatedAt: true,
+        categories: { select: { name: true, color: true } },
+        author: { select: { name: true } },
+        _count: { select: { likes: true, comments: true } },
       },
       orderBy: { updatedAt: "desc" },
     }),
-    prisma.like.count({ where: { createdAt: { gte: todayStart } } }),
-    prisma.comment.count({ where: { createdAt: { gte: todayStart } } }),
+    prisma.category.findMany({
+      select: {
+        name: true,
+        color: true,
+        _count: { select: { stories: true } },
+        stories: { where: { published: true }, select: { views: true } },
+      },
+    }),
+    prisma.tag.findMany({
+      where: { isApproved: true },
+      select: {
+        name: true,
+        _count: { select: { stories: true } },
+        stories: { where: { published: true }, select: { views: true } },
+      },
+    }),
+    prisma.author.findMany({
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        image: true,
+        coinEarnings: true,
+        _count: { select: { stories: true } },
+      },
+      orderBy: { coinEarnings: "desc" },
+      take: 5,
+    }),
+    prisma.coinTransaction.count({ where: { createdAt: { gte: monthStart } } }),
+    prisma.tip.count({ where: { createdAt: { gte: monthStart } } }),
   ]);
 
   const totalViews = totalViewsAgg._sum.views ?? 0;
-
-  const tagViews: Record<string, { views: number; count: number }> = {};
-  let totalReadingTime = 0;
-
-  for (const s of publishedStoriesData) {
-    try {
-      const tags = JSON.parse(s.tags || "[]") as string[];
-      for (const tag of tags) {
-        const t = tag.trim().toLowerCase();
-        if (t) {
-          if (!tagViews[t]) tagViews[t] = { views: 0, count: 0 };
-          tagViews[t].views += s.views;
-          tagViews[t].count += 1;
-        }
-      }
-    } catch { /* ignore */ }
-    totalReadingTime += s.readingTime;
-  }
-
-  const topTags = Object.entries(tagViews)
-    .sort((a, b) => b[1].views - a[1].views)
-    .slice(0, 8)
-    .map(([tag, { views, count }]) => ({ tag, views, count }));
-
-  const avgReadingTime =
-    publishedStoriesData.length > 0
-      ? Math.round(totalReadingTime / publishedStoriesData.length)
-      : 0;
+  const avgReadingTime = Math.round(avgReadingTimeAgg._avg.readingTime ?? 0);
 
   const topCategories = categoriesWithStories
     .map((cat) => ({
       name: cat.name,
       color: cat.color,
       views: cat.stories.reduce((sum, s) => sum + s.views, 0),
-      count: cat.stories.length,
+      count: cat._count.stories,
     }))
     .sort((a, b) => b.views - a.views)
     .slice(0, 6);
 
-  const paidSubscribers = Math.max(1, Math.floor(totalUsers * 0.08));
-  const monthlyRevenue = paidSubscribers * 9.99;
-  const weeklyRevenue = monthlyRevenue / 4.33;
-  const dailyRevenue = monthlyRevenue / 30;
-  const creatorEarningsMonth = monthlyRevenue * 0.3;
+  const topTags = tagData
+    .map((t) => ({
+      name: t.name,
+      views: t.stories.reduce((sum, s) => sum + s.views, 0),
+      count: t._count.stories,
+    }))
+    .sort((a, b) => b.views - a.views)
+    .slice(0, 8);
 
   return {
     totalStories,
     publishedStories,
+    draftStories,
+    pendingStories,
     totalUsers,
     newUsersToday,
     newUsersWeek,
     newUsersMonth,
     totalLikes,
     totalViews,
+    totalComments,
+    totalBookmarks,
     activeUsersToday,
-    pendingStories,
-    topTags,
-    topCategories,
-    avgReadingTime,
-    recentStories,
     newLikesToday,
     newCommentsToday,
-    paidSubscribers,
-    dailyRevenue: parseFloat(dailyRevenue.toFixed(2)),
-    weeklyRevenue: parseFloat(weeklyRevenue.toFixed(2)),
-    monthlyRevenue: parseFloat(monthlyRevenue.toFixed(2)),
-    completionRate: 68.4,
-    creatorEarningsMonth: parseFloat(creatorEarningsMonth.toFixed(2)),
+    pendingReports,
+    pendingTagRequests,
+    totalAuthors,
+    avgReadingTime,
+    topStoriesByViews,
+    recentStories,
+    topCategories,
+    topTags,
+    topAuthors,
+    coinTransactionsMonth,
+    tipsMonth,
   };
 }
 

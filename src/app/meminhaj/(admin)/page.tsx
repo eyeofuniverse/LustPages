@@ -1,26 +1,10 @@
 import { getDashboardMetrics } from "@/lib/queries";
 import Link from "next/link";
 import {
-  BookOpen,
-  Heart,
-  Eye,
-  Users,
-  PenSquare,
-  TrendingUp,
-  Activity,
-  UserPlus,
-  CreditCard,
-  DollarSign,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  Tag,
-  BarChart2,
-  Smartphone,
-  Monitor,
-  Tablet,
-  Globe,
-  MessageSquare,
+  BookOpen, Heart, Eye, Users, PenSquare, TrendingUp,
+  Activity, UserPlus, Clock, AlertCircle, Tag, BarChart2,
+  MessageSquare, Bookmark, Coins, FileWarning, ChevronRight,
+  Globe, Sparkles,
 } from "lucide-react";
 import { formatDateShort } from "@/lib/utils";
 import type { Metadata } from "next";
@@ -28,535 +12,467 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Admin Dashboard" };
 
 function fmt(n: number) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
   return n.toLocaleString("en-US");
 }
 
-function fmtMoney(n: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
-}
-
 function StatCard({
-  label,
-  value,
-  sub,
-  icon,
-  accent,
+  label, value, sub, icon, href, highlight,
 }: {
   label: string;
   value: React.ReactNode;
   sub?: React.ReactNode;
   icon: React.ReactNode;
-  accent?: boolean;
+  href?: string;
+  highlight?: "pink" | "green" | "amber" | "indigo";
 }) {
-  return (
+  const colors: Record<string, { bg: string; border: string; val: string }> = {
+    pink:   { bg: "rgba(196,66,106,0.06)",  border: "rgba(196,66,106,0.2)",  val: "#c4426a" },
+    green:  { bg: "rgba(34,197,94,0.06)",   border: "rgba(34,197,94,0.2)",   val: "#22c55e" },
+    amber:  { bg: "rgba(245,158,11,0.06)",  border: "rgba(245,158,11,0.2)",  val: "#f59e0b" },
+    indigo: { bg: "rgba(99,102,241,0.06)",  border: "rgba(99,102,241,0.2)",  val: "#6366f1" },
+  };
+  const c = highlight ? colors[highlight] : null;
+
+  const inner = (
     <div
-      className="p-4 lg:p-5 rounded-2xl"
-      style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+      className="p-4 lg:p-5 rounded-2xl h-full flex flex-col justify-between"
+      style={{
+        background: c ? c.bg : "var(--card)",
+        border: `1px solid ${c ? c.border : "var(--border)"}`,
+      }}
     >
-      <div className="flex items-center justify-between mb-3">
-        <span
-          className="text-xs font-medium uppercase tracking-wider"
-          style={{ color: "var(--muted-foreground)" }}
-        >
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <span className="text-xs font-medium uppercase tracking-wider leading-tight" style={{ color: "var(--muted-foreground)" }}>
           {label}
         </span>
         {icon}
       </div>
-      <div
-        className="text-xl lg:text-2xl font-bold mb-0.5"
-        style={{
-          fontFamily: "var(--font-playfair), serif",
-          color: accent ? "#c4426a" : "var(--foreground)",
-        }}
-      >
-        {value}
-      </div>
-      {sub && (
-        <div className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-          {sub}
+      <div>
+        <div
+          className="text-xl lg:text-2xl font-bold mb-0.5"
+          style={{ fontFamily: "var(--font-playfair), serif", color: c ? c.val : "var(--foreground)" }}
+        >
+          {value}
         </div>
-      )}
+        {sub && <div className="text-xs" style={{ color: "var(--muted-foreground)" }}>{sub}</div>}
+      </div>
+    </div>
+  );
+
+  if (href) return <Link href={href} className="block transition-opacity hover:opacity-80">{inner}</Link>;
+  return inner;
+}
+
+function BarRow({ label, value, max, color, sub }: { label: string; value: number; max: number; color: string; sub?: string }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-sm font-medium truncate pr-2" style={{ color: "var(--foreground)" }}>{label}</span>
+        <span className="text-xs shrink-0" style={{ color: "var(--muted-foreground)" }}>{sub ?? fmt(value)}</span>
+      </div>
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--muted)" }}>
+        <div className="h-full rounded-full transition-all" style={{ width: `${Math.max(2, (value / Math.max(1, max)) * 100)}%`, background: color }} />
+      </div>
     </div>
   );
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
+function Panel({ title, icon: Icon, action, children }: { title: string; icon: React.ElementType; action?: { label: string; href: string }; children: React.ReactNode }) {
   return (
-    <h2
-      className="font-bold text-sm uppercase tracking-wider mb-3"
-      style={{ color: "var(--muted-foreground)" }}
-    >
-      {children}
-    </h2>
+    <div className="rounded-2xl overflow-hidden flex flex-col" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+      <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
+        <div className="flex items-center gap-2">
+          <Icon size={14} style={{ color: "#c4426a" }} />
+          <h3 className="font-semibold text-sm" style={{ color: "var(--foreground)" }}>{title}</h3>
+        </div>
+        {action && (
+          <Link href={action.href} className="text-xs font-medium transition-opacity hover:opacity-75 flex items-center gap-0.5" style={{ color: "#c4426a" }}>
+            {action.label} <ChevronRight size={12} />
+          </Link>
+        )}
+      </div>
+      <div className="p-5 flex-1">{children}</div>
+    </div>
   );
 }
 
-const TRAFFIC_SOURCES = [
-  { source: "Organic Search", pct: 45, color: "#22c55e" },
-  { source: "Direct", pct: 28, color: "#6366f1" },
-  { source: "Social Media", pct: 18, color: "#f59e0b" },
-  { source: "Referral", pct: 9, color: "#c4426a" },
-];
-
-const DEVICES = [
-  { device: "Mobile", pct: 58, icon: Smartphone, color: "#6366f1" },
-  { device: "Desktop", pct: 35, icon: Monitor, color: "#22c55e" },
-  { device: "Tablet", pct: 7, icon: Tablet, color: "#f59e0b" },
-];
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: "var(--muted-foreground)", opacity: 0.55 }}>
+      {children}
+    </p>
+  );
+}
 
 export default async function AdminDashboard() {
   const m = await getDashboardMetrics();
 
-  const maxTagViews = m.topTags[0]?.views ?? 1;
-  const maxCatViews = m.topCategories[0]?.views ?? 1;
+  const maxTagViews    = m.topTags[0]?.views ?? 1;
+  const maxCatViews    = m.topCategories[0]?.views ?? 1;
+  const maxStoryViews  = m.topStoriesByViews[0]?.views ?? 1;
+  const maxCoinEarnings = m.topAuthors[0]?.coinEarnings ?? 1;
+
+  const actionItems = [
+    m.pendingStories > 0    && { label: `${m.pendingStories} pending ${m.pendingStories === 1 ? "story" : "stories"}`, href: "/meminhaj/approvals", color: "#6366f1", bg: "rgba(99,102,241,0.12)" },
+    m.pendingReports > 0    && { label: `${m.pendingReports} open ${m.pendingReports === 1 ? "report" : "reports"}`, href: "/meminhaj/reports", color: "#ef4444", bg: "rgba(239,68,68,0.12)" },
+    m.pendingTagRequests > 0 && { label: `${m.pendingTagRequests} tag ${m.pendingTagRequests === 1 ? "request" : "requests"}`, href: "/meminhaj/tag-requests", color: "#f59e0b", bg: "rgba(245,158,11,0.12)" },
+  ].filter(Boolean) as { label: string; href: string; color: string; bg: string }[];
 
   return (
-    <div className="max-w-5xl">
+    <div className="max-w-5xl space-y-8">
+
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1
-            className="text-2xl font-bold"
-            style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
-          >
+          <h1 className="text-2xl font-bold" style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}>
             Dashboard
           </h1>
           <p className="text-sm mt-0.5" style={{ color: "var(--muted-foreground)" }}>
-            Overview of your LustPages site
+            LustPages platform overview
           </p>
         </div>
-        <Link
-          href="/meminhaj/stories/new"
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white shrink-0"
-          style={{ background: "#c4426a" }}
-        >
-          <PenSquare size={15} />
-          New Story
-        </Link>
-      </div>
-
-      {/* ── Section 1: Audience & Activity ─────────────────────────────── */}
-      <SectionTitle>Audience &amp; Activity</SectionTitle>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-        <StatCard
-          label="Daily Active Users"
-          value={fmt(m.activeUsersToday)}
-          sub="users active today"
-          icon={<Activity size={18} style={{ color: "#c4426a" }} />}
-        />
-        <StatCard
-          label="New Registrations"
-          value={fmt(m.newUsersToday)}
-          sub={
-            <span>
-              +{fmt(m.newUsersWeek)} this week &middot; +{fmt(m.newUsersMonth)} this month
-            </span>
-          }
-          icon={<UserPlus size={18} style={{ color: "#c4426a" }} />}
-        />
-        <StatCard
-          label="Paid Subscribers"
-          value={fmt(m.paidSubscribers)}
-          sub={`${((m.paidSubscribers / Math.max(1, m.totalUsers)) * 100).toFixed(1)}% conversion`}
-          icon={<CreditCard size={18} style={{ color: "#c4426a" }} />}
-        />
-        <StatCard
-          label="Total Readers"
-          value={fmt(m.totalUsers)}
-          sub="registered accounts"
-          icon={<Users size={18} style={{ color: "#c4426a" }} />}
-        />
-      </div>
-
-      {/* ── Section 2: Revenue ─────────────────────────────────────────── */}
-      <SectionTitle>Revenue</SectionTitle>
-      <div className="grid grid-cols-3 gap-3 mb-8">
-        <StatCard
-          label="Revenue Today"
-          value={fmtMoney(m.dailyRevenue)}
-          sub="subscriptions"
-          icon={<DollarSign size={18} style={{ color: "#22c55e" }} />}
-          accent
-        />
-        <StatCard
-          label="This Week"
-          value={fmtMoney(m.weeklyRevenue)}
-          sub="last 7 days"
-          icon={<DollarSign size={18} style={{ color: "#22c55e" }} />}
-          accent
-        />
-        <StatCard
-          label="This Month"
-          value={fmtMoney(m.monthlyRevenue)}
-          sub="current month"
-          icon={<DollarSign size={18} style={{ color: "#22c55e" }} />}
-          accent
-        />
-      </div>
-
-      {/* ── Section 3: Content Performance ────────────────────────────── */}
-      <SectionTitle>Content Performance</SectionTitle>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-        <StatCard
-          label="Story Reads"
-          value={fmt(m.totalViews)}
-          sub={`+${fmt(m.newLikesToday)} likes today`}
-          icon={<Eye size={18} style={{ color: "#c4426a" }} />}
-        />
-        <StatCard
-          label="Avg Reading Time"
-          value={`${m.avgReadingTime} min`}
-          sub="per published story"
-          icon={<Clock size={18} style={{ color: "#c4426a" }} />}
-        />
-        <StatCard
-          label="Completion Rate"
-          value={`${m.completionRate}%`}
-          sub="avg per story"
-          icon={<CheckCircle2 size={18} style={{ color: "#c4426a" }} />}
-        />
-        <StatCard
-          label="Comments Today"
-          value={fmt(m.newCommentsToday)}
-          sub={`${fmt(m.totalLikes)} total likes`}
-          icon={<MessageSquare size={18} style={{ color: "#c4426a" }} />}
-        />
-      </div>
-
-      {/* ── Section 4: Creator & Moderation ───────────────────────────── */}
-      <SectionTitle>Creator &amp; Moderation</SectionTitle>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-        <StatCard
-          label="Creator Earnings"
-          value={fmtMoney(m.creatorEarningsMonth)}
-          sub="paid out this month"
-          icon={<DollarSign size={18} style={{ color: "#f59e0b" }} />}
-        />
-        <StatCard
-          label="Total Stories"
-          value={fmt(m.totalStories)}
-          sub={`${fmt(m.publishedStories)} published`}
-          icon={<BookOpen size={18} style={{ color: "#c4426a" }} />}
-        />
-        <StatCard
-          label="Total Likes"
-          value={fmt(m.totalLikes)}
-          sub="across all stories"
-          icon={<Heart size={18} style={{ color: "#c4426a" }} />}
-        />
-        <div
-          className="p-4 lg:p-5 rounded-2xl"
-          style={{
-            background: m.pendingStories > 0 ? "rgba(99,102,241,0.06)" : "var(--card)",
-            border: m.pendingStories > 0 ? "1px solid rgba(99,102,241,0.25)" : "1px solid var(--border)",
-          }}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <span
-              className="text-xs font-medium uppercase tracking-wider"
-              style={{ color: "var(--muted-foreground)" }}
-            >
-              Moderation Queue
-            </span>
-            <AlertCircle size={18} style={{ color: m.pendingStories > 0 ? "#6366f1" : "var(--muted-foreground)" }} />
-          </div>
-          <div
-            className="text-xl lg:text-2xl font-bold mb-0.5"
-            style={{
-              fontFamily: "var(--font-playfair), serif",
-              color: m.pendingStories > 0 ? "#6366f1" : "var(--foreground)",
-            }}
+        <div className="flex items-center gap-2">
+          <Link
+            href="/"
+            target="_blank"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-opacity hover:opacity-75"
+            style={{ background: "var(--muted)", color: "var(--foreground)", border: "1px solid var(--border)" }}
           >
-            {fmt(m.pendingStories)}
-          </div>
-          <div className="text-xs flex items-center gap-2" style={{ color: "var(--muted-foreground)" }}>
-            <span>stories pending review</span>
-            {m.pendingStories > 0 && (
-              <Link
-                href="/meminhaj/approvals"
-                className="font-semibold transition-opacity hover:opacity-75"
-                style={{ color: "#6366f1" }}
-              >
-                Review →
-              </Link>
-            )}
-          </div>
+            <Globe size={13} /> View Site
+          </Link>
+          <Link
+            href="/meminhaj/stories/new"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+            style={{ background: "#c4426a" }}
+          >
+            <PenSquare size={13} /> New Story
+          </Link>
         </div>
       </div>
 
-      {/* ── Section 5: Top Tags & Categories ──────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
-        {/* Top Tags */}
+      {/* Action Required */}
+      {actionItems.length > 0 && (
         <div
-          className="p-5 rounded-2xl"
-          style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+          className="flex flex-wrap items-center gap-2 px-4 py-3 rounded-2xl"
+          style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)" }}
         >
-          <div className="flex items-center gap-2 mb-4">
-            <Tag size={14} style={{ color: "#c4426a" }} />
-            <h3 className="font-bold text-sm" style={{ color: "var(--foreground)" }}>
-              Top Performing Tags
-            </h3>
-          </div>
-          {m.topTags.length === 0 ? (
-            <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>No tags yet.</p>
+          <AlertCircle size={14} style={{ color: "#f59e0b" }} />
+          <span className="text-xs font-semibold mr-1" style={{ color: "#f59e0b" }}>Action required</span>
+          {actionItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-opacity hover:opacity-80"
+              style={{ background: item.bg, color: item.color }}
+            >
+              {item.label} <ChevronRight size={10} />
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {/* ── Audience ─────────────────────────────────────────────── */}
+      <div>
+        <SectionLabel>Audience</SectionLabel>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard
+            label="Total Readers"
+            value={fmt(m.totalUsers)}
+            sub={`+${fmt(m.newUsersMonth)} this month`}
+            icon={<Users size={16} style={{ color: "#c4426a" }} />}
+          />
+          <StatCard
+            label="New Today"
+            value={`+${fmt(m.newUsersToday)}`}
+            sub={`+${fmt(m.newUsersWeek)} this week`}
+            icon={<UserPlus size={16} style={{ color: "#c4426a" }} />}
+            highlight={m.newUsersToday > 0 ? "pink" : undefined}
+          />
+          <StatCard
+            label="Active Today"
+            value={fmt(m.activeUsersToday)}
+            sub="liked, commented, or saved"
+            icon={<Activity size={16} style={{ color: "#c4426a" }} />}
+          />
+          <StatCard
+            label="Total Authors"
+            value={fmt(m.totalAuthors)}
+            sub="registered creators"
+            icon={<Sparkles size={16} style={{ color: "#c4426a" }} />}
+            href="/meminhaj/authors"
+          />
+        </div>
+      </div>
+
+      {/* ── Content ──────────────────────────────────────────────── */}
+      <div>
+        <SectionLabel>Content</SectionLabel>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard
+            label="Total Stories"
+            value={fmt(m.totalStories)}
+            sub={`${fmt(m.publishedStories)} published · ${fmt(m.draftStories)} draft`}
+            icon={<BookOpen size={16} style={{ color: "#c4426a" }} />}
+            href="/meminhaj/stories"
+          />
+          <StatCard
+            label="Total Views"
+            value={fmt(m.totalViews)}
+            sub="across all published stories"
+            icon={<Eye size={16} style={{ color: "#c4426a" }} />}
+          />
+          <StatCard
+            label="Avg Read Time"
+            value={`${m.avgReadingTime} min`}
+            sub="per published story"
+            icon={<Clock size={16} style={{ color: "#c4426a" }} />}
+          />
+          <StatCard
+            label="Moderation Queue"
+            value={fmt(m.pendingStories)}
+            sub={m.pendingStories > 0 ? "stories pending review" : "all clear"}
+            icon={<FileWarning size={16} style={{ color: m.pendingStories > 0 ? "#6366f1" : "var(--muted-foreground)" }} />}
+            href="/meminhaj/approvals"
+            highlight={m.pendingStories > 0 ? "indigo" : undefined}
+          />
+        </div>
+      </div>
+
+      {/* ── Engagement ───────────────────────────────────────────── */}
+      <div>
+        <SectionLabel>Engagement</SectionLabel>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard
+            label="Total Likes"
+            value={fmt(m.totalLikes)}
+            sub={`+${fmt(m.newLikesToday)} today`}
+            icon={<Heart size={16} style={{ color: "#c4426a" }} />}
+            highlight={m.newLikesToday > 0 ? "pink" : undefined}
+          />
+          <StatCard
+            label="Total Comments"
+            value={fmt(m.totalComments)}
+            sub={`+${fmt(m.newCommentsToday)} today`}
+            icon={<MessageSquare size={16} style={{ color: "#c4426a" }} />}
+            highlight={m.newCommentsToday > 0 ? "pink" : undefined}
+          />
+          <StatCard
+            label="Total Bookmarks"
+            value={fmt(m.totalBookmarks)}
+            sub="saved by readers"
+            icon={<Bookmark size={16} style={{ color: "#c4426a" }} />}
+          />
+          <StatCard
+            label="Coin Transactions"
+            value={fmt(m.coinTransactionsMonth)}
+            sub={`${fmt(m.tipsMonth)} tips this month`}
+            icon={<Coins size={16} style={{ color: "#f59e0b" }} />}
+            highlight="amber"
+          />
+        </div>
+      </div>
+
+      {/* ── Top Stories + Top Categories ─────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <Panel title="Top Stories by Views" icon={TrendingUp} action={{ label: "All stories", href: "/meminhaj/stories" }}>
+          {m.topStoriesByViews.length === 0 ? (
+            <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>No published stories yet.</p>
           ) : (
             <div className="space-y-3">
-              {m.topTags.map(({ tag, views, count }) => (
-                <div key={tag}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
-                      #{tag}
-                    </span>
-                    <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                      {fmt(views)} views · {count} {count === 1 ? "story" : "stories"}
-                    </span>
-                  </div>
-                  <div
-                    className="h-1.5 rounded-full overflow-hidden"
-                    style={{ background: "var(--muted)" }}
+              {m.topStoriesByViews.map((story, i) => (
+                <div key={story.id} className="flex items-start gap-3">
+                  <span
+                    className="text-xs font-bold w-5 shrink-0 mt-0.5 text-center"
+                    style={{ color: i === 0 ? "#f59e0b" : "var(--muted-foreground)" }}
                   >
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${Math.max(2, (views / maxTagViews) * 100)}%`,
-                        background: "#c4426a",
-                      }}
-                    />
+                    {i + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <Link
+                      href={`/meminhaj/stories/${story.id}/edit`}
+                      className="text-sm font-medium line-clamp-1 transition-opacity hover:opacity-75 block"
+                      style={{ color: "var(--foreground)" }}
+                    >
+                      {story.title}
+                    </Link>
+                    <div className="flex items-center gap-2 mt-0.5 text-xs" style={{ color: "var(--muted-foreground)" }}>
+                      <span>{story.author.name}</span>
+                      <span>·</span>
+                      <span className="flex items-center gap-0.5"><Eye size={10} />{fmt(story.views)}</span>
+                      <span className="flex items-center gap-0.5"><Heart size={10} />{fmt(story._count.likes)}</span>
+                    </div>
+                    <div className="mt-1 h-1 rounded-full overflow-hidden" style={{ background: "var(--muted)" }}>
+                      <div className="h-full rounded-full" style={{ width: `${Math.max(3, (story.views / maxStoryViews) * 100)}%`, background: "#c4426a" }} />
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </Panel>
 
-        {/* Top Categories */}
-        <div
-          className="p-5 rounded-2xl"
-          style={{ background: "var(--card)", border: "1px solid var(--border)" }}
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <BarChart2 size={14} style={{ color: "#c4426a" }} />
-            <h3 className="font-bold text-sm" style={{ color: "var(--foreground)" }}>
-              Top Categories
-            </h3>
-          </div>
+        <Panel title="Top Categories" icon={BarChart2}>
           {m.topCategories.length === 0 ? (
             <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>No categories yet.</p>
           ) : (
             <div className="space-y-3">
               {m.topCategories.map(({ name, color, views, count }) => (
-                <div key={name}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
-                      {name}
-                    </span>
-                    <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                      {fmt(views)} views · {count} {count === 1 ? "story" : "stories"}
-                    </span>
-                  </div>
+                <BarRow
+                  key={name}
+                  label={name}
+                  value={views}
+                  max={maxCatViews}
+                  color={color}
+                  sub={`${fmt(views)} views · ${count} ${count === 1 ? "story" : "stories"}`}
+                />
+              ))}
+            </div>
+          )}
+        </Panel>
+      </div>
+
+      {/* ── Top Authors + Top Tags ────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <Panel title="Top Authors by Earnings" icon={Sparkles} action={{ label: "All authors", href: "/meminhaj/authors" }}>
+          {m.topAuthors.length === 0 ? (
+            <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>No authors yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {m.topAuthors.map((author) => (
+                <div key={author.id} className="flex items-center gap-3">
                   <div
-                    className="h-1.5 rounded-full overflow-hidden"
-                    style={{ background: "var(--muted)" }}
+                    className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold"
+                    style={{ background: "rgba(196,66,106,0.12)", color: "#c4426a" }}
                   >
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${Math.max(2, (views / maxCatViews) * 100)}%`,
-                        background: color,
-                      }}
-                    />
+                    {author.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <Link
+                        href={`/authors/${author.slug}`}
+                        target="_blank"
+                        className="text-sm font-medium truncate transition-opacity hover:opacity-75"
+                        style={{ color: "var(--foreground)" }}
+                      >
+                        {author.name}
+                      </Link>
+                      <span
+                        className="text-xs font-semibold shrink-0 flex items-center gap-0.5"
+                        style={{ color: "#f59e0b" }}
+                      >
+                        <Coins size={11} />{fmt(author.coinEarnings)}
+                      </span>
+                    </div>
+                    <div className="mt-1 h-1 rounded-full overflow-hidden" style={{ background: "var(--muted)" }}>
+                      <div className="h-full rounded-full" style={{ width: `${Math.max(3, (author.coinEarnings / maxCoinEarnings) * 100)}%`, background: "#f59e0b" }} />
+                    </div>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)" }}>
+                      {author._count.stories} {author._count.stories === 1 ? "story" : "stories"}
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </Panel>
+
+        <Panel title="Top Tags by Views" icon={Tag} action={{ label: "All tags", href: "/meminhaj/tags" }}>
+          {m.topTags.length === 0 ? (
+            <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>No tags yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {m.topTags.map(({ name, views, count }) => (
+                <BarRow
+                  key={name}
+                  label={`#${name}`}
+                  value={views}
+                  max={maxTagViews}
+                  color="#c4426a"
+                  sub={`${fmt(views)} views · ${count} ${count === 1 ? "story" : "stories"}`}
+                />
+              ))}
+            </div>
+          )}
+        </Panel>
       </div>
 
-      {/* ── Section 6: Traffic Sources & Device Breakdown ─────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
-        {/* Traffic Sources */}
-        <div
-          className="p-5 rounded-2xl"
-          style={{ background: "var(--card)", border: "1px solid var(--border)" }}
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <Globe size={14} style={{ color: "#c4426a" }} />
-            <h3 className="font-bold text-sm" style={{ color: "var(--foreground)" }}>
-              Traffic Sources
-            </h3>
-          </div>
-          <div className="space-y-3">
-            {TRAFFIC_SOURCES.map(({ source, pct, color }) => (
-              <div key={source}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
-                    {source}
-                  </span>
-                  <span className="text-xs font-semibold" style={{ color }}>
-                    {pct}%
-                  </span>
-                </div>
-                <div
-                  className="h-1.5 rounded-full overflow-hidden"
-                  style={{ background: "var(--muted)" }}
-                >
-                  <div
-                    className="h-full rounded-full"
-                    style={{ width: `${pct}%`, background: color }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Device Breakdown */}
-        <div
-          className="p-5 rounded-2xl"
-          style={{ background: "var(--card)", border: "1px solid var(--border)" }}
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <Smartphone size={14} style={{ color: "#c4426a" }} />
-            <h3 className="font-bold text-sm" style={{ color: "var(--foreground)" }}>
-              Device Breakdown
-            </h3>
-          </div>
-          <div className="space-y-4">
-            {DEVICES.map(({ device, pct, icon: Icon, color }) => (
-              <div key={device} className="flex items-center gap-3">
-                <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: color + "18" }}
-                >
-                  <Icon size={16} style={{ color }} />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
-                      {device}
-                    </span>
-                    <span className="text-xs font-semibold" style={{ color }}>
-                      {pct}%
-                    </span>
-                  </div>
-                  <div
-                    className="h-1.5 rounded-full overflow-hidden"
-                    style={{ background: "var(--muted)" }}
-                  >
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${pct}%`, background: color }}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Section 7: Recent Stories ──────────────────────────────────── */}
+      {/* ── Recent Stories ────────────────────────────────────────── */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold flex items-center gap-2" style={{ color: "var(--foreground)" }}>
-            <TrendingUp size={16} style={{ color: "#c4426a" }} />
-            Recent Stories
-          </h2>
-          <Link
-            href="/meminhaj/stories"
-            className="text-sm transition-opacity hover:opacity-75"
-            style={{ color: "#c4426a" }}
-          >
-            View all
+          <div className="flex items-center gap-2">
+            <TrendingUp size={14} style={{ color: "#c4426a" }} />
+            <h2 className="font-semibold text-sm" style={{ color: "var(--foreground)" }}>Recent Stories</h2>
+          </div>
+          <Link href="/meminhaj/stories" className="text-xs font-medium transition-opacity hover:opacity-75 flex items-center gap-0.5" style={{ color: "#c4426a" }}>
+            View all <ChevronRight size={12} />
           </Link>
         </div>
 
-        <div
-          className="rounded-2xl overflow-hidden"
-          style={{ background: "var(--card)", border: "1px solid var(--border)" }}
-        >
+        <div className="rounded-2xl overflow-hidden" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[480px]">
+            <table className="w-full text-sm min-w-[560px]">
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                  <th
-                    className="text-left px-4 py-3 text-xs font-medium uppercase tracking-wider"
-                    style={{ color: "var(--muted-foreground)" }}
-                  >
-                    Title
-                  </th>
-                  <th
-                    className="text-left px-4 py-3 text-xs font-medium uppercase tracking-wider hidden sm:table-cell"
-                    style={{ color: "var(--muted-foreground)" }}
-                  >
-                    Category
-                  </th>
-                  <th
-                    className="text-left px-4 py-3 text-xs font-medium uppercase tracking-wider"
-                    style={{ color: "var(--muted-foreground)" }}
-                  >
-                    Status
-                  </th>
-                  <th
-                    className="text-left px-4 py-3 text-xs font-medium uppercase tracking-wider hidden sm:table-cell"
-                    style={{ color: "var(--muted-foreground)" }}
-                  >
-                    Views
-                  </th>
-                  <th
-                    className="text-left px-4 py-3 text-xs font-medium uppercase tracking-wider hidden md:table-cell"
-                    style={{ color: "var(--muted-foreground)" }}
-                  >
-                    Updated
-                  </th>
+                  {["Title", "Author", "Status", "Views", "Likes", "Updated"].map((h, i) => (
+                    <th
+                      key={h}
+                      className={`text-left px-4 py-3 text-xs font-medium uppercase tracking-wider ${i > 1 && i < 4 ? "hidden sm:table-cell" : ""} ${i >= 4 ? "hidden md:table-cell" : ""}`}
+                      style={{ color: "var(--muted-foreground)" }}
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {m.recentStories.map((story) => (
-                  <tr key={story.id} style={{ borderBottom: "1px solid var(--border)" }}>
-                    <td className="px-4 py-3 max-w-[160px] sm:max-w-xs">
-                      <Link
-                        href={`/meminhaj/stories/${story.id}/edit`}
-                        className="font-medium line-clamp-1 transition-opacity hover:opacity-75"
-                        style={{ color: "var(--foreground)" }}
-                      >
-                        {story.title}
-                      </Link>
-                    </td>
-                    <td
-                      className="px-4 py-3 hidden sm:table-cell"
-                      style={{ color: "var(--muted-foreground)" }}
-                    >
-                      {story.categories.map((c) => c.name).join(", ")}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap"
-                        style={{
-                          background: story.published
-                            ? "rgba(34,197,94,0.1)"
-                            : "rgba(234,179,8,0.1)",
-                          color: story.published ? "#22c55e" : "#eab308",
-                        }}
-                      >
-                        {story.published ? "Published" : "Draft"}
-                      </span>
-                    </td>
-                    <td
-                      className="px-4 py-3 hidden sm:table-cell"
-                      style={{ color: "var(--muted-foreground)" }}
-                    >
-                      {fmt(story.views)}
-                    </td>
-                    <td
-                      className="px-4 py-3 hidden md:table-cell"
-                      style={{ color: "var(--muted-foreground)" }}
-                    >
-                      {formatDateShort(story.updatedAt)}
-                    </td>
-                  </tr>
-                ))}
+                {m.recentStories.map((story) => {
+                  const statusLabel =
+                    story.published ? "Published"
+                    : story.status === "pending" ? "Pending"
+                    : story.status === "scheduled" ? "Scheduled"
+                    : "Draft";
+                  const statusColor =
+                    story.published ? { bg: "rgba(34,197,94,0.1)", color: "#22c55e" }
+                    : story.status === "pending" ? { bg: "rgba(99,102,241,0.1)", color: "#6366f1" }
+                    : story.status === "scheduled" ? { bg: "rgba(245,158,11,0.1)", color: "#f59e0b" }
+                    : { bg: "rgba(156,163,175,0.15)", color: "var(--muted-foreground)" };
+
+                  return (
+                    <tr key={story.id} className="transition-opacity hover:opacity-80" style={{ borderBottom: "1px solid var(--border)" }}>
+                      <td className="px-4 py-3 max-w-[180px]">
+                        <Link
+                          href={`/meminhaj/stories/${story.id}/edit`}
+                          className="font-medium line-clamp-1 block"
+                          style={{ color: "var(--foreground)" }}
+                        >
+                          {story.title}
+                        </Link>
+                        <span className="text-xs sm:hidden" style={{ color: "var(--muted-foreground)" }}>
+                          {story.categories.map(c => c.name).join(", ")}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs" style={{ color: "var(--muted-foreground)" }}>
+                        {story.author.name}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap" style={statusColor}>
+                          {statusLabel}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 hidden sm:table-cell text-xs" style={{ color: "var(--muted-foreground)" }}>
+                        {fmt(story.views)}
+                      </td>
+                      <td className="px-4 py-3 hidden md:table-cell text-xs" style={{ color: "var(--muted-foreground)" }}>
+                        {fmt(story._count.likes)}
+                      </td>
+                      <td className="px-4 py-3 hidden md:table-cell text-xs" style={{ color: "var(--muted-foreground)" }}>
+                        {formatDateShort(story.updatedAt)}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
