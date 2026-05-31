@@ -83,7 +83,7 @@ function FlatTagSearch({
               if (noResults) handleAdd();
             }
           }}
-          placeholder="Search or add tags…"
+          placeholder="Search tags or type a new one…"
           className="w-full pl-9 pr-3 py-2 rounded-lg text-sm"
           style={{
             background: "var(--muted)",
