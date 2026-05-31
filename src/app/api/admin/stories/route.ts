@@ -15,7 +15,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { categoryIds, ...data } = await req.json();
+    const { categoryIds, tagIds, ...data } = await req.json();
     if (data.content) data.content = sanitizeStoryContent(data.content);
     const story = await prisma.story.create({
       data: {
@@ -24,6 +24,9 @@ export async function POST(req: Request) {
         categories: {
           connect: (categoryIds as string[]).map((id) => ({ id })),
         },
+        ...(Array.isArray(tagIds) && tagIds.length > 0 && {
+          storyTags: { connect: (tagIds as string[]).map((id) => ({ id })) },
+        }),
       },
     });
     return NextResponse.json(story, { status: 201 });
