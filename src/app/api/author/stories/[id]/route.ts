@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sanitizeStoryContent } from "@/lib/sanitize";
+import { resolveNewTags } from "@/lib/tag-helpers";
 
 async function requireStoryOwner(storyId: string) {
   const session = await auth();
@@ -35,7 +36,7 @@ export async function PATCH(
   }
 
   try {
-    const { categoryIds, tagIds, action, coinPrice: incomingCoinPrice, ...rest } = await req.json();
+    const { categoryIds, tagIds, newTagNames, action, coinPrice: incomingCoinPrice, ...rest } = await req.json();
     if (rest.content) rest.content = sanitizeStoryContent(rest.content);
 
     // Series stories cannot have individual coin prices — premium is series-level
@@ -50,6 +51,8 @@ export async function PATCH(
       }
     }
 
+    const pendingTagIds = await resolveNewTags(newTagNames ?? []);
+    const allTagIds = [...(tagIds as string[] ?? []), ...pendingTagIds];
     const newStatus = action === "submit" ? "pending" : "draft";
     const story = await prisma.story.update({
       where: { id },
@@ -64,7 +67,7 @@ export async function PATCH(
           set: (categoryIds as string[]).map((cid) => ({ id: cid })),
         },
         storyTags: {
-          set: (tagIds as string[] ?? []).map((tid) => ({ id: tid })),
+          set: allTagIds.map((tid) => ({ id: tid })),
         },
       },
     });

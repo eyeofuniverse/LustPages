@@ -12,10 +12,19 @@ export interface TagEntry {
   description?: string | null;
 }
 
+export interface CustomTag { name: string; tier: number; }
+
 interface Props {
   availableTags: TagEntry[];
   value: string[];
   onChange: (ids: string[]) => void;
+  // Free-form custom tag props
+  allowFreeForm?: boolean;
+  customTags?: CustomTag[];
+  onAddCustomTag?: (name: string, tier: number) => void;
+  onRemoveCustomTag?: (name: string) => void;
+  showPendingBadge?: boolean;
+  // Legacy request-modal prop (kept for compatibility)
   onRequestTag?: (name: string, tier: number) => void;
 }
 
@@ -26,17 +35,16 @@ const TIER_COLORS: Record<number, { bg: string; border: string; color: string }>
 };
 
 function TierSection({
-  tier,
-  tags,
-  selected,
-  onToggle,
-  onRequest,
+  tier, tags, selected, onToggle,
+  allowFreeForm, onAddCustomTag, onRequestTag,
 }: {
   tier: number;
   tags: TagEntry[];
   selected: string[];
   onToggle: (id: string) => void;
-  onRequest: (name: string, tier: number) => void;
+  allowFreeForm?: boolean;
+  onAddCustomTag?: (name: string, tier: number) => void;
+  onRequestTag?: (name: string, tier: number) => void;
 }) {
   const [open, setOpen] = useState(tier <= 2);
   const [query, setQuery] = useState("");
@@ -50,6 +58,17 @@ function TierSection({
   }, [tags, query]);
 
   const noResults = query.trim() !== "" && filtered.length === 0;
+
+  function handleAdd() {
+    const name = query.trim();
+    if (!name) return;
+    if (allowFreeForm && onAddCustomTag) {
+      onAddCustomTag(name, tier);
+    } else if (onRequestTag) {
+      onRequestTag(name, tier);
+    }
+    setQuery("");
+  }
 
   return (
     <div
@@ -110,6 +129,7 @@ function TierSection({
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (noResults) handleAdd(); } }}
               placeholder={`Search ${label.title.toLowerCase()}…`}
               className="w-full pl-9 pr-3 py-2 rounded-lg text-sm"
               style={{
@@ -172,11 +192,12 @@ function TierSection({
               </p>
               <button
                 type="button"
-                onClick={() => { onRequest(query, tier); setQuery(""); }}
+                onClick={handleAdd}
                 className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition-opacity hover:opacity-75"
                 style={{ background: colors.bg, color: colors.color, border: `1px solid ${colors.border}` }}
               >
-                <Plus size={11} /> Request tag
+                <Plus size={11} />
+                {allowFreeForm ? `Add "${query}"` : "Request tag"}
               </button>
             </div>
           )}
@@ -192,7 +213,11 @@ function TierSection({
   );
 }
 
-export function TierTagSelector({ availableTags, value, onChange, onRequestTag }: Props) {
+export function TierTagSelector({
+  availableTags, value, onChange,
+  allowFreeForm, customTags, onAddCustomTag, onRemoveCustomTag, showPendingBadge,
+  onRequestTag,
+}: Props) {
   const byTier = useMemo(() => {
     const map: Record<number, TagEntry[]> = { 1: [], 2: [], 3: [] };
     for (const t of availableTags) {
@@ -214,11 +239,51 @@ export function TierTagSelector({ availableTags, value, onChange, onRequestTag }
           tags={byTier[tier] ?? []}
           selected={value}
           onToggle={toggle}
-          onRequest={(name, t) => onRequestTag?.(name, t)}
+          allowFreeForm={allowFreeForm}
+          onAddCustomTag={onAddCustomTag}
+          onRequestTag={(name, t) => onRequestTag?.(name, t)}
         />
       ))}
+
+      {/* Custom / pending tags */}
+      {customTags && customTags.length > 0 && (
+        <div
+          className="p-3 rounded-xl space-y-2"
+          style={{ background: "var(--muted)", border: "1px solid var(--border)" }}
+        >
+          <p className="text-xs font-semibold" style={{ color: "var(--muted-foreground)" }}>
+            Custom tags{showPendingBadge ? " · pending admin review" : ""}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {customTags.map(({ name, tier }) => {
+              const colors = TIER_COLORS[tier] ?? TIER_COLORS[2];
+              return (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => onRemoveCustomTag?.(name)}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all hover:opacity-80"
+                  style={{ background: colors.bg, color: colors.color, border: `1px solid ${colors.border}` }}
+                >
+                  {name}
+                  {showPendingBadge && (
+                    <span
+                      className="ml-0.5 w-1.5 h-1.5 rounded-full inline-block"
+                      style={{ background: "#f59e0b" }}
+                      title="Pending admin review"
+                    />
+                  )}
+                  <X size={10} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
         Tier 1: 1–2 required · Tier 2: 2–4 required · Tier 3: up to 5 optional
+        {allowFreeForm && " · Type a tag name and press Enter or click Add to use a custom tag"}
       </p>
     </div>
   );

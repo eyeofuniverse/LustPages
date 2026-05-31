@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { StoryEditor } from "@/components/admin/StoryEditor";
 import { CoverImageUpload } from "@/components/admin/CoverImageUpload";
-import { TierTagSelector, type TagEntry } from "@/components/author/TierTagSelector";
-import { TagRequestModal } from "@/components/author/TagRequestModal";
+import { TierTagSelector, type TagEntry, type CustomTag } from "@/components/author/TierTagSelector";
 import {
   Save, Send, AlertTriangle, ChevronDown, ChevronUp,
   BookOpen, Tag, Info,
@@ -46,6 +45,7 @@ interface AuthorStoryFormProps {
     content: string;
     coverImage: string | null;
     tagIds: string[];
+    customTags?: CustomTag[];
     categoryIds: string[];
     readingTime: number;
     series: string | null;
@@ -133,8 +133,7 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
   const [content, setContent] = useState(initialData?.content ?? "");
   const [coverImage, setCoverImage] = useState<string | null>(initialData?.coverImage ?? null);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(initialData?.tagIds ?? []);
-  const [tagRequestModal, setTagRequestModal] = useState<{ name: string; tier: number } | null>(null);
-  const [tagRequestSuccess, setTagRequestSuccess] = useState("");
+  const [customTags, setCustomTags] = useState<CustomTag[]>(initialData?.customTags ?? []);
   const [categoryIds, setCategoryIds] = useState<string[]>(initialData?.categoryIds ?? []);
   const [readingTime, setReadingTime] = useState(initialData?.readingTime ?? 5);
   const [maturityRating, setMaturityRating] = useState(initialData?.maturityRating ?? "Explicit");
@@ -188,6 +187,7 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
       content,
       coverImage,
       tagIds: selectedTagIds,
+      newTagNames: customTags,
       categoryIds,
       readingTime,
       maturityRating,
@@ -484,21 +484,22 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
           <label style={{ ...labelStyle, marginBottom: "10px" }}>
             <Tag size={11} className="inline mr-1" />
             Tags
-            <FieldInfo text="Specific descriptors that help readers find your story (e.g. 'enemies to lovers', 'slow burn'). Choose from approved tags or request new ones." />
+            <FieldInfo text="Choose from the approved tag library, or type a tag name that isn't listed and press Enter to add it. Custom tags will be reviewed by our team." />
           </label>
-          {tagRequestSuccess && (
-            <p
-              className="text-xs px-3 py-2 rounded-lg mb-3"
-              style={{ background: "rgba(34,197,94,0.1)", color: "#22c55e" }}
-            >
-              {tagRequestSuccess}
-            </p>
-          )}
           <TierTagSelector
             availableTags={availableTags}
             value={selectedTagIds}
             onChange={setSelectedTagIds}
-            onRequestTag={(name, tier) => setTagRequestModal({ name, tier })}
+            allowFreeForm
+            customTags={customTags}
+            onAddCustomTag={(name, tier) => {
+              if (!customTags.some((t) => t.name.toLowerCase() === name.toLowerCase())) {
+                setCustomTags((prev) => [...prev, { name, tier }]);
+              }
+            }}
+            onRemoveCustomTag={(name) =>
+              setCustomTags((prev) => prev.filter((t) => t.name !== name))
+            }
           />
         </div>
 
@@ -672,14 +673,6 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
         </Panel>
       </div>
 
-      {tagRequestModal && (
-        <TagRequestModal
-          initialName={tagRequestModal.name}
-          initialTier={tagRequestModal.tier}
-          onClose={() => setTagRequestModal(null)}
-          onSuccess={(msg) => { setTagRequestSuccess(msg); setTagRequestModal(null); }}
-        />
-      )}
     </div>
   );
 }

@@ -52,7 +52,10 @@ export default async function AuthorEditStoryPage({ params }: Props) {
           excerpt: story.excerpt,
           content: story.content,
           coverImage: story.coverImage,
-          tagIds: story.storyTags.map((t) => t.id),
+          tagIds: story.storyTags.filter((t) => t.isApproved).map((t) => t.id),
+          customTags: story.storyTags
+            .filter((t) => !t.isApproved)
+            .map((t) => ({ name: t.name, tier: t.tier })),
           categoryIds: story.categories.map((c) => c.id),
           readingTime: story.readingTime,
           series: story.seriesInfo?.name ?? story.series,

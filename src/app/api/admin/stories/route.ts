@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sanitizeStoryContent } from "@/lib/sanitize";
+import { resolveNewTags } from "@/lib/tag-helpers";
 
 async function requireAdmin() {
   const session = await auth();
@@ -15,8 +16,10 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { categoryIds, tagIds, ...data } = await req.json();
+    const { categoryIds, tagIds, newTagNames, ...data } = await req.json();
     if (data.content) data.content = sanitizeStoryContent(data.content);
+    const pendingTagIds = await resolveNewTags(newTagNames ?? []);
+    const allTagIds = [...(Array.isArray(tagIds) ? tagIds as string[] : []), ...pendingTagIds];
     const story = await prisma.story.create({
       data: {
         ...data,
@@ -24,8 +27,8 @@ export async function POST(req: Request) {
         categories: {
           connect: (categoryIds as string[]).map((id) => ({ id })),
         },
-        ...(Array.isArray(tagIds) && tagIds.length > 0 && {
-          storyTags: { connect: (tagIds as string[]).map((id) => ({ id })) },
+        ...(allTagIds.length > 0 && {
+          storyTags: { connect: allTagIds.map((id) => ({ id })) },
         }),
       },
     });
