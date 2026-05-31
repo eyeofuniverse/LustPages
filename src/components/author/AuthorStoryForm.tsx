@@ -484,13 +484,14 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
           <label style={{ ...labelStyle, marginBottom: "10px" }}>
             <Tag size={11} className="inline mr-1" />
             Tags
-            <FieldInfo text="Choose from the approved tag library, or type a tag name that isn't listed and press Enter to add it. Custom tags will be reviewed by our team." />
+            <FieldInfo text="Search the tag library, or type a new tag name and press Enter to add it." />
           </label>
           <TierTagSelector
             availableTags={availableTags}
             value={selectedTagIds}
             onChange={setSelectedTagIds}
             allowFreeForm
+            showTierSections={false}
             customTags={customTags}
             onAddCustomTag={(name, tier) => {
               if (!customTags.some((t) => t.name.toLowerCase() === name.toLowerCase())) {
