@@ -707,12 +707,13 @@ export function StoryForm({ categories, authors, availableTags, initialData }: S
               </select>
             </div>
             <div>
-              <label style={{ ...labelStyle, marginBottom: "0.625rem" }}>Tags <FieldInfo text="Tier 1: subgenre (1–2 required) · Tier 2: tropes (2–4 required) · Tier 3: descriptors (up to 5 optional). Type a new tag name to add it as pending." /></label>
+              <label style={{ ...labelStyle, marginBottom: "0.625rem" }}>Tags <FieldInfo text="Search the tag library, or type a new tag name to add it as pending review." /></label>
               <TierTagSelector
                 availableTags={availableTags}
                 value={selectedTagIds}
                 onChange={setSelectedTagIds}
                 allowFreeForm
+                showTierSections={false}
                 showPendingBadge
                 customTags={customTags}
                 onAddCustomTag={(name, tier) => {
