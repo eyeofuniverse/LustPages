@@ -20,16 +20,31 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "method and accountDetails are required" }, { status: 400 });
   }
 
-  // Demo mode — log the request and zero out earnings
-  await prisma.author.update({
-    where: { id: author.id },
-    data: { coinEarnings: 0 },
-  });
+  const usdAmount = parseFloat((author.coinEarnings / 100).toFixed(2));
+
+  // Atomically zero earnings and write the payout ledger record
+  const [, payout] = await prisma.$transaction([
+    prisma.author.update({
+      where: { id: author.id },
+      data: { coinEarnings: 0 },
+    }),
+    prisma.payoutRequest.create({
+      data: {
+        authorId: author.id,
+        coinsRequested: author.coinEarnings,
+        usdAmount,
+        method,
+        accountDetails,
+        status: "pending",
+      },
+    }),
+  ]);
 
   return NextResponse.json({
     ok: true,
+    payoutRequestId: payout.id,
     coinsRequested: author.coinEarnings,
-    usdAmount: (author.coinEarnings / 100).toFixed(2),
+    usdAmount: usdAmount.toFixed(2),
     message: "Payout request received (demo mode — no real transfer). Earnings reset to 0.",
   });
 }
