@@ -9,6 +9,7 @@ export async function POST(req: NextRequest) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const userId = session.user.id as string;
 
   const { seriesId } = await req.json();
   if (!seriesId) {
@@ -31,42 +32,52 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Series is not premium" }, { status: 400 });
   }
 
+  // Fast path: already unlocked (avoids a full transaction on the common case)
   const existing = await prisma.seriesUnlock.findUnique({
-    where: { userId_seriesId: { userId: session.user.id, seriesId } },
+    where: { userId_seriesId: { userId, seriesId } },
   });
   if (existing) return NextResponse.json({ success: true, alreadyUnlocked: true });
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { coinBalance: true },
-  });
-  if (!user || user.coinBalance < series.coinPrice) {
-    return NextResponse.json({ error: "Insufficient coins" }, { status: 402 });
-  }
-
   const authorShare = Math.floor(series.coinPrice * AUTHOR_SHARE);
 
-  const [updatedUser] = await prisma.$transaction([
-    prisma.user.update({
-      where: { id: session.user.id },
-      data: { coinBalance: { decrement: series.coinPrice } },
-    }),
-    prisma.seriesUnlock.create({
-      data: { userId: session.user.id, seriesId, coinsSpent: series.coinPrice },
-    }),
-    prisma.coinTransaction.create({
-      data: {
-        userId: session.user.id,
-        amount: -series.coinPrice,
-        type: "unlock",
-        description: `Unlocked series: ${series.name}`,
-      },
-    }),
-    prisma.author.update({
-      where: { id: series.authorId },
-      data: { coinEarnings: { increment: authorShare } },
-    }),
-  ]);
+  try {
+    const newBalance = await prisma.$transaction(async (tx) => {
+      // Atomically check and deduct — if balance was insufficient at commit time, count === 0
+      const deducted = await tx.user.updateMany({
+        where: { id: userId, coinBalance: { gte: series.coinPrice! } },
+        data: { coinBalance: { decrement: series.coinPrice! } },
+      });
+      if (deducted.count === 0) throw new Error("INSUFFICIENT_COINS");
 
-  return NextResponse.json({ success: true, balance: updatedUser.coinBalance });
+      await tx.seriesUnlock.create({
+        data: { userId, seriesId, coinsSpent: series.coinPrice! },
+      });
+      await tx.coinTransaction.create({
+        data: {
+          userId,
+          amount: -series.coinPrice!,
+          type: "unlock",
+          description: `Unlocked series: ${series.name}`,
+        },
+      });
+      await tx.author.update({
+        where: { id: series.authorId },
+        data: { coinEarnings: { increment: authorShare } },
+      });
+
+      const updated = await tx.user.findUnique({ where: { id: userId }, select: { coinBalance: true } });
+      return updated!.coinBalance;
+    });
+
+    return NextResponse.json({ success: true, balance: newBalance });
+  } catch (e) {
+    if (e instanceof Error && e.message === "INSUFFICIENT_COINS") {
+      return NextResponse.json({ error: "Insufficient coins" }, { status: 402 });
+    }
+    // Concurrent double-unlock hit the unique constraint — treat as already unlocked
+    if ((e as { code?: string })?.code === "P2002") {
+      return NextResponse.json({ success: true, alreadyUnlocked: true });
+    }
+    throw e;
+  }
 }

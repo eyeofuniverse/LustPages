@@ -9,6 +9,7 @@ export async function POST(req: NextRequest) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const userId = session.user.id as string;
 
   const { authorId, storyId, amount, message } = await req.json();
   if (!authorId || !amount || typeof amount !== "number" || amount < 1) {
@@ -18,52 +19,56 @@ export async function POST(req: NextRequest) {
   const author = await prisma.author.findUnique({ where: { id: authorId } });
   if (!author) return NextResponse.json({ error: "Author not found" }, { status: 404 });
 
-  // Prevent tipping yourself
-  if (author.userId === session.user.id) {
+  if (author.userId === userId) {
     return NextResponse.json({ error: "Cannot tip yourself" }, { status: 400 });
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { coinBalance: true },
-  });
-  if (!user || user.coinBalance < amount) {
-    return NextResponse.json({ error: "Insufficient coins" }, { status: 402 });
   }
 
   const authorShare = Math.floor(amount * AUTHOR_SHARE_PCT);
   const platformShare = amount - authorShare;
 
-  const [updatedUser] = await prisma.$transaction([
-    prisma.user.update({
-      where: { id: session.user.id },
-      data: { coinBalance: { decrement: amount } },
-    }),
-    prisma.author.update({
-      where: { id: authorId },
-      data: { coinEarnings: { increment: authorShare } },
-    }),
-    prisma.tip.create({
-      data: {
-        fromUserId: session.user.id,
-        toAuthorId: authorId,
-        storyId: storyId ?? null,
-        amount,
-        authorShare,
-        platformShare,
-        message: message ?? null,
-      },
-    }),
-    prisma.coinTransaction.create({
-      data: {
-        userId: session.user.id,
-        amount: -amount,
-        type: "tip_sent",
-        description: `Tip to ${author.name}`,
-        storyId: storyId ?? null,
-      },
-    }),
-  ]);
+  try {
+    const newBalance = await prisma.$transaction(async (tx) => {
+      // Atomically check and deduct — if balance was insufficient at commit time, count === 0
+      const deducted = await tx.user.updateMany({
+        where: { id: userId, coinBalance: { gte: amount } },
+        data: { coinBalance: { decrement: amount } },
+      });
+      if (deducted.count === 0) throw new Error("INSUFFICIENT_COINS");
 
-  return NextResponse.json({ success: true, balance: updatedUser.coinBalance });
+      await tx.author.update({
+        where: { id: authorId },
+        data: { coinEarnings: { increment: authorShare } },
+      });
+      await tx.tip.create({
+        data: {
+          fromUserId: userId,
+          toAuthorId: authorId,
+          storyId: storyId ?? null,
+          amount,
+          authorShare,
+          platformShare,
+          message: message ?? null,
+        },
+      });
+      await tx.coinTransaction.create({
+        data: {
+          userId,
+          amount: -amount,
+          type: "tip_sent",
+          description: `Tip to ${author.name}`,
+          storyId: storyId ?? null,
+        },
+      });
+
+      const updated = await tx.user.findUnique({ where: { id: userId }, select: { coinBalance: true } });
+      return updated!.coinBalance;
+    });
+
+    return NextResponse.json({ success: true, balance: newBalance });
+  } catch (e) {
+    if (e instanceof Error && e.message === "INSUFFICIENT_COINS") {
+      return NextResponse.json({ error: "Insufficient coins" }, { status: 402 });
+    }
+    throw e;
+  }
 }
