@@ -57,6 +57,16 @@ export async function PATCH(
       }
     }
 
+    if (rest.slug) {
+      const slugConflict = await prisma.story.findFirst({
+        where: { slug: rest.slug as string, NOT: { id } },
+        select: { id: true },
+      });
+      if (slugConflict) {
+        return NextResponse.json({ error: "That slug is already taken by another story." }, { status: 409 });
+      }
+    }
+
     const pendingTagIds = await resolveNewTags(newTagNames ?? []);
     const allTagIds = [...(tagIds as string[] ?? []), ...pendingTagIds];
     const newStatus = action === "submit" ? "pending" : "draft";
