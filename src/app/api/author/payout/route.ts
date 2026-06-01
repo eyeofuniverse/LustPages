@@ -20,6 +20,30 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "method and accountDetails are required" }, { status: 400 });
   }
 
+  const VALID_METHODS = ["bank", "paypal", "crypto"];
+  if (!VALID_METHODS.includes(method)) {
+    return NextResponse.json({ error: "method must be bank, paypal, or crypto" }, { status: 400 });
+  }
+
+  const details = String(accountDetails).trim();
+  let formatOk = false;
+  let formatHint = "";
+  if (method === "paypal") {
+    formatOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details);
+    formatHint = "PayPal account must be a valid email address";
+  } else if (method === "bank") {
+    // IBAN / account number: 8–42 chars, alphanumeric + spaces/dashes
+    formatOk = /^[A-Z0-9\s-]{8,42}$/i.test(details);
+    formatHint = "Bank account must be 8–42 alphanumeric characters (IBAN or account number)";
+  } else if (method === "crypto") {
+    // Shortest real addresses are ~26 chars; allow alphanumeric + common prefixes
+    formatOk = /^[A-Za-z0-9]{26,}$/.test(details);
+    formatHint = "Crypto wallet address must be at least 26 alphanumeric characters";
+  }
+  if (!formatOk) {
+    return NextResponse.json({ error: formatHint }, { status: 400 });
+  }
+
   const usdAmount = parseFloat((author.coinEarnings / 100).toFixed(2));
 
   // Atomically zero earnings and write the payout ledger record
