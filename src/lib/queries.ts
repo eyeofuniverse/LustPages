@@ -1558,13 +1558,11 @@ export async function getAuthorAnalytics(authorId: string) {
   const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
   const eightWeeksAgo = new Date(now.getTime() - 8 * MS_PER_WEEK);
 
-  // Step 1: All published stories with engagement + reading data
+  // Step 1: All published stories — counts only, no raw readingHistory/unlocks rows
   const stories = await prisma.story.findMany({
     where: { authorId, published: true },
     include: {
-      _count: { select: { likes: true, comments: true, bookmarks: true } },
-      readingHistory: { select: { progress: true, completedAt: true } },
-      unlocks: { select: { coinsSpent: true } },
+      _count: { select: { likes: true, comments: true, bookmarks: true, readingHistory: true, unlocks: true } },
       storyTags: { select: { name: true, slug: true } },
       categories: { select: { id: true, name: true, color: true } },
     },
@@ -1573,8 +1571,8 @@ export async function getAuthorAnalytics(authorId: string) {
 
   const storyIds = stories.map((s) => s.id);
 
-  // Step 2: Parallel — weekly views, tips, author record
-  const [weeklyViewRows, tips, tipTotals, authorRecord] = await Promise.all([
+  // Step 2: Parallel — weekly views, tips, author record + DB-level reading/unlock aggregates
+  const [weeklyViewRows, tips, tipTotals, authorRecord, completedByStory, avgProgressByStory, unlockCoinsByStory, retentionRows] = await Promise.all([
     storyIds.length > 0
       ? prisma.storyView.findMany({
           where: { storyId: { in: storyIds }, viewedAt: { gte: eightWeeksAgo } },
@@ -1596,20 +1594,54 @@ export async function getAuthorAnalytics(authorId: string) {
       _count: { id: true },
     }),
     prisma.author.findUnique({ where: { id: authorId }, select: { coinEarnings: true } }),
+    // Completed reader count per story
+    storyIds.length > 0
+      ? prisma.readingHistory.groupBy({
+          by: ["storyId"],
+          where: { storyId: { in: storyIds }, completedAt: { not: null } },
+          _count: { storyId: true },
+        })
+      : ([] as { storyId: string; _count: { storyId: number } }[]),
+    // Avg in-progress progress per story
+    storyIds.length > 0
+      ? prisma.readingHistory.groupBy({
+          by: ["storyId"],
+          where: { storyId: { in: storyIds }, completedAt: null },
+          _avg: { progress: true },
+        })
+      : ([] as { storyId: string; _avg: { progress: number | null } }[]),
+    // Unlock coins sum per story
+    storyIds.length > 0
+      ? prisma.storyUnlock.groupBy({
+          by: ["storyId"],
+          where: { storyId: { in: storyIds } },
+          _sum: { coinsSpent: true },
+        })
+      : ([] as { storyId: string; _sum: { coinsSpent: number | null } }[]),
+    // Raw reading progress for retention curve only (minimal fields)
+    storyIds.length > 0
+      ? prisma.readingHistory.findMany({
+          where: { storyId: { in: storyIds } },
+          select: { progress: true, completedAt: true },
+        })
+      : ([] as { progress: number; completedAt: Date | null }[]),
   ]);
 
-  // Step 3: Per-story stats
+  // Step 3: Per-story stats — build lookup maps from aggregates
+  const completedMap: Record<string, number> = {};
+  completedByStory.forEach((r) => { completedMap[r.storyId] = r._count.storyId; });
+  const avgProgressMap: Record<string, number> = {};
+  avgProgressByStory.forEach((r) => { avgProgressMap[r.storyId] = Math.round(r._avg.progress ?? 0); });
+  const unlockCoinsMap: Record<string, number> = {};
+  unlockCoinsByStory.forEach((r) => { unlockCoinsMap[r.storyId] = r._sum.coinsSpent ?? 0; });
+
   const storyStats = stories.map((story) => {
-    const totalReaders = story.readingHistory.length;
-    const completed = story.readingHistory.filter((r) => r.completedAt !== null).length;
-    const inProgress = story.readingHistory.filter((r) => r.completedAt === null);
-    const avgProgress =
-      inProgress.length > 0
-        ? Math.round(inProgress.reduce((sum, r) => sum + r.progress, 0) / inProgress.length)
-        : 0;
+    const totalReaders = story._count.readingHistory;
+    const completed = completedMap[story.id] ?? 0;
     const completionRate = totalReaders > 0 ? Math.round((completed / totalReaders) * 100) : 0;
-    const unlockCount = story.unlocks.length;
-    const unlockCoins = story.unlocks.reduce((sum, u) => sum + u.coinsSpent, 0);
+    const avgProgress = avgProgressMap[story.id] ?? 0;
+    const unlockCount = story._count.unlocks;
+    const unlockCoins = unlockCoinsMap[story.id] ?? 0;
     return {
       id: story.id,
       title: story.title,
@@ -1668,15 +1700,14 @@ export async function getAuthorAnalytics(authorId: string) {
   const topCategories = Object.values(catMap).sort((a, b) => b.views - a.views);
 
   // Step 7: Retention curve — what % of readers reached each 10% milestone
-  const allHistory = stories.flatMap((s) => s.readingHistory);
-  const totalReaders = allHistory.length;
+  const totalReaders = retentionRows.length;
   const retentionCurve =
     totalReaders === 0
       ? ([] as { milestone: number; pct: number }[])
       : [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((milestone) => ({
           milestone,
           pct: Math.round(
-            (allHistory.filter((h) => h.progress >= milestone).length / totalReaders) * 100
+            (retentionRows.filter((h) => h.progress >= milestone).length / totalReaders) * 100
           ),
         }));
 
@@ -1685,7 +1716,7 @@ export async function getAuthorAnalytics(authorId: string) {
   const totalLikes = stories.reduce((sum, s) => sum + s._count.likes, 0);
   const totalComments = stories.reduce((sum, s) => sum + s._count.comments, 0);
   const totalBookmarks = stories.reduce((sum, s) => sum + s._count.bookmarks, 0);
-  const allCompleted = allHistory.filter((h) => h.completedAt !== null).length;
+  const allCompleted = retentionRows.filter((h) => h.completedAt !== null).length;
   const overallCompletionRate =
     totalReaders > 0 ? Math.round((allCompleted / totalReaders) * 100) : 0;
   const totalTipCoins = tipTotals._sum.authorShare ?? 0;
