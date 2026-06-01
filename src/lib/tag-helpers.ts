@@ -9,7 +9,7 @@ export async function resolveNewTags(newTagNames: NewTagInput[]): Promise<string
     const trimmed = name.trim();
     if (!trimmed) continue;
     const slug = slugifyTag(trimmed);
-    if (!slug) continue;
+    if (slug.length < 2) continue;
 
     const existing = await prisma.tag.findFirst({
       where: { OR: [{ slug }, { aliases: { some: { alias: slug } } }] },
