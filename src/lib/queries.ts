@@ -629,7 +629,10 @@ export async function getAdminStories({
     statusFilter === "published"
       ? { published: true }
       : statusFilter === "draft"
-      ? { published: false, status: "draft", scheduledAt: null }
+      // Catch any unpublished story not in an explicit workflow state (pending/rejected/scheduled).
+      // Using notIn rather than status === "draft" prevents a ghost zone where
+      // published:false + status:"approved" stories disappear from all filter tabs.
+      ? { published: false, status: { notIn: ["pending", "rejected"] }, scheduledAt: null }
       : statusFilter === "scheduled"
       ? { published: false, scheduledAt: { not: null } }
       : statusFilter === "pending"
