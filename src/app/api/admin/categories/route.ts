@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { pickUniqueColor } from "@/lib/category-colors";
 
 async function requireAdmin() {
   const session = await auth();
@@ -19,17 +20,19 @@ export async function GET() {
 
 export async function POST(req: Request) {
   if (!(await requireAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const { name, slug, description, color } = await req.json();
+  const { name, slug, description } = await req.json();
   if (!name?.trim() || !slug?.trim()) {
     return NextResponse.json({ error: "Name and slug are required" }, { status: 400 });
   }
   try {
+    const existing = await prisma.category.findMany({ select: { color: true } });
+    const color = pickUniqueColor(existing.map((c) => c.color));
     const category = await prisma.category.create({
       data: {
         name: name.trim(),
         slug: slug.trim(),
         description: description?.trim() || null,
-        color: color || "#c4426a",
+        color,
       },
       include: { _count: { select: { stories: true } } },
     });
