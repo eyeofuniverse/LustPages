@@ -19,11 +19,17 @@ export async function POST(req: Request) {
   });
   if (existing) return NextResponse.json({ error: "This tag already exists", existing }, { status: 409 });
 
-  // Check if already requested
+  // Check if already requested (pending) or previously rejected
   const existingReq = await prisma.tagRequest.findFirst({
-    where: { slug, status: "pending" },
+    where: { slug, status: { in: ["pending", "rejected"] } },
+    select: { status: true },
   });
-  if (existingReq) return NextResponse.json({ error: "Already requested and pending review" }, { status: 409 });
+  if (existingReq) {
+    const error = existingReq.status === "rejected"
+      ? "This tag was previously rejected by an admin. Contact support if you believe it should be reconsidered."
+      : "Already requested and pending review";
+    return NextResponse.json({ error }, { status: 409 });
+  }
 
   const request = await prisma.tagRequest.create({
     data: {
