@@ -68,8 +68,9 @@ model Author {
   promotions   FeaturedPromotion[]
   createdAt    DateTime @default(now())
   user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  tipsReceived Tip[]    @relation("TipsToAuthor")
-  likes        AuthorLike[]
+  tipsReceived    Tip[]            @relation("TipsToAuthor")
+  likes           AuthorLike[]
+  payoutRequests  PayoutRequest[]
 }
 
 model Story {
@@ -547,5 +548,20 @@ model CryptoPayment {
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([status])
+}
+
+model PayoutRequest {
+  id             String   @id @default(cuid())
+  authorId       String
+  coinsRequested Int
+  usdAmount      Float
+  method         String
+  accountDetails String
+  status         String   @default("pending")
+  createdAt      DateTime @default(now())
+  author         Author   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId])
   @@index([status])
 }
