@@ -17,11 +17,22 @@ export async function resolveNewTags(newTagNames: NewTagInput[]): Promise<string
 
     if (existing) {
       ids.push(existing.id);
-    } else {
+      continue;
+    }
+
+    try {
       const created = await prisma.tag.create({
         data: { name: trimmed, slug, tier, isApproved: false },
       });
       ids.push(created.id);
+    } catch (e) {
+      if ((e as { code?: string }).code !== "P2002") throw e;
+      // Concurrent request created the same slug between our findFirst and create.
+      // Re-fetch to get the winner's record.
+      const winner = await prisma.tag.findFirst({
+        where: { OR: [{ slug }, { aliases: { some: { alias: slug } } }] },
+      });
+      if (winner) ids.push(winner.id);
     }
   }
   return ids;
