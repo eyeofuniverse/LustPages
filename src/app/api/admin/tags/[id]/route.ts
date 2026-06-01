@@ -17,16 +17,30 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   // Merge a pending tag into an approved tag — migrates all story connections then deletes it
   if (action === "mergeInto" && targetTagId) {
     const merged = await prisma.$transaction(async (tx) => {
-      const pending = await tx.tag.findUnique({
-        where: { id },
-        include: { stories: { select: { id: true } } },
-      });
+      const [pending, target] = await Promise.all([
+        tx.tag.findUnique({
+          where: { id },
+          include: { stories: { select: { id: true, tags: true } } },
+        }),
+        tx.tag.findUnique({ where: { id: targetTagId as string }, select: { id: true, name: true } }),
+      ]);
       if (!pending) throw new Error("Tag not found");
+      if (!target) throw new Error("Target tag not found");
       if (pending.stories.length > 0) {
         await tx.tag.update({
           where: { id: targetTagId as string },
           data: { stories: { connect: pending.stories.map((s) => ({ id: s.id })) } },
         });
+        // Sync the denormalized tags JSON on each affected story
+        for (const story of pending.stories) {
+          try {
+            const tagNames = JSON.parse(story.tags) as string[];
+            if (tagNames.includes(pending.name)) {
+              const synced = [...new Set(tagNames.map((t) => (t === pending.name ? target.name : t)))];
+              await tx.story.update({ where: { id: story.id }, data: { tags: JSON.stringify(synced) } });
+            }
+          } catch { /* skip malformed tags JSON */ }
+        }
       }
       await tx.tag.delete({ where: { id } });
       return { mergedCount: pending.stories.length };
