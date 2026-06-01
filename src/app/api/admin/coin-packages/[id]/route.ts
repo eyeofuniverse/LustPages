@@ -14,6 +14,12 @@ export async function PATCH(
   if (!await requireAdmin()) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const { id } = await params;
   const body = await req.json();
+  if (body.price !== undefined && Number(body.price) <= 0) {
+    return NextResponse.json({ error: "price must be greater than 0" }, { status: 400 });
+  }
+  if (body.coins !== undefined && Number(body.coins) <= 0) {
+    return NextResponse.json({ error: "coins must be greater than 0" }, { status: 400 });
+  }
   const pkg = await prisma.coinPackage.update({
     where: { id },
     data: {

@@ -12,6 +12,9 @@ export async function DELETE(
   }
 
   const { id } = await params;
-  await prisma.comment.delete({ where: { id } });
+  await prisma.$transaction([
+    prisma.comment.deleteMany({ where: { parentId: id } }),
+    prisma.comment.delete({ where: { id } }),
+  ]);
   return NextResponse.json({ ok: true });
 }

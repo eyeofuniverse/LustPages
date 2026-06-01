@@ -27,6 +27,9 @@ export async function POST(req: NextRequest) {
   if (!pkg || !pkg.isActive) {
     return NextResponse.json({ error: "Package not found" }, { status: 404 });
   }
+  if (pkg.price <= 0) {
+    return NextResponse.json({ error: "Package price is invalid." }, { status: 422 });
+  }
 
   const sub = await prisma.subscription.findUnique({
     where: { userId: session.user.id },
