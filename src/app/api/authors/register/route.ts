@@ -23,11 +23,13 @@ export async function POST(req: Request) {
     let baseSlug = slugify(authorName, { lower: true });
     if (!baseSlug) baseSlug = "author";
 
-    // Find a unique slug by appending a number if needed
+    // Find a unique slug — cap sequential probes to avoid unbounded DB loops
     let slug = baseSlug;
-    let suffix = 1;
-    while (await prisma.author.findUnique({ where: { slug } })) {
-      slug = `${baseSlug}-${suffix++}`;
+    const MAX_PROBES = 10;
+    for (let i = 1; i <= MAX_PROBES; i++) {
+      const taken = await prisma.author.findUnique({ where: { slug }, select: { id: true } });
+      if (!taken) break;
+      slug = i < MAX_PROBES ? `${baseSlug}-${i}` : `${baseSlug}-${Date.now().toString(36)}`;
     }
 
     const hashed = await bcrypt.hash(password, 12);
