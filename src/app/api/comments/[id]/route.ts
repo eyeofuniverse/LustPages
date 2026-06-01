@@ -32,6 +32,9 @@ export async function DELETE(
     return NextResponse.json({ error: "Forbidden." }, { status: 403 });
   }
 
-  await prisma.comment.delete({ where: { id } });
+  await prisma.$transaction([
+    prisma.comment.deleteMany({ where: { parentId: id } }),
+    prisma.comment.delete({ where: { id } }),
+  ]);
   return NextResponse.json({ ok: true });
 }

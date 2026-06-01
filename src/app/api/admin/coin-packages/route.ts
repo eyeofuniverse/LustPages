@@ -19,6 +19,12 @@ export async function POST(req: Request) {
   if (!name || !coins || !price) {
     return NextResponse.json({ error: "name, coins, and price are required" }, { status: 400 });
   }
+  if (Number(price) <= 0) {
+    return NextResponse.json({ error: "price must be greater than 0" }, { status: 400 });
+  }
+  if (Number(coins) <= 0) {
+    return NextResponse.json({ error: "coins must be greater than 0" }, { status: 400 });
+  }
   const pkg = await prisma.coinPackage.create({
     data: {
       name,
