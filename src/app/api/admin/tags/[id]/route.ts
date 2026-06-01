@@ -36,7 +36,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const updates: Record<string, unknown> = {};
   if (name !== undefined) { updates.name = name.trim(); updates.slug = slugifyTag(name); }
-  if (tier !== undefined) updates.tier = Number(tier);
+  if (tier !== undefined) {
+    const t = Number(tier);
+    if (![1, 2, 3].includes(t)) return NextResponse.json({ error: "tier must be 1, 2, or 3" }, { status: 400 });
+    updates.tier = t;
+  }
   if (description !== undefined) updates.description = description;
   if (isApproved !== undefined) updates.isApproved = isApproved;
 
