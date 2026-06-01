@@ -44,10 +44,13 @@ export async function POST(req: NextRequest) {
 
   if (FINISHED_STATUSES.has(status)) {
     await prisma.$transaction(async (tx) => {
-      await tx.cryptoPayment.update({
-        where: { nowPaymentId },
+      // Atomically claim the payment by flipping creditedAt only while it is still null.
+      // If a concurrent webhook already committed first, count === 0 and we skip crediting.
+      const claimed = await tx.cryptoPayment.updateMany({
+        where: { nowPaymentId, creditedAt: null },
         data: { status: "finished", creditedAt: new Date(), updatedAt: new Date() },
       });
+      if (claimed.count === 0) return;
 
       const user = await tx.user.update({
         where: { id: payment.userId },
