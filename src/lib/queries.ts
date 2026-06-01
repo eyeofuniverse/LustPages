@@ -1,5 +1,12 @@
 import { prisma } from "./prisma";
 
+async function publishScheduledStories() {
+  await prisma.story.updateMany({
+    where: { status: "approved", published: false, scheduledAt: { lte: new Date() } },
+    data: { published: true, scheduledAt: null },
+  });
+}
+
 export async function getPublishedStories({
   take = 12,
   skip = 0,
@@ -19,6 +26,7 @@ export async function getPublishedStories({
   tag?: string;
   sort?: "latest" | "top-rated";
 } = {}) {
+  await publishScheduledStories();
   return prisma.story.findMany({
     where: {
       published: true,
@@ -51,6 +59,7 @@ export async function getPublishedStories({
 }
 
 export async function getStoryBySlug(slug: string) {
+  await publishScheduledStories();
   return prisma.story.findUnique({
     where: { slug, published: true },
     include: {
