@@ -39,9 +39,15 @@ export async function PATCH(
     const { categoryIds, tagIds, newTagNames, action, coinPrice: incomingCoinPrice, ...rest } = await req.json();
     if (rest.content) rest.content = sanitizeStoryContent(rest.content);
 
-    // Series stories cannot have individual coin prices — premium is series-level
+    // Series stories cannot have individual coin prices — premium is series-level.
+    // Derive where the story will actually live after this update; fall back to the
+    // current DB value when seriesId wasn't included in the request body at all.
+    const targetSeriesId = (
+      "seriesId" in rest ? rest.seriesId : ownership.story.seriesId
+    ) as string | null;
+
     let coinPrice: number | null = null;
-    if (!rest.seriesId && !ownership.story.seriesId) {
+    if (!targetSeriesId) {
       // Standalone story: apply price lock logic
       const unlockCount = await prisma.storyUnlock.count({ where: { storyId: id } });
       if (unlockCount > 0 && incomingCoinPrice !== ownership.story.coinPrice) {
