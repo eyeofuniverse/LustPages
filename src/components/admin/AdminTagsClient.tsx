@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { Search, Plus, Trash2, Edit2, Check, X, Tag, ChevronDown, ChevronUp, GitMerge } from "lucide-react";
+import { Search, Plus, Trash2, Edit2, Check, X, Tag, ChevronDown, ChevronUp, GitMerge, Layers } from "lucide-react";
 import { TagSearchPicker } from "./TagSearchPicker";
 
 interface TagAlias { id: string; alias: string; }
@@ -49,11 +49,51 @@ export function AdminTagsClient({ initialTags }: Props) {
   const [addDesc, setAddDesc] = useState("");
   const [addLoading, setAddLoading] = useState(false);
 
+  const [showBulkMerge, setShowBulkMerge] = useState(false);
+  const [bulkKeyword, setBulkKeyword] = useState("");
+  const [bulkTargetId, setBulkTargetId] = useState("");
+  const [bulkLoading, setBulkLoading] = useState(false);
+
   const filtered = useMemo(() => tags.filter((t) => {
     const matchSearch = !search.trim() || t.name.toLowerCase().includes(search.toLowerCase()) || t.slug.includes(search.toLowerCase());
     const matchTier = tierFilter === null || t.tier === tierFilter;
     return matchSearch && matchTier;
   }), [tags, search, tierFilter]);
+
+  const bulkMatches = useMemo(() => {
+    if (!bulkKeyword.trim()) return [];
+    const kw = bulkKeyword.trim().toLowerCase();
+    return tags.filter((t) => t.name.toLowerCase().includes(kw) && t.id !== bulkTargetId);
+  }, [tags, bulkKeyword, bulkTargetId]);
+
+  async function handleBulkMerge() {
+    if (!bulkKeyword.trim() || !bulkTargetId || bulkMatches.length === 0) return;
+    const target = tags.find((t) => t.id === bulkTargetId);
+    if (!confirm(`Merge ${bulkMatches.length} tag${bulkMatches.length > 1 ? "s" : ""} into "${target?.name}"?\n\n${bulkMatches.map((t) => `• ${t.name}`).join("\n")}\n\nEach becomes an alias of "${target?.name}". This cannot be undone.`)) return;
+    setBulkLoading(true);
+    try {
+      const res = await fetch("/api/admin/tags/bulk-merge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keyword: bulkKeyword.trim(), targetTagId: bulkTargetId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const mergedIds = new Set(bulkMatches.map((t) => t.id));
+        setTags((prev) => prev.filter((t) => !mergedIds.has(t.id)));
+        setBulkKeyword("");
+        setBulkTargetId("");
+        setShowBulkMerge(false);
+        alert(`Merged ${data.merged} tag${data.merged !== 1 ? "s" : ""} into "${data.targetName}".`);
+      } else {
+        alert(data.error ?? "Bulk merge failed");
+      }
+    } catch {
+      alert("Network error — please try again");
+    } finally {
+      setBulkLoading(false);
+    }
+  }
 
   async function handleSeed() {
     const res = await fetch("/api/admin/tags", { method: "PUT" });
@@ -229,6 +269,17 @@ export function AdminTagsClient({ initialTags }: Props) {
         >
           <Plus size={14} /> Add Tag
         </button>
+        <button
+          onClick={() => setShowBulkMerge(!showBulkMerge)}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold shrink-0 transition-all"
+          style={{
+            background: showBulkMerge ? "rgba(99,102,241,0.15)" : "var(--card)",
+            border: `1px solid ${showBulkMerge ? "rgba(99,102,241,0.5)" : "var(--border)"}`,
+            color: showBulkMerge ? "#6366f1" : "var(--muted-foreground)",
+          }}
+        >
+          <Layers size={14} /> Bulk Merge
+        </button>
         {tags.length === 0 && (
           <button
             onClick={handleSeed}
@@ -276,6 +327,97 @@ export function AdminTagsClient({ initialTags }: Props) {
               style={{ background: "#c4426a" }}
             >
               {addLoading ? "Adding…" : "Add"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk merge panel */}
+      {showBulkMerge && (
+        <div
+          className="p-4 rounded-2xl mb-6"
+          style={{ background: "var(--card)", border: "1px solid rgba(99,102,241,0.35)" }}
+        >
+          <p className="text-sm font-semibold mb-1" style={{ color: "#6366f1" }}>Bulk Merge by Keyword</p>
+          <p className="text-xs mb-4" style={{ color: "var(--muted-foreground)" }}>
+            Every approved tag whose name contains the keyword will be merged into the target tag — each becomes an alias and its stories are re-assigned. Irreversible.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+            <div className="relative flex-1">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--muted-foreground)" }} />
+              <input
+                value={bulkKeyword}
+                onChange={(e) => setBulkKeyword(e.target.value)}
+                placeholder="Keyword to match tag names…"
+                style={{ ...inputStyle, paddingLeft: "30px", width: "100%" }}
+              />
+            </div>
+            <div className="flex-1">
+              <TagSearchPicker
+                options={tags}
+                excludeId=""
+                value={bulkTargetId}
+                onChange={setBulkTargetId}
+                placeholder="Merge all matches into…"
+              />
+            </div>
+          </div>
+
+          {/* Live preview */}
+          {bulkKeyword.trim() && (
+            <div
+              className="rounded-xl p-3 mb-4"
+              style={{ background: "var(--muted)", border: "1px solid var(--border)" }}
+            >
+              {bulkMatches.length === 0 ? (
+                <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>No tags match &ldquo;{bulkKeyword}&rdquo;</p>
+              ) : (
+                <>
+                  <p className="text-xs font-semibold mb-2" style={{ color: "var(--muted-foreground)" }}>
+                    {bulkMatches.length} tag{bulkMatches.length !== 1 ? "s" : ""} will be merged:
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {bulkMatches.map((t) => (
+                      <span
+                        key={t.id}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs"
+                        style={{
+                          background: TIER_COLORS[t.tier]?.bg,
+                          color: TIER_COLORS[t.tier]?.color,
+                          border: `1px solid ${TIER_COLORS[t.tier]?.border}`,
+                        }}
+                      >
+                        {t.name}
+                        <span style={{ opacity: 0.6 }}>· {t._count.stories}</span>
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => { setShowBulkMerge(false); setBulkKeyword(""); setBulkTargetId(""); }}
+              className="px-3 py-1.5 rounded-lg text-xs"
+              style={{ color: "var(--muted-foreground)" }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleBulkMerge}
+              disabled={bulkLoading || bulkMatches.length === 0 || !bulkTargetId}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-40 transition-all"
+              style={{ background: "rgba(99,102,241,0.15)", color: "#6366f1", border: "1px solid rgba(99,102,241,0.4)" }}
+            >
+              <GitMerge size={12} />
+              {bulkLoading
+                ? "Merging…"
+                : bulkMatches.length > 0
+                  ? `Merge ${bulkMatches.length} tag${bulkMatches.length !== 1 ? "s" : ""}`
+                  : "Merge"}
             </button>
           </div>
         </div>
