@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   BookOpen, LayoutDashboard, PenSquare, Home, Menu, X, FolderOpen, Tag,
   Tags, CheckSquare, Megaphone, MessageCircle, Flag, Receipt, Mail, Coins,
-  Sparkles, Layers, Library, UserCircle, Users, UserRound,
+  Sparkles, Layers, Library, UserCircle, Users, UserRound, BarChart2,
 } from "lucide-react";
 import type { AdminPermissionKey } from "@/lib/admin-permissions";
 
@@ -75,6 +75,12 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/meminhaj/featured", icon: Sparkles, label: "Featured", permission: "featured" },
       { href: "/meminhaj/ads", icon: Megaphone, label: "Ads", permission: "ads" },
       { href: "/meminhaj/emails", icon: Mail, label: "Emails", permission: "emails" },
+    ],
+  },
+  {
+    label: "Analytics",
+    items: [
+      { href: "/meminhaj/visitors", icon: BarChart2, label: "Visitors", permission: "analytics" },
     ],
   },
 ];

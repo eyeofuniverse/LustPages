@@ -5,7 +5,7 @@ import { getPendingStoriesCount, getPendingReportsCount, getPendingTagRequestsCo
 import {
   BookOpen, LayoutDashboard, PenSquare, Home, FolderOpen, Tag, CheckSquare,
   Megaphone, Sparkles, MessageCircle, Flag, Tags, Receipt, Mail, Coins,
-  Layers, Library, UserCircle, Users, UserRound,
+  Layers, Library, UserCircle, Users, UserRound, BarChart2,
 } from "lucide-react";
 import { MobileAdminNav } from "@/components/admin/MobileAdminNav";
 import type { Metadata } from "next";
@@ -102,6 +102,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         { href: "/meminhaj/featured", icon: <Sparkles size={16} />, label: "Featured", permission: "featured" },
         { href: "/meminhaj/ads", icon: <Megaphone size={16} />, label: "Ads", permission: "ads" },
         { href: "/meminhaj/emails", icon: <Mail size={16} />, label: "Emails", permission: "emails" },
+      ],
+    },
+    {
+      label: "Analytics",
+      items: [
+        { href: "/meminhaj/visitors", icon: <BarChart2 size={16} />, label: "Visitors", permission: "analytics" },
       ],
     },
   ];

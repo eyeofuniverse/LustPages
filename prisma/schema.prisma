@@ -565,3 +565,22 @@ model PayoutRequest {
   @@index([authorId])
   @@index([status])
 }
+
+model PageVisit {
+  id        String   @id @default(cuid())
+  ip        String
+  path      String
+  userAgent String?
+  visitedAt DateTime @default(now())
+
+  @@index([visitedAt])
+  @@index([ip])
+}
+
+model IpGeoCache {
+  ip          String   @id
+  country     String?
+  countryCode String?
+  city        String?
+  cachedAt    DateTime @default(now()) @updatedAt
+}

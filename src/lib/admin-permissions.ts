@@ -11,6 +11,7 @@ export const ADMIN_PERMISSIONS = {
   reports: "Reports",
   emails: "Email Settings",
   authors: "Authors",
+  analytics: "Visitor Analytics",
 } as const;
 
 export type AdminPermissionKey = keyof typeof ADMIN_PERMISSIONS;
