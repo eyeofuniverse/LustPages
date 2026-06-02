@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Heart, MessageCircle, BookOpen, Star } from "lucide-react";
-import { getTags, formatRelativeDate } from "@/lib/utils";
+import { formatRelativeDate } from "@/lib/utils";
 import { StoryThumbnail } from "@/components/story/StoryThumbnail";
 import { AuthorAvatarImg } from "@/components/story/AuthorAvatarImg";
 
@@ -12,7 +12,7 @@ interface StoryListItemData {
   coverImage: string | null;
   readingTime: number;
   views: number;
-  tags: string;
+  storyTags?: { name: string }[];
   series: string | null;
   createdAt: Date;
   categories: { id: string; name: string; slug: string; color: string }[];
@@ -23,7 +23,7 @@ interface StoryListItemData {
 }
 
 export function StoryListItem({ story }: { story: StoryListItemData }) {
-  const tags = getTags(story.tags);
+  const tags = story.storyTags?.map((t) => t.name) ?? [];
   const primaryCategory = story.categories[0];
   const primaryColor = primaryCategory?.color ?? "#c4426a";
   const authorInitial = story.author.name.charAt(0).toUpperCase();

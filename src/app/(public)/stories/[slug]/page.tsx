@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getStoryBySlug, getStoryRecommendations, incrementViews, getStoryUnlock, getSeriesUnlock, getUserCoinBalance } from "@/lib/queries";
 import { auth } from "@/auth";
-import { formatDate, getTags, getTextPreview, countWords, splitHtmlAtParagraph } from "@/lib/utils";
+import { formatDate, getTextPreview, countWords, splitHtmlAtParagraph } from "@/lib/utils";
 import { sanitizeStoryContent } from "@/lib/sanitize";
 import { StoryCard } from "@/components/story/StoryCard";
 import { StoryActions } from "@/components/story/StoryActions";
@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: story.title,
     description: story.excerpt,
     keywords: [
-      ...getTags(story.tags),
+      ...story.storyTags.map((t) => t.name),
       ...story.categories.map((c) => c.name),
       "erotica",
       "adult fiction",
@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       publishedTime: story.createdAt.toISOString(),
       modifiedTime: story.updatedAt.toISOString(),
       authors: [story.author.name],
-      tags: getTags(story.tags),
+      tags: story.storyTags.map((t) => t.name),
       url: `${siteUrl}/stories/${slug}`,
       ...(ogCover && {
         images: [{ url: ogCover, width: 1200, height: 630 }],
@@ -75,8 +75,8 @@ export default async function StoryPage({ params }: Props) {
   if (!story) notFound();
 
   const userId = session?.user?.id;
-  const tags = getTags(story.tags);
   const tagNames = story.storyTags.map((t) => t.name);
+  const tags = tagNames;
   const categoryIds = story.categories.map((c) => c.id);
 
   // Effective cover: series cover takes priority when story is in a series
