@@ -29,11 +29,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         if (!source) throw new Error("Tag not found");
         if (!target) throw new Error("Target tag not found");
 
-        // Re-connect all stories to target
+        // Re-connect all stories to target, then clear them from source
         if (source.stories.length > 0) {
           await tx.tag.update({
             where: { id: targetTagId as string },
             data: { stories: { connect: source.stories.map((s) => ({ id: s.id })) } },
+          });
+          await tx.tag.update({
+            where: { id },
+            data: { stories: { set: [] } },
           });
         }
 

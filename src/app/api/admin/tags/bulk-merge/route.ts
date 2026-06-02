@@ -34,46 +34,56 @@ export async function POST(req: Request) {
 
     const mergedNames: string[] = [];
 
-    await prisma.$transaction(async (tx) => {
-      for (const source of sources) {
-        // Re-connect all stories to target
-        if (source.stories.length > 0) {
-          await tx.tag.update({
-            where: { id: targetTagId },
-            data: { stories: { connect: source.stories.map((s) => ({ id: s.id })) } },
-          });
-        }
+    await prisma.$transaction(
+      async (tx) => {
+        for (const source of sources) {
+          // Connect all source stories to target
+          if (source.stories.length > 0) {
+            await tx.tag.update({
+              where: { id: targetTagId },
+              data: { stories: { connect: source.stories.map((s) => ({ id: s.id })) } },
+            });
+            // Explicitly disconnect stories from source before deleting it,
+            // so we don't rely on implicit CASCADE in the join table
+            await tx.tag.update({
+              where: { id: source.id },
+              data: { stories: { set: [] } },
+            });
+          }
 
-        // Transfer existing aliases to target
-        for (const { alias } of source.aliases) {
+          // Transfer existing aliases to target
+          for (const { alias } of source.aliases) {
+            await tx.tagAlias.upsert({
+              where: { alias },
+              update: { tagId: targetTagId },
+              create: { alias, tagId: targetTagId },
+            });
+          }
+
+          // Add source slug as alias on target so old searches/URLs still resolve
           await tx.tagAlias.upsert({
-            where: { alias },
+            where: { alias: source.slug },
             update: { tagId: targetTagId },
-            create: { alias, tagId: targetTagId },
+            create: { alias: source.slug, tagId: targetTagId },
           });
+
+          // Repoint TagRequests that referenced source
+          await tx.tagRequest.updateMany({
+            where: { mergedIntoTagId: source.id },
+            data: { mergedIntoTagId: targetTagId },
+          });
+
+          await tx.tag.delete({ where: { id: source.id } });
+          mergedNames.push(source.name);
         }
-
-        // Add source slug as alias so old searches/URLs still resolve
-        await tx.tagAlias.upsert({
-          where: { alias: source.slug },
-          update: { tagId: targetTagId },
-          create: { alias: source.slug, tagId: targetTagId },
-        });
-
-        // Repoint TagRequests that referenced source
-        await tx.tagRequest.updateMany({
-          where: { mergedIntoTagId: source.id },
-          data: { mergedIntoTagId: targetTagId },
-        });
-
-        await tx.tag.delete({ where: { id: source.id } });
-        mergedNames.push(source.name);
-      }
-    });
+      },
+      { timeout: 30000 },
+    );
 
     return NextResponse.json({ merged: mergedNames.length, tagNames: mergedNames, targetName: target.name });
   } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
     console.error("POST /api/admin/tags/bulk-merge", e);
-    return NextResponse.json({ error: "Bulk merge failed" }, { status: 500 });
+    return NextResponse.json({ error: msg || "Bulk merge failed" }, { status: 500 });
   }
 }
