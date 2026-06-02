@@ -23,7 +23,9 @@ export async function PATCH(
     const { categoryIds, tagIds, newTagNames, ...data } = await req.json();
     if (data.content) data.content = sanitizeStoryContent(data.content);
     const statusUpdate =
-      "published" in data ? { status: data.published ? "approved" : "draft" } : {};
+      "published" in data || "scheduledAt" in data
+        ? { status: data.published || data.scheduledAt ? "approved" : "draft" }
+        : {};
     const pendingTagIds = await resolveNewTags(newTagNames ?? []);
     const allTagIds = tagIds !== undefined
       ? [...(tagIds as string[]), ...pendingTagIds]

@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     const story = await prisma.story.create({
       data: {
         ...data,
-        status: data.published ? "approved" : "draft",
+        status: data.published || data.scheduledAt ? "approved" : "draft",
         categories: {
           connect: (categoryIds as string[]).map((id) => ({ id })),
         },
