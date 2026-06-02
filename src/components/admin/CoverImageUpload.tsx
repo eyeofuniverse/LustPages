@@ -87,7 +87,7 @@ export function CoverImageUpload({ value, onChange, signUrl = "/api/admin/upload
       />
 
       {value ? (
-        <div className="relative rounded-xl overflow-hidden group" style={{ aspectRatio: "16/9" }}>
+        <div className="relative rounded-xl overflow-hidden group" style={{ aspectRatio: "2/3", maxWidth: 200 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={value}
@@ -134,9 +134,11 @@ export function CoverImageUpload({ value, onChange, signUrl = "/api/admin/upload
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
           disabled={uploading}
-          className="w-full rounded-xl flex flex-col items-center justify-center gap-2 transition-colors hover:opacity-80 disabled:opacity-60"
+          className="rounded-xl flex flex-col items-center justify-center gap-2 transition-colors hover:opacity-80 disabled:opacity-60"
           style={{
-            aspectRatio: "16/9",
+            aspectRatio: "2/3",
+            width: "100%",
+            maxWidth: 200,
             border: "2px dashed var(--border)",
             background: "var(--muted)",
             color: "var(--muted-foreground)",
@@ -146,9 +148,9 @@ export function CoverImageUpload({ value, onChange, signUrl = "/api/admin/upload
             spinner()
           ) : (
             <>
-              <ImageIcon size={28} style={{ opacity: 0.45 }} />
-              <span className="text-xs font-medium">Click or drag to upload cover</span>
-              <span className="text-xs" style={{ opacity: 0.6 }}>JPG, PNG, WEBP · max 10 MB</span>
+              <ImageIcon size={24} style={{ opacity: 0.45 }} />
+              <span className="text-xs font-medium text-center px-2">Upload cover</span>
+              <span className="text-[10px] text-center px-2" style={{ opacity: 0.6 }}>JPG, PNG, WEBP · 10 MB max</span>
             </>
           )}
         </button>
