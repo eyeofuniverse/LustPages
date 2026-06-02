@@ -33,7 +33,7 @@ export async function getPublishedStories({
   sort?: "latest" | "top-rated";
 } = {}) {
   await publishScheduledStories();
-  return prisma.story.findMany({
+  const stories = await prisma.story.findMany({
     where: {
       published: true,
       ...(featured !== undefined && { featured }),
@@ -58,11 +58,13 @@ export async function getPublishedStories({
       author: true,
       storyTags: { select: { name: true } },
       _count: { select: { likes: true, comments: true, bookmarks: true } },
+      seriesInfo: { select: { coverImage: true } },
     },
     orderBy: sort === "top-rated" ? [{ ratingAvg: "desc" }, { ratingCount: "desc" }] : { createdAt: "desc" },
     take,
     skip,
   });
+  return stories.map(resolveStoryCover);
 }
 
 export async function getStoryBySlug(slug: string) {
@@ -1242,6 +1244,7 @@ export async function getAdminSeriesById(id: string) {
       name: true,
       slug: true,
       description: true,
+      coverImage: true,
       isPremium: true,
       coinPrice: true,
       freeChapters: true,

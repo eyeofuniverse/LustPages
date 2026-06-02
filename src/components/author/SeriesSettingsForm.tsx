@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Lock, Unlock, Save, Loader2, AlertTriangle, Info, Clock } from "lucide-react";
 import { PAYMENTS_ENABLED } from "@/lib/feature-flags";
+import { CoverImageUpload } from "@/components/admin/CoverImageUpload";
 
 interface Series {
   id: string;
@@ -47,6 +48,7 @@ export function SeriesSettingsForm({ series }: { series: Series }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
+  const [coverImage, setCoverImage] = useState(series.coverImage ?? "");
   const isPriceLocked = series._count.unlocks > 0;
 
   async function handleSave() {
@@ -69,6 +71,7 @@ export function SeriesSettingsForm({ series }: { series: Series }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           description: description || null,
+          coverImage: coverImage || null,
           isPremium,
           coinPrice: isPremium ? parseInt(coinPrice) : null,
           freeChapters: fc,
@@ -100,7 +103,7 @@ export function SeriesSettingsForm({ series }: { series: Series }) {
         </p>
       </div>
 
-      {/* Description */}
+      {/* Description + Cover */}
       <div
         className="rounded-2xl p-5 space-y-4"
         style={{ background: "var(--card)", border: "1px solid var(--border)" }}
@@ -115,6 +118,14 @@ export function SeriesSettingsForm({ series }: { series: Series }) {
             placeholder="What is this series about?"
             style={{ ...inputStyle, resize: "vertical" }}
           />
+        </div>
+        <div>
+          <label style={labelStyle}>Series Cover Image</label>
+          <p className="text-xs mb-2" style={{ color: "var(--muted-foreground)" }}>
+            Shared across all chapters. Individual chapter covers are replaced by this image.
+            Recommended: portrait ratio (e.g. 800×1200px).
+          </p>
+          <CoverImageUpload value={coverImage} onChange={setCoverImage} signUrl="/api/author/upload/sign" />
         </div>
       </div>
 
