@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Lock, Unlock, Save, Loader2, Info, AlertTriangle } from "lucide-react";
+import { CoverImageUpload } from "@/components/admin/CoverImageUpload";
 
 interface Series {
   id: string;
   name: string;
   slug: string;
   description: string | null;
+  coverImage: string | null;
   isPremium: boolean;
   coinPrice: number | null;
   freeChapters: number;
@@ -41,6 +43,7 @@ export function AdminSeriesSettingsForm({ series }: { series: Series }) {
   const [coinPrice, setCoinPrice] = useState(series.coinPrice?.toString() ?? "");
   const [freeChapters, setFreeChapters] = useState(series.freeChapters.toString());
   const [description, setDescription] = useState(series.description ?? "");
+  const [coverImage, setCoverImage] = useState(series.coverImage ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -67,6 +70,7 @@ export function AdminSeriesSettingsForm({ series }: { series: Series }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           description: description || null,
+          coverImage: coverImage || null,
           isPremium,
           coinPrice: isPremium ? parseInt(coinPrice) : null,
           freeChapters: fc,
@@ -113,7 +117,7 @@ export function AdminSeriesSettingsForm({ series }: { series: Series }) {
         </div>
       )}
 
-      {/* Description */}
+      {/* Description + Cover */}
       <div
         className="rounded-2xl p-5 space-y-4"
         style={{ background: "var(--card)", border: "1px solid var(--border)" }}
@@ -128,6 +132,13 @@ export function AdminSeriesSettingsForm({ series }: { series: Series }) {
             placeholder="What is this series about?"
             style={{ ...inputStyle, resize: "vertical" }}
           />
+        </div>
+        <div>
+          <label style={labelStyle}>Series Cover Image</label>
+          <p className="text-xs mb-2" style={{ color: "var(--muted-foreground)" }}>
+            Shared across all chapters of this series. Recommended: portrait ratio (e.g. 800×1200px).
+          </p>
+          <CoverImageUpload value={coverImage} onChange={setCoverImage} />
         </div>
       </div>
 

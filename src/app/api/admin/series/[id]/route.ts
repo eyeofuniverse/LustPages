@@ -16,10 +16,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!series) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await req.json();
-  const { isPremium, coinPrice, freeChapters, description } = body;
+  const { isPremium, coinPrice, freeChapters, description, coverImage } = body;
 
   const data: Record<string, unknown> = {};
   if (description !== undefined) data.description = description || null;
+  if (coverImage !== undefined) data.coverImage = coverImage || null;
   if (typeof isPremium === "boolean") {
     data.isPremium = isPremium;
     if (!isPremium) data.coinPrice = null;
