@@ -6,6 +6,7 @@ import { AgeGate } from "@/components/layout/AgeGate";
 import { auth } from "@/auth";
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 import { AnalyticsEvents } from "@/components/analytics/AnalyticsEvents";
+import { PageTracker } from "@/components/analytics/PageTracker";
 import { Suspense } from "react";
 
 const geist = Geist({
@@ -92,6 +93,7 @@ export default async function RootLayout({
         <Suspense fallback={null}>
           <AnalyticsEvents />
         </Suspense>
+        <PageTracker />
         <SessionProvider session={session}>
           <AgeGate />
           {children}
