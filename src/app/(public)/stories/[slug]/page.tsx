@@ -4,7 +4,7 @@ import { getStoryBySlug, getStoryRecommendations, incrementViews, getStoryUnlock
 import { auth } from "@/auth";
 import { formatDate, getTextPreview, countWords, splitHtmlAtParagraph } from "@/lib/utils";
 import { sanitizeStoryContent } from "@/lib/sanitize";
-import { StoryCard } from "@/components/story/StoryCard";
+import { RecsCarousel } from "@/components/story/RecsCarousel";
 import { StoryActions } from "@/components/story/StoryActions";
 import { StoryRating } from "@/components/story/StoryRating";
 import { ReportButton } from "@/components/story/ReportButton";
@@ -436,33 +436,11 @@ export default async function StoryPage({ params }: Props) {
           <div className="mt-12 pt-10" style={{ borderTop: "1px solid var(--border)" }}>
             {recommendations.collaborative && (
               <div className="mb-10">
-                <h2
-                  className="text-xl font-bold mb-5"
-                  style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
-                >
-                  Readers also liked
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {recommendations.collaborative.map((s) => (
-                    <StoryCard key={s.id} story={s} />
-                  ))}
-                </div>
+                <RecsCarousel title="Readers also liked" stories={recommendations.collaborative} />
               </div>
             )}
             {recommendations.tagBased.length > 0 && (
-              <div>
-                <h2
-                  className="text-xl font-bold mb-5"
-                  style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
-                >
-                  More like this
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {recommendations.tagBased.map((s) => (
-                    <StoryCard key={s.id} story={s} />
-                  ))}
-                </div>
-              </div>
+              <RecsCarousel title="More like this" stories={recommendations.tagBased} />
             )}
           </div>
         )}
