@@ -74,6 +74,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
   }
 
+  if (addAlias) {
+    const normalized = slugifyTag(addAlias);
+    const conflictingTag = await prisma.tag.findUnique({ where: { slug: normalized }, select: { id: true, name: true } });
+    if (conflictingTag && conflictingTag.id !== id) {
+      return NextResponse.json({ error: `"${normalized}" is already a tag slug — use Merge instead` }, { status: 409 });
+    }
+  }
+
   const updates: Record<string, unknown> = {};
   if (name !== undefined) { updates.name = name.trim(); updates.slug = slugifyTag(name); }
   if (tier !== undefined) {

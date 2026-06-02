@@ -372,6 +372,14 @@ export async function getTagBySlug(slug: string) {
   });
 }
 
+export async function getTagCanonicalSlug(alias: string) {
+  const record = await prisma.tagAlias.findUnique({
+    where: { alias },
+    select: { tag: { select: { slug: true } } },
+  });
+  return record?.tag.slug ?? null;
+}
+
 export async function getAdminTags() {
   return prisma.tag.findMany({
     orderBy: [{ tier: "asc" }, { name: "asc" }],
