@@ -10,6 +10,7 @@ export interface TagEntry {
   slug: string;
   tier: number;
   description?: string | null;
+  aliases?: { alias: string }[];
 }
 
 export interface CustomTag { name: string; tier: number; }
@@ -45,10 +46,17 @@ function FlatTagSearch({
 }) {
   const [query, setQuery] = useState("");
 
-  const filtered = useMemo(() => {
+  type TagWithAlias = TagEntry & { matchedAlias: string | null };
+
+  const filtered = useMemo<TagWithAlias[]>(() => {
     const q = query.toLowerCase().trim();
     if (!q) return [];
-    return tags.filter((t) => t.name.toLowerCase().includes(q) || t.slug.includes(q));
+    return tags.reduce<TagWithAlias[]>((acc, t) => {
+      const matchesName = t.name.toLowerCase().includes(q) || t.slug.includes(q);
+      const matchedAlias = t.aliases?.find((a) => a.alias.includes(q))?.alias ?? null;
+      if (matchesName || matchedAlias) acc.push({ ...t, matchedAlias: matchesName ? null : matchedAlias });
+      return acc;
+    }, []);
   }, [tags, query]);
 
   const noResults = query.trim() !== "" && filtered.length === 0;
@@ -132,6 +140,11 @@ function FlatTagSearch({
                 }}
               >
                 {t.name}
+                {t.matchedAlias && (
+                  <span className="ml-1" style={{ opacity: 0.55 }}>
+                    ({t.matchedAlias.replace(/-/g, " ")})
+                  </span>
+                )}
               </button>
             ))}
         </div>
@@ -187,9 +200,17 @@ function TierSection({
   const colors = TIER_COLORS[tier];
   const selectedCount = tags.filter((t) => selected.includes(t.id)).length;
 
-  const filtered = useMemo(() => {
+  type TagWithAlias = TagEntry & { matchedAlias: string | null };
+
+  const filtered = useMemo<TagWithAlias[]>(() => {
     const q = query.toLowerCase().trim();
-    return q ? tags.filter((t) => t.name.toLowerCase().includes(q) || t.slug.includes(q)) : tags;
+    if (!q) return tags.map((t) => ({ ...t, matchedAlias: null }));
+    return tags.reduce<TagWithAlias[]>((acc, t) => {
+      const matchesName = t.name.toLowerCase().includes(q) || t.slug.includes(q);
+      const matchedAlias = t.aliases?.find((a) => a.alias.includes(q))?.alias ?? null;
+      if (matchesName || matchedAlias) acc.push({ ...t, matchedAlias: matchesName ? null : matchedAlias });
+      return acc;
+    }, []);
   }, [tags, query]);
 
   const noResults = query.trim() !== "" && filtered.length === 0;
@@ -315,6 +336,11 @@ function TierSection({
                     }}
                   >
                     {t.name}
+                    {t.matchedAlias && (
+                      <span className="ml-1" style={{ opacity: 0.55 }}>
+                        ({t.matchedAlias.replace(/-/g, " ")})
+                      </span>
+                    )}
                   </button>
                 );
               })}

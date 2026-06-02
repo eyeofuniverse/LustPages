@@ -361,7 +361,7 @@ export async function getAllStructuredTags() {
   return prisma.tag.findMany({
     where: { isApproved: true },
     orderBy: [{ tier: "asc" }, { name: "asc" }],
-    select: { id: true, name: true, slug: true, tier: true, description: true },
+    select: { id: true, name: true, slug: true, tier: true, description: true, aliases: { select: { alias: true } } },
   });
 }
 
