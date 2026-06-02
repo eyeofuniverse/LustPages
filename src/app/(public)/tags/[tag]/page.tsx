@@ -5,7 +5,9 @@ import {
   getTrendingStories,
   getPopularTags,
   getTagBySlug,
+  getTagCanonicalSlug,
 } from "@/lib/queries";
+import { permanentRedirect } from "next/navigation";
 import { FilterBar } from "@/components/story/FilterBar";
 import { StoriesSearchBar } from "@/components/story/StoriesSearchBar";
 import { TrendingCarousel } from "@/components/story/TrendingCarousel";
@@ -51,6 +53,11 @@ export default async function TagPage({ params, searchParams }: Props) {
   const { tag } = await params;
   const tagSlug = decodeURIComponent(tag);
   const tagRecord = await getTagBySlug(tagSlug);
+
+  if (!tagRecord) {
+    const canonicalSlug = await getTagCanonicalSlug(tagSlug);
+    if (canonicalSlug) permanentRedirect(`/tags/${canonicalSlug}`);
+  }
   const tagName = tagRecord?.name ?? tagSlug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
   const sp = await searchParams;
   const page = Math.max(1, parseInt(sp.page ?? "1", 10));

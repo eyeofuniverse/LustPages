@@ -23,6 +23,10 @@ export async function POST(req: Request) {
   const { name, tier, description, isApproved = true } = await req.json();
   if (!name?.trim() || !tier) return NextResponse.json({ error: "name and tier required" }, { status: 400 });
   const slug = slugifyTag(name);
+  const aliasConflict = await prisma.tagAlias.findUnique({ where: { alias: slug }, select: { tag: { select: { name: true } } } });
+  if (aliasConflict) {
+    return NextResponse.json({ error: `"${slug}" is already an alias of "${aliasConflict.tag.name}" — choose a different name or merge instead` }, { status: 409 });
+  }
   try {
     const tag = await prisma.tag.create({ data: { name: name.trim(), slug, tier: Number(tier), description, isApproved } });
     return NextResponse.json(tag, { status: 201 });
