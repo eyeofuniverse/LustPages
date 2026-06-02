@@ -59,20 +59,25 @@ export function AdminTagRequestsClient({ initialRequests, masterTags, pendingTag
 
   async function act(id: string, action: string, extra: Record<string, unknown> = {}) {
     setLoading(id + action);
-    const res = await fetch(`/api/admin/tag-requests/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, adminNote: adminNote[id] || null, ...extra }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setRequests((prev) =>
-        prev.map((r) => r.id === id ? { ...r, ...(data.request ?? data), mergedIntoTag: data.tag ?? r.mergedIntoTag } : r)
-      );
-    } else {
-      alert(data.error ?? "Error");
+    try {
+      const res = await fetch(`/api/admin/tag-requests/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, adminNote: adminNote[id] || null, ...extra }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setRequests((prev) =>
+          prev.map((r) => r.id === id ? { ...r, ...(data.request ?? data), mergedIntoTag: data.tag ?? r.mergedIntoTag } : r)
+        );
+      } else {
+        alert(data.error ?? "Error");
+      }
+    } catch {
+      alert("Network error — please try again");
+    } finally {
+      setLoading(null);
     }
-    setLoading(null);
   }
 
   async function handleDeleteRequest(id: string) {
@@ -86,19 +91,24 @@ export function AdminTagRequestsClient({ initialRequests, masterTags, pendingTag
   async function handleTagApprove(tag: PendingTag) {
     const tier = tagApproveTier[tag.id] ?? tag.tier;
     setLoading(tag.id + "approve");
-    const res = await fetch(`/api/admin/tags/${tag.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isApproved: true, tier }),
-    });
-    if (res.ok) {
-      setPendingTagList((prev) => prev.filter((t) => t.id !== tag.id));
-      setApprovedTags((prev) => [...prev, { id: tag.id, name: tag.name, slug: tag.slug, tier }]);
-    } else {
-      const d = await res.json();
-      alert(d.error ?? "Error approving tag");
+    try {
+      const res = await fetch(`/api/admin/tags/${tag.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isApproved: true, tier }),
+      });
+      if (res.ok) {
+        setPendingTagList((prev) => prev.filter((t) => t.id !== tag.id));
+        setApprovedTags((prev) => [...prev, { id: tag.id, name: tag.name, slug: tag.slug, tier }]);
+      } else {
+        const d = await res.json();
+        alert(d.error ?? "Error approving tag");
+      }
+    } catch {
+      alert("Network error — please try again");
+    } finally {
+      setLoading(null);
     }
-    setLoading(null);
   }
 
   async function handleTagMerge(tag: PendingTag) {
@@ -107,19 +117,24 @@ export function AdminTagRequestsClient({ initialRequests, masterTags, pendingTag
     const target = approvedTags.find((t) => t.id === targetId);
     if (!confirm(`Merge "${tag.name}" into "${target?.name}"?\n\n"${tag.name}" becomes an alias of "${target?.name}". ${tag._count.stories > 0 ? `All ${tag._count.stories} stories re-assigned. ` : ""}This cannot be undone.`)) return;
     setLoading(tag.id + "merge");
-    const res = await fetch(`/api/admin/tags/${tag.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "mergeInto", targetTagId: targetId }),
-    });
-    if (res.ok) {
-      setPendingTagList((prev) => prev.filter((t) => t.id !== tag.id));
-      setTagMergeTarget((prev) => { const n = { ...prev }; delete n[tag.id]; return n; });
-    } else {
-      const d = await res.json();
-      alert(d.error ?? "Error merging tag");
+    try {
+      const res = await fetch(`/api/admin/tags/${tag.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "mergeInto", targetTagId: targetId }),
+      });
+      if (res.ok) {
+        setPendingTagList((prev) => prev.filter((t) => t.id !== tag.id));
+        setTagMergeTarget((prev) => { const n = { ...prev }; delete n[tag.id]; return n; });
+      } else {
+        const d = await res.json();
+        alert(d.error ?? "Error merging tag");
+      }
+    } catch {
+      alert("Network error — please try again");
+    } finally {
+      setLoading(null);
     }
-    setLoading(null);
   }
 
   async function handleTagDelete(tag: PendingTag) {
