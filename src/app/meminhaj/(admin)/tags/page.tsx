@@ -5,8 +5,9 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Tag Library — Admin" };
 
 export default async function TagsPage() {
-  const tags = await getAdminTags();
-  const approved = tags.filter((t) => t.isApproved).length;
+  const allTags = await getAdminTags();
+  const tags = allTags.filter((t) => t.isApproved);
+  const unapprovedCount = allTags.length - tags.length;
 
   return (
     <div className="max-w-5xl">
@@ -18,7 +19,10 @@ export default async function TagsPage() {
           Tag Library
         </h1>
         <p className="text-sm mt-0.5" style={{ color: "var(--muted-foreground)" }}>
-          {tags.length} tags ({approved} approved) · Tier 1: Subgenre · Tier 2: Tropes · Tier 3: Content
+          {tags.length} approved tags · Tier 1: Subgenre · Tier 2: Tropes · Tier 3: Content
+          {unapprovedCount > 0 && (
+            <> · <a href="/meminhaj/tag-requests" style={{ color: "#f59e0b", textDecoration: "underline" }}>{unapprovedCount} pending review</a></>
+          )}
         </p>
       </div>
       <AdminTagsClient initialTags={tags} />

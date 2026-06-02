@@ -10,8 +10,16 @@ export default async function TagRequestsPage() {
     getAdminTags(),
   ]);
 
-  const masterTags = allTags.map((t) => ({ id: t.id, name: t.name, slug: t.slug, tier: t.tier }));
-  const pending = requests.filter((r) => r.status === "pending").length;
+  const masterTags = allTags
+    .filter((t) => t.isApproved)
+    .map((t) => ({ id: t.id, name: t.name, slug: t.slug, tier: t.tier }));
+
+  const pendingTags = allTags
+    .filter((t) => !t.isApproved)
+    .map((t) => ({ id: t.id, name: t.name, slug: t.slug, tier: t.tier, _count: { stories: t._count.stories } }));
+
+  const pendingRequestCount = requests.filter((r) => r.status === "pending").length;
+  const totalPending = pendingRequestCount + pendingTags.length;
 
   return (
     <div className="max-w-3xl">
@@ -23,12 +31,13 @@ export default async function TagRequestsPage() {
           Tag Requests
         </h1>
         <p className="text-sm mt-0.5" style={{ color: "var(--muted-foreground)" }}>
-          {pending} pending · Review, approve, merge, or reject author tag requests
+          {totalPending > 0 ? `${totalPending} pending — ` : ""}Review, approve, merge, or reject author tag requests and unapproved tags
         </p>
       </div>
       <AdminTagRequestsClient
         initialRequests={requests.map((r) => ({ ...r, createdAt: r.createdAt.toISOString(), updatedAt: r.updatedAt.toISOString() }))}
         masterTags={masterTags}
+        pendingTags={pendingTags}
       />
     </div>
   );
