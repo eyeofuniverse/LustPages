@@ -438,7 +438,22 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
           style={{ background: "var(--card)", border: "1px solid var(--border)" }}
         >
           <label style={{ ...labelStyle, marginBottom: "10px" }}>Cover Image <FieldInfo text="Your story's main visual, shown in listing cards and at the top of the story page. Recommended: 800×1200px portrait, JPG or PNG." /></label>
-          <CoverImageUpload value={coverImage ?? ""} onChange={setCoverImage} signUrl="/api/author/upload/sign" />
+          {seriesId ? (
+            <div
+              className="flex items-start gap-2.5 p-3 rounded-xl"
+              style={{ background: "rgba(196,66,106,0.06)", border: "1px solid rgba(196,66,106,0.2)" }}
+            >
+              <BookOpen size={14} className="shrink-0 mt-0.5" style={{ color: "#c4426a" }} />
+              <p className="text-xs leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+                <span className="font-semibold" style={{ color: "#c4426a" }}>Series story</span> — this story uses the series cover image.
+                Manage the cover in{" "}
+                <span className="font-semibold" style={{ color: "var(--foreground)" }}>Series Settings</span>{" "}
+                on your author dashboard.
+              </p>
+            </div>
+          ) : (
+            <CoverImageUpload value={coverImage ?? ""} onChange={setCoverImage} signUrl="/api/author/upload/sign" />
+          )}
         </div>
 
         {/* Categories */}

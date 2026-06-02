@@ -31,6 +31,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const siteUrl = process.env.NEXTAUTH_URL ?? "https://lustpages.com";
 
+  const ogCover = story.seriesInfo?.coverImage ?? story.coverImage;
+
   return {
     title: story.title,
     description: story.excerpt,
@@ -51,8 +53,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       authors: [story.author.name],
       tags: getTags(story.tags),
       url: `${siteUrl}/stories/${slug}`,
-      ...(story.coverImage && {
-        images: [{ url: story.coverImage, width: 1200, height: 630 }],
+      ...(ogCover && {
+        images: [{ url: ogCover, width: 1200, height: 630 }],
       }),
     },
     twitter: {
@@ -76,6 +78,9 @@ export default async function StoryPage({ params }: Props) {
   const tags = getTags(story.tags);
   const tagNames = story.storyTags.map((t) => t.name);
   const categoryIds = story.categories.map((c) => c.id);
+
+  // Effective cover: series cover takes priority when story is in a series
+  const coverImage = story.seriesInfo?.coverImage ?? story.coverImage;
 
   // Series-aware access logic
   const seriesInfo = story.seriesInfo;
@@ -113,8 +118,8 @@ export default async function StoryPage({ params }: Props) {
     },
     headline: story.title,
     description: story.excerpt,
-    image: story.coverImage
-      ? [story.coverImage]
+    image: coverImage
+      ? [coverImage]
       : [`${siteUrl}/og-default.jpg`],
     author: {
       "@type": "Person",
@@ -177,14 +182,14 @@ export default async function StoryPage({ params }: Props) {
           style={{ background: "var(--card)", border: "1px solid var(--border)" }}
         >
           {/* Blurred atmospheric backdrop */}
-          {story.coverImage && (
+          {coverImage && (
             <>
               <div
                 className="absolute inset-0"
                 aria-hidden
                 style={{ filter: "blur(32px)", transform: "scale(1.15)", opacity: 0.2 }}
               >
-                <SafeImage src={story.coverImage} alt="" fill className="object-cover" />
+                <SafeImage src={coverImage} alt="" fill className="object-cover" />
               </div>
               <div
                 className="absolute inset-0"
@@ -196,7 +201,7 @@ export default async function StoryPage({ params }: Props) {
 
           <div className="relative flex flex-col sm:flex-row gap-6 sm:gap-8 p-6 sm:p-8">
             {/* Portrait cover — shown at natural proportions, no crop */}
-            {story.coverImage && (
+            {coverImage && (
               <div className="shrink-0 mx-auto sm:mx-0 sm:self-start">
                 <div
                   className="rounded-xl overflow-hidden relative"
@@ -207,7 +212,7 @@ export default async function StoryPage({ params }: Props) {
                   }}
                 >
                   <SafeImage
-                    src={story.coverImage}
+                    src={coverImage}
                     alt={story.title}
                     fill
                     priority

@@ -1,5 +1,11 @@
 import { prisma } from "./prisma";
 
+// Resolves effective cover image: series cover takes priority over story's own cover.
+function resolveStoryCover<T extends { coverImage: string | null; seriesInfo?: { coverImage: string | null } | null }>(s: T): T {
+  if (s.seriesInfo?.coverImage) return { ...s, coverImage: s.seriesInfo.coverImage } as T;
+  return s;
+}
+
 async function publishScheduledStories() {
   await prisma.story.updateMany({
     where: { status: "approved", published: false, scheduledAt: { lte: new Date() } },
@@ -84,6 +90,7 @@ export async function getStoryBySlug(slug: string) {
           id: true,
           name: true,
           slug: true,
+          coverImage: true,
           isPremium: true,
           coinPrice: true,
           freeChapters: true,
@@ -289,6 +296,7 @@ export async function getTrendingStories(take = 10): Promise<TrendingStoryEntry[
     ratingAvg: true, ratingCount: true,
     author: { select: { name: true, slug: true } },
     categories: { select: { id: true, name: true, slug: true, color: true } },
+    seriesInfo: { select: { coverImage: true } },
   } as const;
 
   if (candidateIds.length === 0) {
@@ -298,7 +306,7 @@ export async function getTrendingStories(take = 10): Promise<TrendingStoryEntry[
       take,
       select: STORY_SELECT,
     });
-    return fallback.map((s) => ({ ...s, recentViews: 0, recentLikes: 0 }));
+    return fallback.map((s) => ({ ...resolveStoryCover(s), recentViews: 0, recentLikes: 0 })) as TrendingStoryEntry[];
   }
 
   const stories = await prisma.story.findMany({
@@ -311,7 +319,7 @@ export async function getTrendingStories(take = 10): Promise<TrendingStoryEntry[
   const now = Date.now();
 
   const scored = stories.map((s) => ({
-    ...s,
+    ...resolveStoryCover(s),
     recentViews: viewMap.get(s.id) ?? 0,
     recentLikes: likeMap.get(s.id) ?? 0,
   }));
@@ -324,7 +332,7 @@ export async function getTrendingStories(take = 10): Promise<TrendingStoryEntry[
     return scoreB - scoreA;
   });
 
-  return scored.slice(0, take);
+  return scored.slice(0, take) as TrendingStoryEntry[];
 }
 
 export async function getAllTags() {
@@ -494,6 +502,7 @@ async function getTagBasedRecs(
       categories: { select: { id: true, name: true, slug: true, color: true } },
       author: { select: { name: true, slug: true } },
       _count: { select: { likes: true, comments: true } },
+      seriesInfo: { select: { coverImage: true } },
     },
     take: 60,
   });
@@ -509,7 +518,7 @@ async function getTagBasedRecs(
   });
 
   scored.sort((a, b) => b.score - a.score);
-  return scored.slice(0, take).map(({ story }) => story);
+  return scored.slice(0, take).map(({ story }) => resolveStoryCover(story));
 }
 
 async function getCollaborativeRecs(storyId: string, take: number) {
@@ -543,13 +552,16 @@ async function getCollaborativeRecs(storyId: string, take: number) {
       categories: { select: { id: true, name: true, slug: true, color: true } },
       author: { select: { name: true, slug: true } },
       _count: { select: { likes: true, comments: true } },
+      seriesInfo: { select: { coverImage: true } },
     },
   });
 
   if (stories.length < CF_MIN_RESULTS) return null;
 
   const rankMap = new Map(qualified.map((r, i) => [r.storyId, i]));
-  return stories.sort((a, b) => (rankMap.get(a.id) ?? 99) - (rankMap.get(b.id) ?? 99));
+  return stories
+    .sort((a, b) => (rankMap.get(a.id) ?? 99) - (rankMap.get(b.id) ?? 99))
+    .map(resolveStoryCover);
 }
 
 export async function getStoryRecommendations(
@@ -1050,6 +1062,7 @@ export async function getFeaturedPromotions(type: "story" | "series"): Promise<F
           ratingAvg: true, ratingCount: true,
           author: { select: { name: true, slug: true } },
           categories: { select: { id: true, name: true, slug: true, color: true } },
+          seriesInfo: { select: { coverImage: true } },
         },
       },
       series: {
@@ -1085,6 +1098,7 @@ export async function getFeaturedPromotions(type: "story" | "series"): Promise<F
               ratingAvg: true, ratingCount: true,
               author: { select: { name: true, slug: true } },
               categories: { select: { id: true, name: true, slug: true, color: true } },
+              seriesInfo: { select: { coverImage: true } },
             },
           },
           series: {
@@ -1099,14 +1113,20 @@ export async function getFeaturedPromotions(type: "story" | "series"): Promise<F
       })
     : [];
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const resolveEntry = (p: { story: any; series: any }) => ({
+    story: p.story ? resolveStoryCover(p.story) : null,
+    series: p.series,
+  });
+
   return [
     ...paid.map((p) => ({
       id: p.id, type: p.type as "story" | "series", isAdminPick: false,
-      expiresAt: p.expiresAt, story: p.story, series: p.series,
+      expiresAt: p.expiresAt, ...resolveEntry(p),
     })),
     ...adminPicks.map((p) => ({
       id: p.id, type: p.type as "story" | "series", isAdminPick: true,
-      expiresAt: null, story: p.story, series: p.series,
+      expiresAt: null, ...resolveEntry(p),
     })),
   ] as FeaturedEntry[];
 }
@@ -1245,13 +1265,14 @@ export type LatestStoryEntry = {
 
 export type LatestSeriesEntry = {
   id: string; name: string; slug: string;
+  coverImage: string | null;
   author: { name: string; slug: string };
   _count: { stories: number };
   stories: { coverImage: string | null; ratingAvg: number; ratingCount: number }[];
 };
 
 export async function getLatestStories(take = 10): Promise<LatestStoryEntry[]> {
-  return prisma.story.findMany({
+  const stories = await prisma.story.findMany({
     where: { published: true },
     orderBy: { createdAt: "desc" },
     take,
@@ -1260,8 +1281,10 @@ export async function getLatestStories(take = 10): Promise<LatestStoryEntry[]> {
       ratingAvg: true, ratingCount: true,
       author: { select: { name: true, slug: true } },
       categories: { select: { id: true, name: true, slug: true, color: true } },
+      seriesInfo: { select: { coverImage: true } },
     },
-  }) as Promise<LatestStoryEntry[]>;
+  });
+  return stories.map(resolveStoryCover) as LatestStoryEntry[];
 }
 
 export async function getLatestSeries(take = 10): Promise<LatestSeriesEntry[]> {
@@ -1288,6 +1311,7 @@ export async function getLatestSeries(take = 10): Promise<LatestSeriesEntry[]> {
     where: { id: { in: seriesIds } },
     select: {
       id: true, name: true, slug: true,
+      coverImage: true,
       author: { select: { name: true, slug: true } },
       _count: { select: { stories: { where: { published: true } } } },
       stories: {
@@ -1321,9 +1345,10 @@ export async function getPremiumStories(take = 20): Promise<PremiumEntry[]> {
       ratingAvg: true, ratingCount: true,
       author: { select: { name: true, slug: true } },
       categories: { select: { id: true, name: true, slug: true, color: true } },
+      seriesInfo: { select: { coverImage: true } },
     },
   });
-  return stories.map((s) => ({ ...s, coinPrice: s.coinPrice! }));
+  return stories.map((s) => ({ ...resolveStoryCover(s), coinPrice: s.coinPrice! })) as PremiumEntry[];
 }
 
 export type CategoryWithStories = {
@@ -1344,8 +1369,10 @@ export async function getCategoriesWithStories(): Promise<CategoryWithStories[]>
         take: 10,
         select: {
           id: true, title: true, slug: true, coverImage: true, readingTime: true, coinPrice: true,
+          ratingAvg: true, ratingCount: true,
           author: { select: { name: true, slug: true } },
           categories: { select: { id: true, name: true, slug: true, color: true } },
+          seriesInfo: { select: { coverImage: true } },
         },
       },
     },
@@ -1353,7 +1380,7 @@ export async function getCategoriesWithStories(): Promise<CategoryWithStories[]>
   return categories.map((c) => ({
     id: c.id, name: c.name, slug: c.slug, color: c.color,
     totalStories: c._count.stories,
-    stories: c.stories as LatestStoryEntry[],
+    stories: c.stories.map(resolveStoryCover) as LatestStoryEntry[],
   }));
 }
 
@@ -1766,6 +1793,7 @@ const COLLECTION_STORY_SELECT = {
       categories: { select: { id: true, name: true, slug: true, color: true } },
       author: { select: { name: true, slug: true } },
       _count: { select: { likes: true, comments: true } },
+      seriesInfo: { select: { coverImage: true } },
     },
   },
 } as const;
@@ -1789,7 +1817,7 @@ export async function getPublishedCollections() {
 }
 
 export async function getCollectionBySlug(slug: string) {
-  return prisma.collection.findUnique({
+  const result = await prisma.collection.findUnique({
     where: { slug, published: true },
     select: {
       id: true,
@@ -1806,6 +1834,15 @@ export async function getCollectionBySlug(slug: string) {
       },
     },
   });
+  if (!result) return null;
+  return {
+    ...result,
+    stories: result.stories.map((cs) => ({
+      ...cs,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      story: cs.story ? resolveStoryCover(cs.story as any) : null,
+    })),
+  };
 }
 
 export async function getAdminCollections() {
@@ -1862,6 +1899,7 @@ const STORY_AUTO_SELECT = {
   categories: { select: { id: true, name: true, slug: true, color: true } },
   author: { select: { name: true, slug: true } },
   _count: { select: { likes: true, comments: true } },
+  seriesInfo: { select: { coverImage: true } },
 } as const;
 
 // Wilson score lower bound — statistically robust quality ranking.
@@ -1885,6 +1923,12 @@ function risingStarScore(createdAt: Date, views: number, likeCount: number, comm
 
 // Auto-collections: computed from live data, not stored in DB
 export async function getAutoCollectionStories(type: string, limit = 20) {
+  const raw = await _getAutoCollectionStoriesRaw(type, limit);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return raw.map((s: any) => resolveStoryCover(s));
+}
+
+async function _getAutoCollectionStoriesRaw(type: string, limit = 20) {
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
@@ -2033,16 +2077,21 @@ export async function getCategoryCollectionStories(categorySlug: string, limit =
   });
   // Fallback: not enough rated stories — use engagement ranking instead
   if (candidates.length < 5) {
-    return prisma.story.findMany({
+    const fallback = await prisma.story.findMany({
       where: { published: true, categories: { some: { slug: categorySlug } } },
       orderBy: [{ views: "desc" }, { likes: { _count: "desc" } }],
       take: limit,
       select: STORY_AUTO_SELECT,
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return fallback.map((s: any) => resolveStoryCover(s));
   }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return candidates
     .sort((a, b) => wilsonScore(b.ratingAvg, b.ratingCount) - wilsonScore(a.ratingAvg, a.ratingCount))
-    .slice(0, limit);
+    .slice(0, limit)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map((s: any) => resolveStoryCover(s));
 }
 
 // ── Tag collections ──────────────────────────────────────────────────
