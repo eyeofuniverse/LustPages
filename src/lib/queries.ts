@@ -394,7 +394,11 @@ export async function getAdminTagRequests({ status }: { status?: string } = {}) 
 }
 
 export async function getPendingTagRequestsCount() {
-  return prisma.tagRequest.count({ where: { status: "pending" } });
+  const [requests, tags] = await Promise.all([
+    prisma.tagRequest.count({ where: { status: "pending" } }),
+    prisma.tag.count({ where: { isApproved: false } }),
+  ]);
+  return requests + tags;
 }
 
 export async function incrementViews(storyId: string) {
