@@ -56,6 +56,7 @@ export async function getPublishedStories({
     include: {
       categories: true,
       author: true,
+      storyTags: { select: { name: true } },
       _count: { select: { likes: true, comments: true, bookmarks: true } },
     },
     orderBy: sort === "top-rated" ? [{ ratingAvg: "desc" }, { ratingCount: "desc" }] : { createdAt: "desc" },
@@ -1468,6 +1469,7 @@ export async function getPremiumStoriesPaginated({ take = 15, skip = 0 }: { take
     include: {
       categories: true,
       author: true,
+      storyTags: { select: { name: true } },
       _count: { select: { likes: true, comments: true, bookmarks: true } },
     },
   });

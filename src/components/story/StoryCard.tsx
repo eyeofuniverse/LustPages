@@ -4,7 +4,7 @@ import Link from "next/link";
 import { SafeImage } from "@/components/ui/SafeImage";
 import { useRouter } from "next/navigation";
 import { Heart, MessageCircle, Clock, BookOpen, Star } from "lucide-react";
-import { formatDateShort, getTags } from "@/lib/utils";
+import { formatDateShort } from "@/lib/utils";
 
 interface StoryCardProps {
   story: {
@@ -15,7 +15,6 @@ interface StoryCardProps {
     coverImage: string | null;
     readingTime: number;
     views: number;
-    tags: string;
     createdAt: Date;
     series?: string | null;
     seriesId?: string | null;
@@ -31,7 +30,6 @@ interface StoryCardProps {
 
 export function StoryCard({ story, variant = "default", priority = false }: StoryCardProps & { priority?: boolean }) {
   const router = useRouter();
-  const tags = getTags(story.tags).slice(0, 3);
   const primaryCategory = story.categories[0];
   const primaryColor = primaryCategory?.color ?? "#c4426a";
 
