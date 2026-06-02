@@ -175,7 +175,7 @@ function StoryCard({ story }: { story: LatestStoryEntry }) {
 }
 
 function SeriesCard({ series }: { series: LatestSeriesEntry }) {
-  const cover = series.stories[0]?.coverImage ?? null;
+  const cover = series.coverImage ?? series.stories[0]?.coverImage ?? null;
   const seriesRating = computeSeriesRating(series.stories);
   const placeholderBg = "linear-gradient(160deg, rgba(6,182,212,0.4) 0%, rgba(6,182,212,0.1) 100%)";
 

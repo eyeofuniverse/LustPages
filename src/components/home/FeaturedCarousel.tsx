@@ -86,7 +86,7 @@ function BookCard({ entry, variant }: { entry: FeaturedEntry; variant: "story" |
 
   const title = isStory ? entry.story?.title : entry.series?.name;
   const author = isStory ? entry.story?.author : entry.series?.author;
-  const cover = isStory ? entry.story?.coverImage : (entry.series?.stories?.[0]?.coverImage ?? null);
+  const cover = isStory ? entry.story?.coverImage : (entry.series?.coverImage ?? entry.series?.stories?.[0]?.coverImage ?? null);
   const href = isStory
     ? `/stories/${entry.story?.slug}`
     : `/series/${entry.series?.slug}`;
