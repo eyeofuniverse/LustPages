@@ -68,36 +68,46 @@ export function AdminTagsClient({ initialTags }: Props) {
   async function handleAdd() {
     if (!addName.trim()) return;
     setAddLoading(true);
-    const res = await fetch("/api/admin/tags", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: addName.trim(), tier: addTier, description: addDesc || null }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setTags((prev) => [...prev, { ...data, _count: { stories: 0 }, aliases: [] }]);
-      setAddName(""); setAddTier(2); setAddDesc(""); setShowAdd(false);
-    } else {
-      alert(data.error ?? "Error creating tag");
+    try {
+      const res = await fetch("/api/admin/tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: addName.trim(), tier: addTier, description: addDesc || null }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setTags((prev) => [...prev, { ...data, _count: { stories: 0 }, aliases: [] }]);
+        setAddName(""); setAddTier(2); setAddDesc(""); setShowAdd(false);
+      } else {
+        alert(data.error ?? "Error creating tag");
+      }
+    } catch {
+      alert("Network error — please try again");
+    } finally {
+      setAddLoading(false);
     }
-    setAddLoading(false);
   }
 
   async function handleSave(id: string) {
     setSaving(id);
-    const res = await fetch(`/api/admin/tags/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: editName, tier: editTier, description: editDesc || null }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setTags((prev) => prev.map((t) => t.id === id ? { ...t, ...data, _count: t._count, aliases: t.aliases } : t));
-      setEditId(null);
-    } else {
-      alert(data.error ?? "Error saving");
+    try {
+      const res = await fetch(`/api/admin/tags/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editName, tier: editTier, description: editDesc || null }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setTags((prev) => prev.map((t) => t.id === id ? { ...t, ...data, _count: t._count, aliases: t.aliases } : t));
+        setEditId(null);
+      } else {
+        alert(data.error ?? "Error saving");
+      }
+    } catch {
+      alert("Network error — please try again");
+    } finally {
+      setSaving(null);
     }
-    setSaving(null);
   }
 
   async function handleDelete(id: string, name: string) {
@@ -152,20 +162,25 @@ export function AdminTagsClient({ initialTags }: Props) {
     const target = tags.find((t) => t.id === targetId);
     if (!confirm(`Merge "${tag.name}" into "${target?.name}"?\n\n"${tag.name}" becomes an alias of "${target?.name}". All ${tag._count.stories} stories are re-assigned. This cannot be undone.`)) return;
     setSaving(tag.id + "merge");
-    const res = await fetch(`/api/admin/tags/${tag.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "mergeInto", targetTagId: targetId }),
-    });
-    if (res.ok) {
-      setTags((prev) => prev.filter((t) => t.id !== tag.id));
-      setExpandedId(null);
-      setMergeTargetId((prev) => { const n = { ...prev }; delete n[tag.id]; return n; });
-    } else {
-      const d = await res.json();
-      alert(d.error ?? "Error merging tag");
+    try {
+      const res = await fetch(`/api/admin/tags/${tag.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "mergeInto", targetTagId: targetId }),
+      });
+      if (res.ok) {
+        setTags((prev) => prev.filter((t) => t.id !== tag.id));
+        setExpandedId(null);
+        setMergeTargetId((prev) => { const n = { ...prev }; delete n[tag.id]; return n; });
+      } else {
+        const d = await res.json();
+        alert(d.error ?? "Error merging tag");
+      }
+    } catch {
+      alert("Network error — please try again");
+    } finally {
+      setSaving(null);
     }
-    setSaving(null);
   }
 
   const inputStyle: React.CSSProperties = {

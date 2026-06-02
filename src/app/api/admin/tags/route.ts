@@ -23,8 +23,15 @@ export async function POST(req: Request) {
   const { name, tier, description, isApproved = true } = await req.json();
   if (!name?.trim() || !tier) return NextResponse.json({ error: "name and tier required" }, { status: 400 });
   const slug = slugifyTag(name);
-  const tag = await prisma.tag.create({ data: { name: name.trim(), slug, tier: Number(tier), description, isApproved } });
-  return NextResponse.json(tag, { status: 201 });
+  try {
+    const tag = await prisma.tag.create({ data: { name: name.trim(), slug, tier: Number(tier), description, isApproved } });
+    return NextResponse.json(tag, { status: 201 });
+  } catch (e: unknown) {
+    const code = (e as { code?: string })?.code;
+    if (code === "P2002") return NextResponse.json({ error: "A tag with that name already exists" }, { status: 409 });
+    console.error("POST /api/admin/tags", e);
+    return NextResponse.json({ error: "Failed to create tag" }, { status: 500 });
+  }
 }
 
 // One-time seed endpoint
