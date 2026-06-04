@@ -61,6 +61,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: "summary_large_image",
       title: story.title,
       description: story.excerpt,
+      ...(ogCover && { images: [ogCover] }),
     },
   };
 }
