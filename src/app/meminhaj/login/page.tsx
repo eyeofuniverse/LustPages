@@ -3,9 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Shield, Eye, EyeOff, AlertCircle, Mail, RefreshCw, CheckCircle } from "lucide-react";
+import { Shield, Eye, EyeOff, AlertCircle, Smartphone, CheckCircle, KeyRound } from "lucide-react";
 
-type Step = "credentials" | "otp";
+type Step = "credentials" | "totp";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -16,139 +16,131 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   // Step 2 state
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [challengeToken, setChallengeToken] = useState("");
+  const [code, setCode] = useState(["", "", "", "", "", ""]);
+  const codeRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [useBackupCode, setUseBackupCode] = useState(false);
+  const [backupInput, setBackupInput] = useState("");
 
   const [step, setStep] = useState<Step>("credentials");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
 
-  // Countdown timer for resend
   useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [resendCooldown]);
-
-  // Auto-focus first OTP box when step changes
-  useEffect(() => {
-    if (step === "otp") setTimeout(() => otpRefs.current[0]?.focus(), 80);
-  }, [step]);
+    if (step === "totp" && !useBackupCode) setTimeout(() => codeRefs.current[0]?.focus(), 80);
+  }, [step, useBackupCode]);
 
   async function handleCredentials(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    const res = await fetch("/api/auth/admin-otp/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const res = await fetch("/api/auth/admin-totp/pre-auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const data = await res.json();
-    setLoading(false);
+      const data = await res.json();
 
-    if (!res.ok) {
-      setError(data.error ?? "Failed to send OTP.");
-      return;
+      if (!res.ok) {
+        setError(data.error ?? "Invalid credentials.");
+        return;
+      }
+
+      if (!data.requireTotp) {
+        // TOTP not configured yet — sign in directly, then redirect to setup
+        const result = await signIn("credentials", {
+          email,
+          adminPreAuthToken: data.token,
+          redirect: false,
+        });
+        if (result?.error) { setError("Sign-in failed. Please try again."); return; }
+        router.push("/meminhaj/totp-setup");
+        router.refresh();
+        return;
+      }
+
+      setChallengeToken(data.challengeToken);
+      setStep("totp");
+    } catch {
+      setError("Network error — please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    setStep("otp");
-    setResendCooldown(60);
   }
 
-  function handleOtpChange(idx: number, value: string) {
+  function handleCodeChange(idx: number, value: string) {
     const char = value.replace(/\D/g, "").slice(-1);
-    const next = [...otp];
+    const next = [...code];
     next[idx] = char;
-    setOtp(next);
+    setCode(next);
     setError("");
-    if (char && idx < 5) otpRefs.current[idx + 1]?.focus();
+    if (char && idx < 5) codeRefs.current[idx + 1]?.focus();
   }
 
-  function handleOtpKeyDown(idx: number, e: React.KeyboardEvent) {
-    if (e.key === "Backspace" && !otp[idx] && idx > 0) {
-      otpRefs.current[idx - 1]?.focus();
-    }
+  function handleCodeKeyDown(idx: number, e: React.KeyboardEvent) {
+    if (e.key === "Backspace" && !code[idx] && idx > 0) codeRefs.current[idx - 1]?.focus();
   }
 
-  function handleOtpPaste(e: React.ClipboardEvent) {
+  function handleCodePaste(e: React.ClipboardEvent) {
     const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
     if (pasted.length === 6) {
-      setOtp(pasted.split(""));
-      otpRefs.current[5]?.focus();
+      setCode(pasted.split(""));
+      codeRefs.current[5]?.focus();
       e.preventDefault();
     }
   }
 
-  async function handleOtpSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const code = otp.join("");
-    if (code.length < 6) { setError("Enter the full 6-digit code."); return; }
-
+  async function submitTotp(codeStr: string) {
     setLoading(true);
     setError("");
+    try {
+      const verifyRes = await fetch("/api/auth/admin-totp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, challengeToken, code: codeStr }),
+      });
 
-    const verifyRes = await fetch("/api/auth/admin-otp/verify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, code }),
-    });
+      const verifyData = await verifyRes.json();
 
-    const verifyData = await verifyRes.json();
-
-    if (!verifyRes.ok) {
-      setLoading(false);
-      setError(verifyData.error ?? "Invalid code.");
-      if (verifyRes.status === 429) {
-        // Lockout — reset to credentials step
-        setTimeout(() => { setStep("credentials"); setOtp(["", "", "", "", "", ""]); }, 1500);
+      if (!verifyRes.ok) {
+        setError(verifyData.error ?? "Verification failed.");
+        if (verifyRes.status === 429) {
+          setTimeout(() => {
+            setStep("credentials");
+            setCode(["", "", "", "", "", ""]);
+            setBackupInput("");
+            setChallengeToken("");
+          }, 1500);
+        }
+        return;
       }
-      return;
+
+      const result = await signIn("credentials", {
+        email,
+        adminPreAuthToken: verifyData.token,
+        redirect: false,
+      });
+
+      if (result?.error) { setError("Sign-in failed. Please try again."); return; }
+
+      router.push("/meminhaj");
+      router.refresh();
+    } catch {
+      setError("Network error — please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    // OTP verified — sign in via pre-auth token
-    const result = await signIn("credentials", {
-      email,
-      adminPreAuthToken: verifyData.token,
-      redirect: false,
-    });
-
-    setLoading(false);
-
-    if (result?.error) {
-      setError("Sign-in failed. Please try again.");
-      return;
-    }
-
-    router.push("/meminhaj");
-    router.refresh();
   }
 
-  async function handleResend() {
-    if (resendCooldown > 0) return;
-    setLoading(true);
-    setError("");
-    setOtp(["", "", "", "", "", ""]);
-
-    const res = await fetch("/api/auth/admin-otp/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await res.json();
-    setLoading(false);
-
-    if (!res.ok) {
-      setError(data.error ?? "Failed to resend.");
-      return;
-    }
-
-    setResendCooldown(60);
-    setTimeout(() => otpRefs.current[0]?.focus(), 80);
+  async function handleTotpSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const codeStr = useBackupCode ? backupInput.trim() : code.join("");
+    if (!useBackupCode && codeStr.length < 6) { setError("Enter the full 6-digit code."); return; }
+    if (useBackupCode && !codeStr) { setError("Enter your backup code."); return; }
+    await submitTotp(codeStr);
   }
 
   return (
@@ -164,20 +156,18 @@ export default function AdminLoginPage() {
         <div className="text-center mb-8">
           <div
             className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-4"
-            style={{ background: "rgba(196,66,106,0.12)" }}
+            style={{ background: step === "totp" ? "rgba(99,102,241,0.12)" : "rgba(196,66,106,0.12)" }}
           >
-            {step === "otp" ? (
-              <Mail size={22} style={{ color: "#c4426a" }} />
-            ) : (
-              <Shield size={22} style={{ color: "#c4426a" }} />
-            )}
+            {step === "totp"
+              ? <Smartphone size={22} style={{ color: "#6366f1" }} />
+              : <Shield size={22} style={{ color: "#c4426a" }} />}
           </div>
           <h1 className="text-xl font-bold" style={{ color: "var(--foreground)" }}>
-            {step === "otp" ? "Check Your Email" : "Admin Access"}
+            {step === "totp" ? "Authenticator Code" : "Admin Access"}
           </h1>
           <p className="text-sm mt-1" style={{ color: "var(--muted-foreground)" }}>
-            {step === "otp"
-              ? `We sent a 6-digit code to ${email}`
+            {step === "totp"
+              ? "Enter the 6-digit code from your authenticator app"
               : "Restricted area — authorised personnel only"}
           </p>
         </div>
@@ -260,76 +250,98 @@ export default function AdminLoginPage() {
               className="w-full py-3 rounded-xl font-semibold text-white transition-all hover:opacity-90 disabled:opacity-60 active:scale-95"
               style={{ background: "#c4426a" }}
             >
-              {loading ? "Sending code…" : "Continue"}
+              {loading ? "Checking…" : "Continue"}
             </button>
           </form>
         )}
 
-        {/* Step 2: OTP */}
-        {step === "otp" && (
-          <form onSubmit={handleOtpSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium mb-3 text-center" style={{ color: "var(--foreground)" }}>
-                Enter verification code
-              </label>
-              <div className="flex gap-2 justify-center" onPaste={handleOtpPaste}>
-                {otp.map((digit, idx) => (
-                  <input
-                    key={idx}
-                    ref={(el) => { otpRefs.current[idx] = el; }}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleOtpChange(idx, e.target.value)}
-                    onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                    suppressHydrationWarning
-                    className="w-11 h-13 text-center text-xl font-bold rounded-xl"
-                    style={{
-                      background: digit ? "rgba(196,66,106,0.12)" : "var(--muted)",
-                      border: digit ? "2px solid #c4426a" : "1px solid var(--border)",
-                      color: "var(--foreground)",
-                      outline: "none",
-                      height: "52px",
-                    }}
-                  />
-                ))}
+        {/* Step 2: TOTP */}
+        {step === "totp" && (
+          <form onSubmit={handleTotpSubmit} className="space-y-5">
+            {!useBackupCode ? (
+              <div>
+                <label className="block text-sm font-medium mb-3 text-center" style={{ color: "var(--foreground)" }}>
+                  6-digit code
+                </label>
+                <div className="flex gap-2 justify-center" onPaste={handleCodePaste}>
+                  {code.map((digit, idx) => (
+                    <input
+                      key={idx}
+                      ref={(el) => { codeRefs.current[idx] = el; }}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleCodeChange(idx, e.target.value)}
+                      onKeyDown={(e) => handleCodeKeyDown(idx, e)}
+                      suppressHydrationWarning
+                      className="w-11 text-center text-xl font-bold rounded-xl"
+                      style={{
+                        height: 52,
+                        background: digit ? "rgba(99,102,241,0.12)" : "var(--muted)",
+                        border: digit ? "2px solid #6366f1" : "1px solid var(--border)",
+                        color: "var(--foreground)",
+                        outline: "none",
+                      }}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: "var(--foreground)" }}>
+                  Backup code
+                </label>
+                <input
+                  type="text"
+                  value={backupInput}
+                  onChange={(e) => { setBackupInput(e.target.value.toUpperCase()); setError(""); }}
+                  placeholder="XXXXX-XXXXX"
+                  autoFocus
+                  suppressHydrationWarning
+                  className="w-full px-4 py-2.5 rounded-xl text-sm font-mono tracking-widest text-center"
+                  style={{
+                    background: "var(--muted)",
+                    border: "1px solid var(--border)",
+                    color: "var(--foreground)",
+                    outline: "none",
+                  }}
+                />
+              </div>
+            )}
 
             <button
               type="submit"
-              disabled={loading || otp.join("").length < 6}
+              disabled={loading || (!useBackupCode && code.join("").length < 6) || (useBackupCode && !backupInput.trim())}
               suppressHydrationWarning
               className="w-full py-3 rounded-xl font-semibold text-white transition-all hover:opacity-90 disabled:opacity-60 active:scale-95 flex items-center justify-center gap-2"
-              style={{ background: "#c4426a" }}
+              style={{ background: "#6366f1" }}
             >
-              {loading ? (
-                "Verifying…"
-              ) : (
-                <>
-                  <CheckCircle size={16} />
-                  Verify & Sign In
-                </>
-              )}
+              {loading ? "Verifying…" : <><CheckCircle size={16} /> Verify & Sign In</>}
             </button>
 
             <div className="flex items-center justify-between text-xs" style={{ color: "var(--muted-foreground)" }}>
               <button
                 type="button"
-                onClick={() => { setStep("credentials"); setOtp(["", "", "", "", "", ""]); setError(""); }}
+                onClick={() => {
+                  setStep("credentials");
+                  setCode(["", "", "", "", "", ""]);
+                  setBackupInput("");
+                  setChallengeToken("");
+                  setUseBackupCode(false);
+                  setError("");
+                }}
                 className="hover:opacity-75 transition-opacity"
               >
-                ← Use different account
+                ← Back
               </button>
               <button
                 type="button"
-                onClick={handleResend}
-                disabled={resendCooldown > 0 || loading}
-                className="flex items-center gap-1 hover:opacity-75 transition-opacity disabled:opacity-40"
+                onClick={() => { setUseBackupCode(!useBackupCode); setError(""); setCode(["", "", "", "", "", ""]); setBackupInput(""); }}
+                className="flex items-center gap-1 hover:opacity-75 transition-opacity"
               >
-                <RefreshCw size={11} />
-                {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
+                <KeyRound size={11} />
+                {useBackupCode ? "Use authenticator app" : "Use backup code"}
               </button>
             </div>
           </form>

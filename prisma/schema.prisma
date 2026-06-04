@@ -28,6 +28,7 @@ model User {
   comments        Comment[]
   author          Author?
   adminProfile    AdminProfile?
+  adminTotp       AdminTotp?
   coinTransactions  CoinTransaction[]
   storyUnlocks      StoryUnlock[]
   seriesUnlocks     SeriesUnlock[]
@@ -501,6 +502,27 @@ model AdminPasswordOtp {
   id        String   @id @default(cuid())
   email     String
   code      String
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+model AdminTotp {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  secret      String
+  backupCodes String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AdminTotpChallenge {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
   attempts  Int      @default(0)
   expiresAt DateTime
   createdAt DateTime @default(now())
