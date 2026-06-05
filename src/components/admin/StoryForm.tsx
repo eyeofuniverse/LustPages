@@ -9,6 +9,7 @@ import { TierTagSelector, type TagEntry, type CustomTag } from "@/components/aut
 import {
   Save, ChevronDown, ChevronUp, Star, MessageSquare,
   Lock, Search, BookOpen, Eye, Heart, Bookmark, Plus, X,
+  Wand2, Loader2,
 } from "lucide-react";
 import { FieldInfo } from "@/components/ui/FieldInfo";
 import { calculateReadingTime } from "@/lib/utils";
@@ -147,6 +148,8 @@ export function StoryForm({ categories, authors, availableTags, initialData }: S
   const [featured, setFeatured] = useState(initialData?.featured ?? false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(initialData?.tagIds ?? []);
   const [customTags, setCustomTags] = useState<CustomTag[]>(initialData?.customTags ?? []);
+  const [autoTagLoading, setAutoTagLoading] = useState(false);
+  const [autoTagCount, setAutoTagCount] = useState<number | null>(null);
   const [localCategories, setLocalCategories] = useState(categories);
   const [categoryIds, setCategoryIds] = useState<string[]>(
     initialData?.categoryIds ?? (categories[0] ? [categories[0].id] : [])
@@ -233,6 +236,25 @@ export function StoryForm({ categories, authors, availableTags, initialData }: S
   function handleTitleChange(v: string) {
     setTitle(v);
     if (!isEditing) setSlug(generateSlug(v));
+  }
+
+  async function handleAutoTags() {
+    setAutoTagLoading(true);
+    setAutoTagCount(null);
+    try {
+      const res = await fetch("/api/admin/stories/auto-tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, content }),
+      });
+      if (!res.ok) return;
+      const { matched } = await res.json() as { matched: TagEntry[] };
+      const newIds = matched.map((t) => t.id).filter((id) => !selectedTagIds.includes(id));
+      setSelectedTagIds((prev) => [...prev, ...newIds]);
+      setAutoTagCount(newIds.length);
+    } finally {
+      setAutoTagLoading(false);
+    }
   }
 
   function toggleCategory(id: string) {
@@ -707,7 +729,29 @@ export function StoryForm({ categories, authors, availableTags, initialData }: S
               </select>
             </div>
             <div>
-              <label style={{ ...labelStyle, marginBottom: "0.625rem" }}>Tags <FieldInfo text="Search the tag library, or type a new tag name to add it as pending review." /></label>
+              <div className="flex items-center justify-between mb-2.5">
+                <label style={{ ...labelStyle, marginBottom: 0 }}>
+                  Tags <FieldInfo text="Search the tag library, or type a new tag name to add it as pending review." />
+                </label>
+                <button
+                  type="button"
+                  onClick={handleAutoTags}
+                  disabled={autoTagLoading || (!title.trim() && !content.trim())}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-40"
+                  style={{ background: "rgba(99,102,241,0.1)", color: "#6366f1", border: "1px solid rgba(99,102,241,0.25)" }}
+                >
+                  {autoTagLoading
+                    ? <><Loader2 size={11} className="animate-spin" /> Scanning…</>
+                    : <><Wand2 size={11} /> Auto-fill from content</>}
+                </button>
+              </div>
+              {autoTagCount !== null && (
+                <p className="text-xs mb-2" style={{ color: autoTagCount > 0 ? "#6366f1" : "var(--muted-foreground)" }}>
+                  {autoTagCount > 0
+                    ? `✓ Added ${autoTagCount} tag${autoTagCount === 1 ? "" : "s"} from content`
+                    : "No new matching tags found in content"}
+                </p>
+              )}
               <TierTagSelector
                 availableTags={availableTags}
                 value={selectedTagIds}
