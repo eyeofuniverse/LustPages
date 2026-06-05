@@ -5,6 +5,15 @@ import { prisma } from "@/lib/prisma";
 
 const BASE = "https://lustpages.com";
 
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -25,7 +34,7 @@ export async function POST(
   const { id } = await params;
   const story = await prisma.story.findUnique({
     where: { id },
-    select: { slug: true, published: true },
+    select: { slug: true, published: true, title: true, excerpt: true, content: true },
   });
 
   if (!story) return NextResponse.json({ error: "Story not found." }, { status: 404 });
@@ -38,6 +47,27 @@ export async function POST(
 
   const storyUrl = `${BASE}/stories/${story.slug}`;
 
+  // Fetch published page content from the live URL so Gemini receives what
+  // readers see, not raw DB fields. Falls back to DB content if fetch fails.
+  let storyText = "";
+  try {
+    const pageRes = await fetch(storyUrl, {
+      headers: { "User-Agent": "LustPages-AdminBot/1.0" },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (pageRes.ok) {
+      const html = await pageRes.text();
+      storyText = stripHtml(html).slice(0, 8000);
+    }
+  } catch {
+    // fall through to DB fallback
+  }
+
+  if (!storyText) {
+    // Fallback: use DB content directly (same text, just not fetched via HTTP)
+    storyText = `${story.title}\n\n${story.excerpt}\n\n${stripHtml(story.content ?? "")}`.slice(0, 8000);
+  }
+
   const [categories, tags] = await Promise.all([
     prisma.category.findMany({ select: { id: true, name: true } }),
     prisma.tag.findMany({
@@ -49,9 +79,12 @@ export async function POST(
 
   const prompt = `You are an expert SEO content tagger for LustPages, an adult fiction website.
 
-Visit and fully read this published story: ${storyUrl}
+Story URL: ${storyUrl}
 
-Based on what you read, select the most accurate and SEO-optimized categories and tags from the lists below.
+Story content:
+${storyText}
+
+Based on the story above, select the most accurate and SEO-optimized categories and tags from the lists below.
 
 AVAILABLE CATEGORIES (select 1–3 best fits):
 ${JSON.stringify(categories)}
@@ -70,44 +103,37 @@ SEO RULES — STRICTLY FOLLOW:
 1. PREFER MID-TAIL keywords (2–3 word phrases, e.g. "forbidden office romance", "boss employee affair") over single-word generic tags
 2. PREFER LONG-TAIL keywords (3–5 word phrases, e.g. "enemies to lovers workplace romance", "taboo stepfamily forbidden desire") — these rank faster and attract intent-driven readers
 3. Pick tags that match how real readers search Google for adult fiction — think search intent, not just topic labels
-4. For newTagSuggestions: ONLY suggest mid-tail or long-tail keyword phrases with genuine search demand. Format them as natural search terms people actually type. Do NOT suggest vague single words.
-5. Specificity beats genericness — a niche tag that perfectly describes the story is worth more than a broad tag that loosely fits
+4. For newTagSuggestions: ONLY suggest mid-tail or long-tail keyword phrases with genuine search demand. Do NOT suggest vague single words.
+5. Specificity beats genericness — a niche tag that perfectly describes the story outranks a broad tag that loosely fits
 
-Return your answer as a JSON object inside a markdown code block:
-\`\`\`json
-{"suggestedCategoryIds":["..."],"suggestedTagIds":["..."],"newTagSuggestions":[{"name":"...","tier":2,"reason":"why this phrase has search demand"}]}
-\`\`\``;
+Return ONLY a valid JSON object, nothing else:
+{"suggestedCategoryIds":["..."],"suggestedTagIds":["..."],"newTagSuggestions":[{"name":"...","tier":2,"reason":"why this phrase has search demand"}]}`;
 
   try {
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt,
-      // urlContext lets Gemini fetch and read the live story page itself.
-      // responseMimeType is intentionally omitted — it conflicts with tool-use responses.
       config: {
-        tools: [{ urlContext: {} }],
+        responseMimeType: "application/json",
       },
     });
 
     const raw = response.text ?? "";
-    console.log("[ai-suggest] raw response length:", raw.length);
-    console.log("[ai-suggest] raw response preview:", raw.slice(0, 500));
 
     if (!raw.trim()) {
       return NextResponse.json(
-        { error: "Gemini returned an empty response. The story URL may not be publicly accessible or the model was blocked." },
+        { error: "Gemini returned an empty response. Check that GEMINI_API_KEY is valid." },
         { status: 500 }
       );
     }
 
-    // Try code fence first, then bare JSON object, then full raw
+    // Extract JSON — code fence first, then bare object, then full raw
     let jsonStr = raw.trim();
     const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (fenceMatch) {
       jsonStr = fenceMatch[1].trim();
     } else {
-      // Find the first { ... } block in the response
       const objMatch = raw.match(/\{[\s\S]*\}/);
       if (objMatch) jsonStr = objMatch[0].trim();
     }
@@ -123,7 +149,7 @@ Return your answer as a JSON object inside a markdown code block:
     } catch {
       console.error("[ai-suggest] JSON parse failed. Raw:\n", raw);
       return NextResponse.json(
-        { error: `Gemini response was not valid JSON. Raw output: ${raw.slice(0, 300)}` },
+        { error: `Gemini response was not valid JSON: ${raw.slice(0, 300)}` },
         { status: 500 }
       );
     }
@@ -141,7 +167,7 @@ Return your answer as a JSON object inside a markdown code block:
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error("[ai-suggest] outer error:", message);
+    console.error("[ai-suggest] error:", message);
     return NextResponse.json(
       { error: `AI analysis failed: ${message}` },
       { status: 500 }
