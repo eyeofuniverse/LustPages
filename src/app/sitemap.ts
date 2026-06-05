@@ -6,6 +6,8 @@ import {
   makeTagCollectionSlug,
 } from "@/lib/collections";
 
+export const revalidate = 3600; // regenerate at most once per hour
+
 const BASE = "https://lustpages.com";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
