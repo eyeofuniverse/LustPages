@@ -73,23 +73,29 @@ SEO RULES — STRICTLY FOLLOW:
 4. For newTagSuggestions: ONLY suggest mid-tail or long-tail keyword phrases with genuine search demand. Format them as natural search terms people actually type. Do NOT suggest vague single words.
 5. Specificity beats genericness — a niche tag that perfectly describes the story is worth more than a broad tag that loosely fits
 
-Return ONLY valid JSON, no markdown, no explanation:
-{"suggestedCategoryIds":["..."],"suggestedTagIds":["..."],"newTagSuggestions":[{"name":"...","tier":2,"reason":"why this phrase has search demand"}]}`;
+Return your answer as a JSON object inside a markdown code block:
+\`\`\`json
+{"suggestedCategoryIds":["..."],"suggestedTagIds":["..."],"newTagSuggestions":[{"name":"...","tier":2,"reason":"why this phrase has search demand"}]}
+\`\`\``;
 
   try {
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: "gemini-2.0-flash",
       contents: prompt,
+      // urlContext lets Gemini fetch and read the live story page itself.
+      // responseMimeType is intentionally omitted — it conflicts with tool-use responses.
       config: {
         tools: [{ urlContext: {} }],
-        responseMimeType: "application/json",
       },
     });
 
     const raw = response.text ?? "";
-    const clean = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
-    const parsed = JSON.parse(clean) as {
+    // Extract JSON from a code fence if present, otherwise parse as-is
+    const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+    const jsonStr = fenceMatch ? fenceMatch[1].trim() : raw.trim();
+
+    const parsed = JSON.parse(jsonStr) as {
       suggestedCategoryIds: string[];
       suggestedTagIds: string[];
       newTagSuggestions: { name: string; tier: number; reason: string }[];
@@ -107,9 +113,10 @@ Return ONLY valid JSON, no markdown, no explanation:
       ),
     });
   } catch (err) {
-    console.error("[ai-suggest]", err);
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[ai-suggest]", message);
     return NextResponse.json(
-      { error: "AI analysis failed. Ensure GEMINI_API_KEY is valid and the story URL is publicly accessible." },
+      { error: `AI analysis failed: ${message}` },
       { status: 500 }
     );
   }
