@@ -278,7 +278,10 @@ export function StoryForm({ categories, authors, availableTags, initialData }: S
     try {
       const res = await fetch(`/api/admin/stories/${initialData.id}/ai-suggest`, { method: "POST" });
       const data = await res.json() as AiSuggestions & { error?: string };
-      if (!res.ok) { setAiError(data.error ?? "AI analysis failed."); return; }
+      if (!res.ok) {
+        setAiError(data.error ?? "AI analysis failed.");
+        return;
+      }
       setAiSuggestions(data);
       setAiSelCategoryIds(data.suggestedCategoryIds);
       setAiSelTagIds(data.suggestedTagIds);
@@ -1016,7 +1019,7 @@ export function StoryForm({ categories, authors, availableTags, initialData }: S
               {!aiSuggestions ? (
                 <>
                   <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                    Analyze story content and get AI-suggested categories, tags, and new SEO tag ideas.
+                    Gemini reads the live published story URL and suggests categories, tags, and long-tail SEO keyword tags.
                   </p>
                   {aiError && (
                     <p className="text-xs" style={{ color: "#ef4444" }}>{aiError}</p>
