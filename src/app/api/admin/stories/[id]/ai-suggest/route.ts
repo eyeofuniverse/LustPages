@@ -1,16 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
-function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+const BASE = "https://lustpages.com";
 
 export async function POST(
   _req: NextRequest,
@@ -24,7 +17,7 @@ export async function POST(
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
-      { error: "GEMINI_API_KEY is not set in environment variables." },
+      { error: "GEMINI_API_KEY is not configured in environment variables." },
       { status: 500 }
     );
   }
@@ -32,9 +25,18 @@ export async function POST(
   const { id } = await params;
   const story = await prisma.story.findUnique({
     where: { id },
-    select: { title: true, excerpt: true, content: true },
+    select: { slug: true, published: true },
   });
+
   if (!story) return NextResponse.json({ error: "Story not found." }, { status: 404 });
+  if (!story.published) {
+    return NextResponse.json(
+      { error: "Story must be published before AI tagging. Publish it first, then run the AI Tagger." },
+      { status: 400 }
+    );
+  }
+
+  const storyUrl = `${BASE}/stories/${story.slug}`;
 
   const [categories, tags] = await Promise.all([
     prisma.category.findMany({ select: { id: true, name: true } }),
@@ -45,46 +47,47 @@ export async function POST(
     }),
   ]);
 
-  const plainContent = stripHtml(story.content ?? "").slice(0, 4000);
+  const prompt = `You are an expert SEO content tagger for LustPages, an adult fiction website.
 
-  const prompt = `You are an expert content tagger for LustPages, an adult fiction website.
-Your job: assign accurate, SEO-optimized categories and tags to a story.
+Visit and fully read this published story: ${storyUrl}
 
-STORY TITLE: ${story.title}
-STORY EXCERPT: ${story.excerpt}
-STORY CONTENT (opening excerpt): ${plainContent}
+Based on what you read, select the most accurate and SEO-optimized categories and tags from the lists below.
 
-AVAILABLE CATEGORIES (pick 1–3 most fitting):
+AVAILABLE CATEGORIES (select 1–3 best fits):
 ${JSON.stringify(categories)}
 
 AVAILABLE TAGS:
-Tier 1 — Subgenre (broad genre, e.g. Dark Romance, Contemporary):
+Tier 1 — Subgenre (broad genre classification):
 ${JSON.stringify(tags.filter(t => t.tier === 1).map(t => ({ id: t.id, name: t.name })))}
 
-Tier 2 — Tropes & Hooks (relationship dynamics, e.g. Enemies to Lovers, Age Gap):
+Tier 2 — Tropes & Hooks (relationship dynamics, story hooks):
 ${JSON.stringify(tags.filter(t => t.tier === 2).map(t => ({ id: t.id, name: t.name })))}
 
-Tier 3 — Content & Kink (explicit descriptors, e.g. BDSM, Public Sex):
+Tier 3 — Content & Kink (explicit content descriptors):
 ${JSON.stringify(tags.filter(t => t.tier === 3).map(t => ({ id: t.id, name: t.name })))}
 
-RULES:
-- Choose 1–3 categories that genuinely fit the story's genre
-- Choose 3–8 tags across tiers. Prioritize tags readers actually search for (high SEO value)
-- In newTagSuggestions include ONLY tags that are missing from the lists above AND have clear SEO search demand for adult fiction. Keep it to 0–4 max.
-- New tag names must be concise (1–4 words), follow the tier logic, and be reusable across stories
+SEO RULES — STRICTLY FOLLOW:
+1. PREFER MID-TAIL keywords (2–3 word phrases, e.g. "forbidden office romance", "boss employee affair") over single-word generic tags
+2. PREFER LONG-TAIL keywords (3–5 word phrases, e.g. "enemies to lovers workplace romance", "taboo stepfamily forbidden desire") — these rank faster and attract intent-driven readers
+3. Pick tags that match how real readers search Google for adult fiction — think search intent, not just topic labels
+4. For newTagSuggestions: ONLY suggest mid-tail or long-tail keyword phrases with genuine search demand. Format them as natural search terms people actually type. Do NOT suggest vague single words.
+5. Specificity beats genericness — a niche tag that perfectly describes the story is worth more than a broad tag that loosely fits
 
-Return ONLY valid JSON, no markdown, no code fences:
-{"suggestedCategoryIds":["..."],"suggestedTagIds":["..."],"newTagSuggestions":[{"name":"...","tier":2,"reason":"..."}]}`;
+Return ONLY valid JSON, no markdown, no explanation:
+{"suggestedCategoryIds":["..."],"suggestedTagIds":["..."],"newTagSuggestions":[{"name":"...","tier":2,"reason":"why this phrase has search demand"}]}`;
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
-      generationConfig: { responseMimeType: "application/json" },
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: prompt,
+      config: {
+        tools: [{ urlContext: {} }],
+        responseMimeType: "application/json",
+      },
     });
 
-    const result = await model.generateContent(prompt);
-    const raw = result.response.text().trim();
+    const raw = response.text ?? "";
     const clean = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
     const parsed = JSON.parse(clean) as {
       suggestedCategoryIds: string[];
@@ -92,7 +95,6 @@ Return ONLY valid JSON, no markdown, no code fences:
       newTagSuggestions: { name: string; tier: number; reason: string }[];
     };
 
-    // Validate IDs exist before returning
     const validCategoryIds = new Set(categories.map(c => c.id));
     const validTagIds = new Set(tags.map(t => t.id));
 
@@ -100,13 +102,14 @@ Return ONLY valid JSON, no markdown, no code fences:
       suggestedCategoryIds: (parsed.suggestedCategoryIds ?? []).filter(id => validCategoryIds.has(id)),
       suggestedTagIds: (parsed.suggestedTagIds ?? []).filter(id => validTagIds.has(id)),
       newTagSuggestions: (parsed.newTagSuggestions ?? []).filter(
-        t => typeof t.name === "string" && [1, 2, 3].includes(t.tier)
+        (t: { name: string; tier: number }) =>
+          typeof t.name === "string" && t.name.trim().length > 0 && [1, 2, 3].includes(t.tier)
       ),
     });
   } catch (err) {
     console.error("[ai-suggest]", err);
     return NextResponse.json(
-      { error: "AI analysis failed. Check your GEMINI_API_KEY and try again." },
+      { error: "AI analysis failed. Ensure GEMINI_API_KEY is valid and the story URL is publicly accessible." },
       { status: 500 }
     );
   }
