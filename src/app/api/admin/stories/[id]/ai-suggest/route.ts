@@ -81,7 +81,7 @@ Return your answer as a JSON object inside a markdown code block:
   try {
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.0-flash-001",
       contents: prompt,
       // urlContext lets Gemini fetch and read the live story page itself.
       // responseMimeType is intentionally omitted — it conflicts with tool-use responses.
