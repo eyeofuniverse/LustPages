@@ -91,15 +91,42 @@ Return your answer as a JSON object inside a markdown code block:
     });
 
     const raw = response.text ?? "";
-    // Extract JSON from a code fence if present, otherwise parse as-is
-    const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
-    const jsonStr = fenceMatch ? fenceMatch[1].trim() : raw.trim();
+    console.log("[ai-suggest] raw response length:", raw.length);
+    console.log("[ai-suggest] raw response preview:", raw.slice(0, 500));
 
-    const parsed = JSON.parse(jsonStr) as {
+    if (!raw.trim()) {
+      return NextResponse.json(
+        { error: "Gemini returned an empty response. The story URL may not be publicly accessible or the model was blocked." },
+        { status: 500 }
+      );
+    }
+
+    // Try code fence first, then bare JSON object, then full raw
+    let jsonStr = raw.trim();
+    const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (fenceMatch) {
+      jsonStr = fenceMatch[1].trim();
+    } else {
+      // Find the first { ... } block in the response
+      const objMatch = raw.match(/\{[\s\S]*\}/);
+      if (objMatch) jsonStr = objMatch[0].trim();
+    }
+
+    let parsed: {
       suggestedCategoryIds: string[];
       suggestedTagIds: string[];
       newTagSuggestions: { name: string; tier: number; reason: string }[];
     };
+
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch {
+      console.error("[ai-suggest] JSON parse failed. Raw:\n", raw);
+      return NextResponse.json(
+        { error: `Gemini response was not valid JSON. Raw output: ${raw.slice(0, 300)}` },
+        { status: 500 }
+      );
+    }
 
     const validCategoryIds = new Set(categories.map(c => c.id));
     const validTagIds = new Set(tags.map(t => t.id));
@@ -114,7 +141,7 @@ Return your answer as a JSON object inside a markdown code block:
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error("[ai-suggest]", message);
+    console.error("[ai-suggest] outer error:", message);
     return NextResponse.json(
       { error: `AI analysis failed: ${message}` },
       { status: 500 }
