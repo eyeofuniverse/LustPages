@@ -9,7 +9,7 @@ import { TierTagSelector, type TagEntry, type CustomTag } from "@/components/aut
 import {
   Save, ChevronDown, ChevronUp, Star, MessageSquare,
   Lock, Search, BookOpen, Eye, Heart, Bookmark, Plus, X,
-  Wand2, Loader2,
+  Wand2, Loader2, Sparkles, Check,
 } from "lucide-react";
 import { FieldInfo } from "@/components/ui/FieldInfo";
 import { calculateReadingTime } from "@/lib/utils";
@@ -150,6 +150,19 @@ export function StoryForm({ categories, authors, availableTags, initialData }: S
   const [customTags, setCustomTags] = useState<CustomTag[]>(initialData?.customTags ?? []);
   const [autoTagLoading, setAutoTagLoading] = useState(false);
   const [autoTagCount, setAutoTagCount] = useState<number | null>(null);
+
+  // AI Tagger state
+  type AiSuggestions = {
+    suggestedCategoryIds: string[];
+    suggestedTagIds: string[];
+    newTagSuggestions: { name: string; tier: number; reason: string }[];
+  };
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [aiSuggestions, setAiSuggestions] = useState<AiSuggestions | null>(null);
+  const [aiSelCategoryIds, setAiSelCategoryIds] = useState<string[]>([]);
+  const [aiSelTagIds, setAiSelTagIds] = useState<string[]>([]);
+  const [aiSelNewTags, setAiSelNewTags] = useState<{ name: string; tier: number }[]>([]);
   const [localCategories, setLocalCategories] = useState(categories);
   const [categoryIds, setCategoryIds] = useState<string[]>(
     initialData?.categoryIds ?? (categories[0] ? [categories[0].id] : [])
@@ -255,6 +268,40 @@ export function StoryForm({ categories, authors, availableTags, initialData }: S
     } finally {
       setAutoTagLoading(false);
     }
+  }
+
+  async function handleAiSuggest() {
+    if (!initialData?.id) return;
+    setAiLoading(true);
+    setAiError("");
+    setAiSuggestions(null);
+    try {
+      const res = await fetch(`/api/admin/stories/${initialData.id}/ai-suggest`, { method: "POST" });
+      const data = await res.json() as AiSuggestions & { error?: string };
+      if (!res.ok) { setAiError(data.error ?? "AI analysis failed."); return; }
+      setAiSuggestions(data);
+      setAiSelCategoryIds(data.suggestedCategoryIds);
+      setAiSelTagIds(data.suggestedTagIds);
+      setAiSelNewTags([]);
+    } catch {
+      setAiError("Network error — please try again.");
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  function applyAiSuggestions() {
+    if (!aiSuggestions) return;
+    setCategoryIds(prev => [...new Set([...prev, ...aiSelCategoryIds])]);
+    setSelectedTagIds(prev => [...new Set([...prev, ...aiSelTagIds])]);
+    setCustomTags(prev => {
+      const toAdd = aiSelNewTags.filter(
+        nt => !prev.some(t => t.name.toLowerCase() === nt.name.toLowerCase())
+      );
+      return [...prev, ...toAdd];
+    });
+    setAiSuggestions(null);
+    setAiError("");
   }
 
   function toggleCategory(id: string) {
@@ -951,6 +998,165 @@ export function StoryForm({ categories, authors, availableTags, initialData }: S
                 ~{initialData.readingTime} min read
               </p>
             </Card>
+          )}
+
+          {/* AI Tagger — only when editing a saved story */}
+          {isEditing && initialData?.id && (
+            <div className="rounded-2xl p-5 space-y-4" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: "var(--foreground)" }}>
+                  <Sparkles size={15} style={{ color: "#6366f1" }} />
+                  AI Tagger
+                </h3>
+                <span className="text-[10px] px-1.5 py-0.5 rounded font-bold tracking-wide" style={{ background: "rgba(99,102,241,0.12)", color: "#6366f1" }}>
+                  Gemini
+                </span>
+              </div>
+
+              {!aiSuggestions ? (
+                <>
+                  <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+                    Analyze story content and get AI-suggested categories, tags, and new SEO tag ideas.
+                  </p>
+                  {aiError && (
+                    <p className="text-xs" style={{ color: "#ef4444" }}>{aiError}</p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleAiSuggest}
+                    disabled={aiLoading}
+                    className="w-full py-2.5 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
+                    style={{ background: "#6366f1" }}
+                  >
+                    {aiLoading
+                      ? <><Loader2 size={14} className="animate-spin" /> Analyzing…</>
+                      : <><Sparkles size={14} /> Analyze Story</>}
+                  </button>
+                </>
+              ) : (
+                <div className="space-y-4">
+                  {/* Suggested categories */}
+                  {aiSuggestions.suggestedCategoryIds.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold mb-2" style={{ color: "var(--foreground)" }}>Suggested Categories</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {aiSuggestions.suggestedCategoryIds.map(cid => {
+                          const cat = localCategories.find(c => c.id === cid);
+                          if (!cat) return null;
+                          const sel = aiSelCategoryIds.includes(cid);
+                          return (
+                            <button
+                              key={cid}
+                              type="button"
+                              onClick={() => setAiSelCategoryIds(prev => sel ? prev.filter(x => x !== cid) : [...prev, cid])}
+                              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all"
+                              style={{
+                                background: sel ? "rgba(196,66,106,0.12)" : "var(--muted)",
+                                color: sel ? "#c4426a" : "var(--muted-foreground)",
+                                border: `1px solid ${sel ? "rgba(196,66,106,0.4)" : "var(--border)"}`,
+                              }}
+                            >
+                              {sel && <Check size={10} />}
+                              {cat.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Suggested existing tags */}
+                  {aiSuggestions.suggestedTagIds.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold mb-2" style={{ color: "var(--foreground)" }}>Suggested Tags</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {aiSuggestions.suggestedTagIds.map(tid => {
+                          const tag = availableTags.find(t => t.id === tid);
+                          if (!tag) return null;
+                          const sel = aiSelTagIds.includes(tid);
+                          const tColors: Record<number, string> = { 1: "#6366f1", 2: "#c4426a", 3: "#f59e0b" };
+                          const color = tColors[tag.tier] ?? "#c4426a";
+                          return (
+                            <button
+                              key={tid}
+                              type="button"
+                              onClick={() => setAiSelTagIds(prev => sel ? prev.filter(x => x !== tid) : [...prev, tid])}
+                              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all"
+                              style={{
+                                background: sel ? `${color}18` : "var(--muted)",
+                                color: sel ? color : "var(--muted-foreground)",
+                                border: `1px solid ${sel ? `${color}50` : "var(--border)"}`,
+                              }}
+                            >
+                              {sel && <Check size={10} />}
+                              {tag.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* New tag suggestions */}
+                  {aiSuggestions.newTagSuggestions.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold mb-2" style={{ color: "var(--foreground)" }}>New Tag Ideas</p>
+                      <div className="space-y-1.5">
+                        {aiSuggestions.newTagSuggestions.map((nt, i) => {
+                          const added = aiSelNewTags.some(t => t.name.toLowerCase() === nt.name.toLowerCase());
+                          const tierLabel = ["", "Subgenre", "Trope", "Content"][nt.tier] ?? "";
+                          return (
+                            <div key={i} className="flex items-center gap-2 p-2 rounded-lg" style={{ background: "var(--muted)", border: "1px solid var(--border)" }}>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium truncate" style={{ color: "var(--foreground)" }}>{nt.name}</p>
+                                <p className="text-[10px] truncate" style={{ color: "var(--muted-foreground)" }}>
+                                  T{nt.tier} {tierLabel} · {nt.reason}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setAiSelNewTags(prev =>
+                                  added
+                                    ? prev.filter(t => t.name.toLowerCase() !== nt.name.toLowerCase())
+                                    : [...prev, { name: nt.name, tier: nt.tier }]
+                                )}
+                                className="shrink-0 px-2 py-1 rounded text-xs font-semibold transition-opacity hover:opacity-80"
+                                style={{
+                                  background: added ? "rgba(34,197,94,0.12)" : "rgba(99,102,241,0.1)",
+                                  color: added ? "#22c55e" : "#6366f1",
+                                  border: `1px solid ${added ? "rgba(34,197,94,0.3)" : "rgba(99,102,241,0.25)"}`,
+                                }}
+                              >
+                                {added ? "✓ Added" : "+ Add"}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
+                    <button
+                      type="button"
+                      onClick={applyAiSuggestions}
+                      className="flex-1 py-2 rounded-xl text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                      style={{ background: "#6366f1" }}
+                    >
+                      Apply to Form
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setAiSuggestions(null); setAiError(""); }}
+                      className="px-3 py-2 rounded-xl text-xs font-medium transition-opacity hover:opacity-75"
+                      style={{ background: "var(--muted)", color: "var(--muted-foreground)", border: "1px solid var(--border)" }}
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Real-time score */}
