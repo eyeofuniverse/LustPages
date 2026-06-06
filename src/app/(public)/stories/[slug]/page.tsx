@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getStoryBySlug, getStoryRecommendations, incrementViews, getStoryUnlock, getSeriesUnlock, getUserCoinBalance } from "@/lib/queries";
+import { getStoryBySlug, getStoryRecommendations, getStoryUnlock, getSeriesUnlock, getUserCoinBalance } from "@/lib/queries";
 import { auth } from "@/auth";
 import { formatDate, getTextPreview, countWords, splitHtmlAtParagraph } from "@/lib/utils";
 import { sanitizeStoryContent } from "@/lib/sanitize";
@@ -15,6 +15,7 @@ import { SeriesUnlockGate } from "@/components/coins/SeriesUnlockGate";
 import { TipModal } from "@/components/coins/TipModal";
 import { SeriesNav } from "@/components/story/SeriesNav";
 import { ReadingProgressTracker } from "@/components/story/ReadingProgressTracker";
+import { ViewTracker } from "@/components/story/ViewTracker";
 import { SafeImage } from "@/components/ui/SafeImage";
 import { ShareButtons } from "@/components/story/ShareButtons";
 import { Clock, Calendar, ArrowLeft, Tag, PenLine } from "lucide-react";
@@ -104,7 +105,6 @@ export default async function StoryPage({ params }: Props) {
           : getStoryUnlock(userId, story.id))
       : Promise.resolve(null),
     userId ? getUserCoinBalance(userId) : Promise.resolve(0),
-    incrementViews(story.id),
   ]);
 
   const isUnlocked = !isPremium || !!unlock;
@@ -162,6 +162,7 @@ export default async function StoryPage({ params }: Props) {
   return (
     <>
       <ReadingProgressTracker slug={slug} storyId={story.id} userId={userId} />
+      <ViewTracker storyId={story.id} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
