@@ -1,44 +1,5 @@
 import { prisma } from "./prisma";
-
-// Splits a multi-word query into individual tokens and builds a Prisma AND condition
-// so each word must appear somewhere in the story (title, excerpt, body, or tags).
-function buildStorySearchWhere(query: string) {
-  const words = query
-    .trim()
-    .split(/\s+/)
-    .filter((w) => w.length >= 2);
-  const tokens = words.length > 0 ? words : [query.trim()];
-
-  const matchToken = (word: string) => ({
-    OR: [
-      { title: { contains: word, mode: "insensitive" as const } },
-      { excerpt: { contains: word, mode: "insensitive" as const } },
-      { content: { contains: word, mode: "insensitive" as const } },
-      { tags: { contains: word.toLowerCase() } },
-    ],
-  });
-
-  if (tokens.length === 1) return matchToken(tokens[0]);
-  return { AND: tokens.map(matchToken) };
-}
-
-function buildSeriesSearchWhere(query: string) {
-  const words = query
-    .trim()
-    .split(/\s+/)
-    .filter((w) => w.length >= 2);
-  const tokens = words.length > 0 ? words : [query.trim()];
-
-  const matchToken = (word: string) => ({
-    OR: [
-      { name: { contains: word, mode: "insensitive" as const } },
-      { description: { contains: word, mode: "insensitive" as const } },
-    ],
-  });
-
-  if (tokens.length === 1) return matchToken(tokens[0]);
-  return { AND: tokens.map(matchToken) };
-}
+import { buildStorySearchWhere, buildSeriesSearchWhere } from "./search";
 
 // Resolves effective cover image: series cover takes priority over story's own cover.
 function resolveStoryCover<T extends { coverImage: string | null; seriesInfo?: { coverImage: string | null } | null }>(s: T): T {
