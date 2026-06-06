@@ -1,25 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
-function buildSearchWhere(query: string) {
-  const words = query
-    .trim()
-    .split(/\s+/)
-    .filter((w) => w.length >= 2);
-  const tokens = words.length > 0 ? words : [query.trim()];
-
-  const matchToken = (word: string) => ({
-    OR: [
-      { title: { contains: word, mode: "insensitive" as const } },
-      { excerpt: { contains: word, mode: "insensitive" as const } },
-      { content: { contains: word, mode: "insensitive" as const } },
-      { tags: { contains: word.toLowerCase() } },
-    ],
-  });
-
-  if (tokens.length === 1) return matchToken(tokens[0]);
-  return { AND: tokens.map(matchToken) };
-}
+import { buildStorySearchWhere } from "@/lib/search";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -29,7 +10,7 @@ export async function GET(req: Request) {
   const stories = await prisma.story.findMany({
     where: {
       published: true,
-      ...buildSearchWhere(q),
+      ...buildStorySearchWhere(q),
     },
     select: {
       id: true,
