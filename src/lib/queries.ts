@@ -34,13 +34,14 @@ export async function getPublishedStories({
   sort?: "latest" | "top-rated";
 } = {}) {
   await publishScheduledStories();
+  const searchWhere = search ? await buildStorySearchWhere(search) : {};
   const stories = await prisma.story.findMany({
     where: {
       published: true,
       ...(featured !== undefined && { featured }),
       ...(categorySlug && { categories: { some: { slug: categorySlug } } }),
       ...(authorSlug && { author: { slug: authorSlug } }),
-      ...(search && buildStorySearchWhere(search)),
+      ...searchWhere,
       ...(tag && {
         OR: [
           { storyTags: { some: { slug: tag } } },
@@ -228,11 +229,12 @@ export async function getStoryCount({
   search,
   tag,
 }: { published?: boolean; categorySlug?: string; search?: string; tag?: string } = {}) {
+  const searchWhere = search ? await buildStorySearchWhere(search) : {};
   return prisma.story.count({
     where: {
       ...(published !== undefined && { published }),
       ...(categorySlug && { categories: { some: { slug: categorySlug } } }),
-      ...(search && buildStorySearchWhere(search)),
+      ...searchWhere,
       ...(tag && {
         OR: [
           { storyTags: { some: { slug: tag } } },
@@ -1390,10 +1392,11 @@ export async function getCategoriesWithStories(): Promise<CategoryWithStories[]>
 }
 
 export async function searchSeries(query: string, take = 10) {
+  const seriesWhere = await buildSeriesSearchWhere(query);
   return prisma.series.findMany({
     where: {
       stories: { some: { published: true } },
-      ...buildSeriesSearchWhere(query),
+      ...seriesWhere,
     },
     take,
     select: {

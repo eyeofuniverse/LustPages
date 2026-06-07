@@ -10,7 +10,7 @@ export async function GET(req: Request) {
   const stories = await prisma.story.findMany({
     where: {
       published: true,
-      ...buildStorySearchWhere(q),
+      ...await buildStorySearchWhere(q),
     },
     select: {
       id: true,
