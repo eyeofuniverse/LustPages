@@ -606,3 +606,18 @@ model IpGeoCache {
   city        String?
   cachedAt    DateTime @default(now()) @updatedAt
 }
+
+enum SynonymType {
+  TOKEN
+  PHRASE
+}
+
+model SearchSynonym {
+  id        String      @id @default(cuid())
+  term      String      @unique
+  type      SynonymType @default(TOKEN)
+  synonyms  String[]
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
