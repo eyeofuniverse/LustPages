@@ -1,11 +1,18 @@
 import { getAdminTags } from "@/lib/queries";
+import { prisma } from "@/lib/prisma";
 import { AdminTagsClient } from "@/components/admin/AdminTagsClient";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Tag Library — Admin" };
 
 export default async function TagsPage() {
-  const fetchedTags = await getAdminTags();
+  const [fetchedTags, rules] = await Promise.all([
+    getAdminTags(),
+    prisma.tagKeywordRule.findMany({
+      include: { parentTag: { select: { id: true, name: true, slug: true } } },
+      orderBy: { keyword: "asc" },
+    }),
+  ]);
   const approvedTags = fetchedTags.filter((t) => t.isApproved);
   const unapprovedCount = fetchedTags.length - approvedTags.length;
 
@@ -25,7 +32,7 @@ export default async function TagsPage() {
           )}
         </p>
       </div>
-      <AdminTagsClient initialTags={approvedTags} allTags={fetchedTags} />
+      <AdminTagsClient initialTags={approvedTags} allTags={fetchedTags} initialRules={rules} />
     </div>
   );
 }

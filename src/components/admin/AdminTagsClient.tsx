@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { Search, Plus, Trash2, Edit2, Check, X, Tag, ChevronDown, ChevronUp, GitMerge, Layers } from "lucide-react";
+import { Search, Plus, Trash2, Edit2, Check, X, Tag, ChevronDown, ChevronUp, GitMerge, Layers, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { TagSearchPicker } from "./TagSearchPicker";
+import { TagKeywordRulesManager } from "./TagKeywordRulesManager";
 
 interface TagAlias { id: string; alias: string; }
 interface TagRef { id: string; name: string; slug: string; }
@@ -22,9 +23,17 @@ interface AdminTag {
   childRelations: ChildRelation[];
 }
 
+interface KeywordRule {
+  id: string;
+  keyword: string;
+  parentTagId: string;
+  parentTag: { id: string; name: string; slug: string };
+}
+
 interface Props {
   initialTags: AdminTag[];
   allTags: AdminTag[];
+  initialRules: KeywordRule[];
 }
 
 const TIER_COLORS: Record<number, { bg: string; border: string; color: string; label: string }> = {
@@ -37,7 +46,8 @@ function slugifyDisplay(slug: string) {
   return slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
 
-export function AdminTagsClient({ initialTags, allTags }: Props) {
+export function AdminTagsClient({ initialTags, allTags, initialRules }: Props) {
+  const [activeTab, setActiveTab] = useState<"library" | "keywords">("library");
   const [tags, setTags] = useState(initialTags);
   const [search, setSearch] = useState("");
   const [tierFilter, setTierFilter] = useState<number | null>(null);
@@ -280,6 +290,32 @@ export function AdminTagsClient({ initialTags, allTags }: Props) {
 
   return (
     <div>
+      {/* Tabs */}
+      <div className="flex gap-1 mb-6 p-1 rounded-xl w-fit" style={{ background: "var(--muted)" }}>
+        {([
+          { key: "library", label: "Tag Library", icon: <Tag size={14} /> },
+          { key: "keywords", label: "Keyword Rules", icon: <KeyRound size={14} /> },
+        ] as const).map(({ key, label, icon }) => (
+          <button
+            key={key}
+            onClick={() => setActiveTab(key)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+            style={{
+              background: activeTab === key ? "var(--card)" : "transparent",
+              color: activeTab === key ? "var(--foreground)" : "var(--muted-foreground)",
+              boxShadow: activeTab === key ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+            }}
+          >
+            {icon}{label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "keywords" && (
+        <TagKeywordRulesManager initialRules={initialRules} tags={allTags} />
+      )}
+
+      {activeTab === "library" && <>
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
@@ -755,6 +791,7 @@ export function AdminTagsClient({ initialTags, allTags }: Props) {
           <p style={{ color: "var(--muted-foreground)" }}>No tags match your search.</p>
         </div>
       )}
+      </>}
     </div>
   );
 }
