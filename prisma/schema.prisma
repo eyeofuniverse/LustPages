@@ -643,10 +643,11 @@ model TagRelationship {
 // `keyword` is created or approved, it automatically gets `parentTagId` as parent.
 model TagKeywordRule {
   id          String   @id @default(cuid())
-  keyword     String   @unique
+  keyword     String
   parentTagId String
   parentTag   Tag      @relation(fields: [parentTagId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
 
+  @@unique([keyword, parentTagId])
   @@index([parentTagId])
 }
