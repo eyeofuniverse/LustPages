@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ rule, applied }, { status: 201 });
   } catch (e: unknown) {
     if ((e as { code?: string })?.code === "P2002") {
-      return NextResponse.json({ error: `A rule for keyword "${kw}" already exists` }, { status: 409 });
+      return NextResponse.json({ error: `A rule for keyword "${kw}" with that parent tag already exists` }, { status: 409 });
     }
     console.error("POST /api/admin/tag-keyword-rules", e);
     return NextResponse.json({ error: "Failed to create rule" }, { status: 500 });
