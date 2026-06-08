@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { Plus, Trash2, Search, Key } from "lucide-react";
+import { toast } from "sonner";
 import { TagSearchPicker } from "./TagSearchPicker";
 
 interface TagRef { id: string; name: string; slug: string; }
@@ -53,20 +54,22 @@ export function TagKeywordRulesManager({ initialRules, tags }: Props) {
         setNewKeyword("");
         setNewParentId("");
         if (data.applied > 0) {
-          alert(`Rule created and applied retroactively to ${data.applied} existing tag${data.applied !== 1 ? "s" : ""}.`);
+          toast.success(`Rule created — applied to ${data.applied} existing tag${data.applied !== 1 ? "s" : ""}.`);
+        } else {
+          toast.success("Rule created.");
         }
       } else {
-        alert(data.error ?? "Error creating rule");
+        toast.error(data.error ?? "Error creating rule");
       }
     } catch {
-      alert("Network error — please try again");
+      toast.error("Network error — please try again");
     } finally {
       setAdding(false);
     }
   }
 
   async function handleDelete(rule: KeywordRule) {
-    if (!confirm(`Delete rule "${rule.keyword}" → "${rule.parentTag.name}"?\n\nExisting relationships created by this rule are NOT removed automatically.`)) return;
+    if (!window.confirm(`Delete rule "${rule.keyword}" → "${rule.parentTag.name}"?\n\nExisting relationships created by this rule are NOT removed automatically.`)) return;
     const res = await fetch(`/api/admin/tag-keyword-rules/${rule.id}`, { method: "DELETE" });
     if (res.ok) setRules((prev) => prev.filter((r) => r.id !== rule.id));
   }

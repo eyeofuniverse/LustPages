@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle, XCircle, X } from "lucide-react";
+import { toast } from "sonner";
 
 interface ApprovalActionsProps {
   storyId: string;
@@ -18,15 +19,16 @@ export function ApprovalActions({ storyId, storyTitle }: ApprovalActionsProps) {
   const [error, setError] = useState("");
 
   async function handleApprove() {
-    if (!confirm(`Approve and publish "${storyTitle}"?`)) return;
+    if (!window.confirm(`Approve and publish "${storyTitle}"?`)) return;
     setIsApproving(true);
     try {
       const res = await fetch(`/api/admin/stories/${storyId}/approve`, { method: "POST" });
       if (!res.ok) {
         const d = await res.json();
-        alert(d.error ?? "Failed to approve");
+        toast.error(d.error ?? "Failed to approve");
         return;
       }
+      toast.success(`"${storyTitle}" published.`);
       router.refresh();
     } finally {
       setIsApproving(false);

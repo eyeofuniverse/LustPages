@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { Search, Plus, Trash2, Edit2, Check, X, Tag, ChevronDown, ChevronUp, GitMerge, Layers } from "lucide-react";
+import { toast } from "sonner";
 import { TagSearchPicker } from "./TagSearchPicker";
 
 interface TagAlias { id: string; alias: string; }
@@ -77,7 +78,7 @@ export function AdminTagsClient({ initialTags, allTags }: Props) {
   async function handleBulkMerge() {
     if (!bulkKeyword.trim() || !bulkTargetId || bulkMatches.length === 0) return;
     const target = tags.find((t) => t.id === bulkTargetId);
-    if (!confirm(`Merge ${bulkMatches.length} tag${bulkMatches.length > 1 ? "s" : ""} into "${target?.name}"?\n\n${bulkMatches.map((t) => `• ${t.name}`).join("\n")}\n\nEach becomes an alias of "${target?.name}". This cannot be undone.`)) return;
+    if (!window.confirm(`Merge ${bulkMatches.length} tag${bulkMatches.length > 1 ? "s" : ""} into "${target?.name}"?\n\n${bulkMatches.map((t) => `• ${t.name}`).join("\n")}\n\nEach becomes an alias of "${target?.name}". This cannot be undone.`)) return;
     setBulkLoading(true);
     try {
       const res = await fetch("/api/admin/tags/bulk-merge", {
@@ -92,12 +93,12 @@ export function AdminTagsClient({ initialTags, allTags }: Props) {
         setBulkKeyword("");
         setBulkTargetId("");
         setShowBulkMerge(false);
-        alert(`Merged ${data.merged} tag${data.merged !== 1 ? "s" : ""} into "${data.targetName}".`);
+        toast.success(`Merged ${data.merged} tag${data.merged !== 1 ? "s" : ""} into "${data.targetName}".`);
       } else {
-        alert(data.error ?? "Bulk merge failed");
+        toast.error(data.error ?? "Bulk merge failed");
       }
     } catch {
-      alert("Network error — please try again");
+      toast.error("Network error — please try again");
     } finally {
       setBulkLoading(false);
     }
@@ -109,7 +110,7 @@ export function AdminTagsClient({ initialTags, allTags }: Props) {
     if (res.ok) {
       window.location.reload();
     } else {
-      alert(data.message ?? data.error ?? "Error");
+      toast.error(data.message ?? data.error ?? "Error");
     }
   }
 
@@ -124,13 +125,14 @@ export function AdminTagsClient({ initialTags, allTags }: Props) {
       });
       const data = await res.json();
       if (res.ok) {
-        setTags((prev) => [...prev, { ...data, _count: { stories: 0 }, aliases: [] }]);
+        setTags((prev) => [...prev, { ...data, _count: { stories: 0 }, aliases: [], parentRelations: [], childRelations: [] }]);
         setAddName(""); setAddTier(2); setAddDesc(""); setShowAdd(false);
+        toast.success(`Tag "${data.name}" created.`);
       } else {
-        alert(data.error ?? "Error creating tag");
+        toast.error(data.error ?? "Error creating tag");
       }
     } catch {
-      alert("Network error — please try again");
+      toast.error("Network error — please try again");
     } finally {
       setAddLoading(false);
     }
@@ -148,20 +150,26 @@ export function AdminTagsClient({ initialTags, allTags }: Props) {
       if (res.ok) {
         setTags((prev) => prev.map((t) => t.id === id ? { ...t, ...data, _count: t._count, aliases: t.aliases } : t));
         setEditId(null);
+        toast.success("Tag saved.");
       } else {
-        alert(data.error ?? "Error saving");
+        toast.error(data.error ?? "Error saving");
       }
     } catch {
-      alert("Network error — please try again");
+      toast.error("Network error — please try again");
     } finally {
       setSaving(null);
     }
   }
 
   async function handleDelete(id: string, name: string) {
-    if (!confirm(`Delete tag "${name}"? This removes it from all stories.`)) return;
+    if (!window.confirm(`Delete tag "${name}"? This removes it from all stories.`)) return;
     const res = await fetch(`/api/admin/tags/${id}`, { method: "DELETE" });
-    if (res.ok) setTags((prev) => prev.filter((t) => t.id !== id));
+    if (res.ok) {
+      setTags((prev) => prev.filter((t) => t.id !== id));
+      toast.success(`Tag "${name}" deleted.`);
+    } else {
+      toast.error("Failed to delete tag.");
+    }
   }
 
   async function handleToggleApprove(tag: AdminTag) {
@@ -188,7 +196,7 @@ export function AdminTagsClient({ initialTags, allTags }: Props) {
       setTags((prev) => prev.map((t) => t.id === tagId ? { ...t, aliases: data.aliases } : t));
       setNewAlias((prev) => ({ ...prev, [tagId]: "" }));
     } else {
-      alert(data.error ?? "Error adding alias");
+      toast.error(data.error ?? "Error adding alias");
     }
   }
 
@@ -208,7 +216,7 @@ export function AdminTagsClient({ initialTags, allTags }: Props) {
     const targetId = mergeTargetId[tag.id];
     if (!targetId) return;
     const target = tags.find((t) => t.id === targetId);
-    if (!confirm(`Merge "${tag.name}" into "${target?.name}"?\n\n"${tag.name}" becomes an alias of "${target?.name}". All ${tag._count.stories} stories are re-assigned. This cannot be undone.`)) return;
+    if (!window.confirm(`Merge "${tag.name}" into "${target?.name}"?\n\n"${tag.name}" becomes an alias of "${target?.name}". All ${tag._count.stories} stories are re-assigned. This cannot be undone.`)) return;
     setSaving(tag.id + "merge");
     try {
       const res = await fetch(`/api/admin/tags/${tag.id}`, {
@@ -222,10 +230,10 @@ export function AdminTagsClient({ initialTags, allTags }: Props) {
         setMergeTargetId((prev) => { const n = { ...prev }; delete n[tag.id]; return n; });
       } else {
         const d = await res.json();
-        alert(d.error ?? "Error merging tag");
+        toast.error(d.error ?? "Error merging tag");
       }
     } catch {
-      alert("Network error — please try again");
+      toast.error("Network error — please try again");
     } finally {
       setSaving(null);
     }
@@ -245,8 +253,9 @@ export function AdminTagsClient({ initialTags, allTags }: Props) {
         ? { ...t, parentRelations: [...t.parentRelations, { id: data.id, parent: data.parent }] }
         : t));
       setAddParentId((prev) => ({ ...prev, [tagId]: "" }));
+      toast.success("Parent added.");
     } else {
-      alert(data.error ?? "Error adding parent");
+      toast.error(data.error ?? "Error adding parent");
     }
   }
 
