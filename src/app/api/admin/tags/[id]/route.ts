@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { slugifyTag } from "@/lib/tag-library";
+import { applyKeywordRulesToTag } from "@/lib/tag-hierarchy";
 
 async function requireAdmin() {
   const session = await auth();
@@ -106,6 +107,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       },
       include: { aliases: { select: { id: true, alias: true } } },
     });
+    // When a tag is approved, auto-assign keyword-rule parents
+    if (isApproved === true) await applyKeywordRulesToTag(tag.id, tag.name);
     return NextResponse.json(tag);
   } catch (e: unknown) {
     const code = (e as { code?: string })?.code;
