@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { slugifyTag, INITIAL_TAGS } from "@/lib/tag-library";
+import { applyKeywordRulesToTag } from "@/lib/tag-hierarchy";
 
 async function requireAdmin() {
   const session = await auth();
@@ -29,6 +30,7 @@ export async function POST(req: Request) {
   }
   try {
     const tag = await prisma.tag.create({ data: { name: name.trim(), slug, tier: Number(tier), description, isApproved } });
+    if (isApproved) await applyKeywordRulesToTag(tag.id, tag.name);
     return NextResponse.json(tag, { status: 201 });
   } catch (e: unknown) {
     const code = (e as { code?: string })?.code;

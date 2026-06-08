@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import { buildStorySearchWhere, buildSeriesSearchWhere } from "./search";
+import { getTagAndChildrenSlugs } from "./tag-hierarchy";
 
 // Resolves effective cover image: series cover takes priority over story's own cover.
 function resolveStoryCover<T extends { coverImage: string | null; seriesInfo?: { coverImage: string | null } | null }>(s: T): T {
@@ -34,7 +35,10 @@ export async function getPublishedStories({
   sort?: "latest" | "top-rated";
 } = {}) {
   await publishScheduledStories();
-  const searchWhere = search ? await buildStorySearchWhere(search) : {};
+  const [searchWhere, tagSlugs] = await Promise.all([
+    search ? buildStorySearchWhere(search) : Promise.resolve({}),
+    tag    ? getTagAndChildrenSlugs(tag)   : Promise.resolve(null),
+  ]);
   const stories = await prisma.story.findMany({
     where: {
       published: true,
@@ -42,10 +46,10 @@ export async function getPublishedStories({
       ...(categorySlug && { categories: { some: { slug: categorySlug } } }),
       ...(authorSlug && { author: { slug: authorSlug } }),
       ...searchWhere,
-      ...(tag && {
+      ...(tagSlugs && {
         OR: [
-          { storyTags: { some: { slug: tag } } },
-          { tags: { contains: `"${tag}"` } },
+          { storyTags: { some: { slug: { in: tagSlugs } } } },
+          ...tagSlugs.map((s) => ({ tags: { contains: `"${s}"` } })),
         ],
       }),
     },
@@ -229,16 +233,19 @@ export async function getStoryCount({
   search,
   tag,
 }: { published?: boolean; categorySlug?: string; search?: string; tag?: string } = {}) {
-  const searchWhere = search ? await buildStorySearchWhere(search) : {};
+  const [searchWhere, tagSlugs] = await Promise.all([
+    search ? buildStorySearchWhere(search) : Promise.resolve({}),
+    tag    ? getTagAndChildrenSlugs(tag)   : Promise.resolve(null),
+  ]);
   return prisma.story.count({
     where: {
       ...(published !== undefined && { published }),
       ...(categorySlug && { categories: { some: { slug: categorySlug } } }),
       ...searchWhere,
-      ...(tag && {
+      ...(tagSlugs && {
         OR: [
-          { storyTags: { some: { slug: tag } } },
-          { tags: { contains: `"${tag}"` } },
+          { storyTags: { some: { slug: { in: tagSlugs } } } },
+          ...tagSlugs.map((s) => ({ tags: { contains: `"${s}"` } })),
         ],
       }),
     },
@@ -330,12 +337,35 @@ export async function getTrendingStories(take = 10): Promise<TrendingStoryEntry[
 }
 
 export async function getAllTags() {
-  const tags = await prisma.tag.findMany({
-    where: { isApproved: true },
-    include: { _count: { select: { stories: { where: { published: true } } } } },
-    orderBy: { name: "asc" },
-  });
-  return tags.map((t) => ({ tag: t.slug, count: t._count.stories, name: t.name, tier: t.tier, id: t.id }));
+  const [tags, relationships] = await Promise.all([
+    prisma.tag.findMany({
+      where: { isApproved: true },
+      include: {
+        _count: { select: { stories: { where: { published: true } } } },
+        parentRelations: { select: { parentId: true } },
+      },
+      orderBy: { name: "asc" },
+    }),
+    prisma.tagRelationship.findMany({ select: { parentId: true, childId: true } }),
+  ]);
+
+  // Build maps for O(1) lookup
+  const countMap = new Map(tags.map((t) => [t.id, t._count.stories]));
+  const childMap = new Map<string, string[]>();
+  for (const rel of relationships) {
+    const arr = childMap.get(rel.parentId) ?? [];
+    arr.push(rel.childId);
+    childMap.set(rel.parentId, arr);
+  }
+
+  // Only show top-level tags (no parents). Their count includes all children.
+  return tags
+    .filter((t) => t.parentRelations.length === 0)
+    .map((t) => {
+      const childIds = childMap.get(t.id) ?? [];
+      const childCount = childIds.reduce((sum, id) => sum + (countMap.get(id) ?? 0), 0);
+      return { tag: t.slug, count: t._count.stories + childCount, name: t.name, tier: t.tier, id: t.id };
+    });
 }
 
 export async function getPopularTags(take = 24) {
@@ -379,6 +409,8 @@ export async function getAdminTags() {
     include: {
       _count: { select: { stories: true } },
       aliases: { select: { id: true, alias: true } },
+      parentRelations: { select: { id: true, parent: { select: { id: true, name: true, slug: true } } } },
+      childRelations:  { select: { id: true, child:  { select: { id: true, name: true, slug: true } } } },
     },
   });
 }

@@ -357,9 +357,12 @@ model Tag {
   description String?
   isApproved  Boolean      @default(true)
   createdAt   DateTime     @default(now())
-  stories     Story[]
-  aliases     TagAlias[]
-  requests    TagRequest[]
+  stories         Story[]
+  aliases         TagAlias[]
+  requests        TagRequest[]
+  parentRelations TagRelationship[] @relation("TagChildren")
+  childRelations  TagRelationship[] @relation("TagParents")
+  keywordRules    TagKeywordRule[]
 }
 
 model TagAlias {
@@ -620,4 +623,30 @@ model SearchSynonym {
   isActive  Boolean     @default(true)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
+}
+
+// Parent/child relationship between tags. A tag can have multiple parents
+// and multiple children. The tag list only shows top-level tags (no parents).
+model TagRelationship {
+  id       String @id @default(cuid())
+  parentId String
+  childId  String
+  parent   Tag    @relation("TagParents", fields: [parentId], references: [id], onDelete: Cascade)
+  child    Tag    @relation("TagChildren", fields: [childId], references: [id], onDelete: Cascade)
+
+  @@unique([parentId, childId])
+  @@index([parentId])
+  @@index([childId])
+}
+
+// Keyword rules for auto-assigning parents. When a tag whose name contains
+// `keyword` is created or approved, it automatically gets `parentTagId` as parent.
+model TagKeywordRule {
+  id          String   @id @default(cuid())
+  keyword     String   @unique
+  parentTagId String
+  parentTag   Tag      @relation(fields: [parentTagId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@index([parentTagId])
 }

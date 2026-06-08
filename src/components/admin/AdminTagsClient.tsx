@@ -5,6 +5,9 @@ import { Search, Plus, Trash2, Edit2, Check, X, Tag, ChevronDown, ChevronUp, Git
 import { TagSearchPicker } from "./TagSearchPicker";
 
 interface TagAlias { id: string; alias: string; }
+interface TagRef { id: string; name: string; slug: string; }
+interface ParentRelation { id: string; parent: TagRef; }
+interface ChildRelation { id: string; child: TagRef; }
 interface AdminTag {
   id: string;
   name: string;
@@ -14,10 +17,13 @@ interface AdminTag {
   isApproved: boolean;
   _count: { stories: number };
   aliases: TagAlias[];
+  parentRelations: ParentRelation[];
+  childRelations: ChildRelation[];
 }
 
 interface Props {
   initialTags: AdminTag[];
+  allTags: AdminTag[];
 }
 
 const TIER_COLORS: Record<number, { bg: string; border: string; color: string; label: string }> = {
@@ -30,7 +36,7 @@ function slugifyDisplay(slug: string) {
   return slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
 
-export function AdminTagsClient({ initialTags }: Props) {
+export function AdminTagsClient({ initialTags, allTags }: Props) {
   const [tags, setTags] = useState(initialTags);
   const [search, setSearch] = useState("");
   const [tierFilter, setTierFilter] = useState<number | null>(null);
@@ -53,6 +59,8 @@ export function AdminTagsClient({ initialTags }: Props) {
   const [bulkKeyword, setBulkKeyword] = useState("");
   const [bulkTargetId, setBulkTargetId] = useState("");
   const [bulkLoading, setBulkLoading] = useState(false);
+
+  const [addParentId, setAddParentId] = useState<Record<string, string>>({});
 
   const filtered = useMemo(() => tags.filter((t) => {
     const matchSearch = !search.trim() || t.name.toLowerCase().includes(search.toLowerCase()) || t.slug.includes(search.toLowerCase());
@@ -220,6 +228,34 @@ export function AdminTagsClient({ initialTags }: Props) {
       alert("Network error — please try again");
     } finally {
       setSaving(null);
+    }
+  }
+
+  async function handleAddParent(tagId: string) {
+    const parentId = addParentId[tagId];
+    if (!parentId) return;
+    const res = await fetch("/api/admin/tag-relationships", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ parentId, childId: tagId }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setTags((prev) => prev.map((t) => t.id === tagId
+        ? { ...t, parentRelations: [...t.parentRelations, { id: data.id, parent: data.parent }] }
+        : t));
+      setAddParentId((prev) => ({ ...prev, [tagId]: "" }));
+    } else {
+      alert(data.error ?? "Error adding parent");
+    }
+  }
+
+  async function handleRemoveParent(tagId: string, relId: string) {
+    const res = await fetch(`/api/admin/tag-relationships/${relId}`, { method: "DELETE" });
+    if (res.ok) {
+      setTags((prev) => prev.map((t) => t.id === tagId
+        ? { ...t, parentRelations: t.parentRelations.filter((r) => r.id !== relId) }
+        : t));
     }
   }
 
@@ -593,6 +629,76 @@ export function AdminTagsClient({ initialTags }: Props) {
                             <Plus size={11} /> Add alias
                           </button>
                         </div>
+
+                        {/* Parent Tags section */}
+                        <div className="pt-4 mb-5" style={{ borderTop: "1px solid var(--border)" }}>
+                          <p className="text-xs font-semibold mb-1" style={{ color: "var(--muted-foreground)" }}>
+                            Parent Tags
+                          </p>
+                          <p className="text-xs mb-2" style={{ color: "var(--muted-foreground)", opacity: 0.7 }}>
+                            This tag appears under these parents on the tag list page.
+                          </p>
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            {tag.parentRelations.map((r) => (
+                              <span
+                                key={r.id}
+                                className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs"
+                                style={{ background: "rgba(99,102,241,0.1)", color: "#6366f1", border: "1px solid rgba(99,102,241,0.3)" }}
+                              >
+                                {r.parent.name}
+                                <button
+                                  onClick={() => handleRemoveParent(tag.id, r.id)}
+                                  className="opacity-60 hover:opacity-100"
+                                  title="Remove parent"
+                                >
+                                  <X size={10} />
+                                </button>
+                              </span>
+                            ))}
+                            {tag.parentRelations.length === 0 && (
+                              <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>None — standalone tag</span>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <TagSearchPicker
+                                options={allTags.filter((t) => t.id !== tag.id && !tag.parentRelations.some((r) => r.parent.id === t.id))}
+                                excludeId={tag.id}
+                                value={addParentId[tag.id] ?? ""}
+                                onChange={(id) => setAddParentId((prev) => ({ ...prev, [tag.id]: id }))}
+                                placeholder="Search tags to add as parent…"
+                              />
+                            </div>
+                            <button
+                              onClick={() => handleAddParent(tag.id)}
+                              disabled={!addParentId[tag.id]}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-40 transition-all shrink-0"
+                              style={{ background: "rgba(99,102,241,0.12)", color: "#6366f1", border: "1px solid rgba(99,102,241,0.3)" }}
+                            >
+                              <Plus size={11} /> Add Parent
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Child Tags section */}
+                        {tag.childRelations.length > 0 && (
+                          <div className="pb-4 mb-4" style={{ borderBottom: "1px solid var(--border)" }}>
+                            <p className="text-xs font-semibold mb-2" style={{ color: "var(--muted-foreground)" }}>
+                              Child Tags ({tag.childRelations.length})
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {tag.childRelations.map((r) => (
+                                <span
+                                  key={r.id}
+                                  className="px-2 py-0.5 rounded-full text-xs"
+                                  style={{ background: "rgba(196,66,106,0.08)", color: "#c4426a", border: "1px solid rgba(196,66,106,0.25)" }}
+                                >
+                                  {r.child.name}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
                         {/* Merge section */}
                         <div className="pt-4" style={{ borderTop: "1px solid var(--border)" }}>
