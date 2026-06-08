@@ -75,7 +75,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         { href: "/meminhaj/tags", icon: <Tag size={16} />, label: "Tags", permission: "tags" },
         { href: "/meminhaj/tag-requests", icon: <Tags size={16} />, label: "Tag Requests", badge: pendingTagRequests, permission: "tags" },
         { href: "/meminhaj/search-synonyms", icon: <SearchCode size={16} />, label: "Search Synonyms", permission: "tags" },
-        { href: "/meminhaj/tag-keywords", icon: <KeyRound size={16} />, label: "Tag Keywords", permission: "tags" },
       ],
     },
     {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { slugifyTag } from "@/lib/tag-library";
+import { applyKeywordRulesToTag } from "@/lib/tag-hierarchy";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -29,6 +30,24 @@ export async function POST(req: Request) {
       ? "This tag was previously rejected by an admin. Contact support if you believe it should be reconsidered."
       : "Already requested and pending review";
     return NextResponse.json({ error }, { status: 409 });
+  }
+
+  // If any keyword rules match this tag name, auto-approve and assign parents
+  const rules = await prisma.tagKeywordRule.findMany({ select: { keyword: true } });
+  const lower = requestedName.trim().toLowerCase();
+  const hasMatch = rules.some((r) => lower.includes(r.keyword.toLowerCase()));
+
+  if (hasMatch) {
+    const tag = await prisma.tag.create({
+      data: {
+        name: requestedName.trim(),
+        slug,
+        tier: Number(tier),
+        isApproved: true,
+      },
+    });
+    await applyKeywordRulesToTag(tag.id, tag.name);
+    return NextResponse.json({ ...tag, autoApproved: true }, { status: 201 });
   }
 
   const request = await prisma.tagRequest.create({

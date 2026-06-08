@@ -47,7 +47,6 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/meminhaj/tags", icon: Tag, label: "Tags", permission: "tags" },
       { href: "/meminhaj/tag-requests", icon: Tags, label: "Tag Requests", permission: "tags", badgeKey: "tagRequests" },
       { href: "/meminhaj/search-synonyms", icon: SearchCode, label: "Search Synonyms", permission: "tags" },
-      { href: "/meminhaj/tag-keywords", icon: KeyRound, label: "Tag Keywords", permission: "tags" },
     ],
   },
   {
