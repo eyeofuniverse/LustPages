@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check, X, GitMerge, Trash2, Clock, Tag } from "lucide-react";
+import { toast } from "sonner";
 import { TagSearchPicker } from "./TagSearchPicker";
 
 interface TagRequest {
@@ -71,17 +72,17 @@ export function AdminTagRequestsClient({ initialRequests, masterTags, pendingTag
           prev.map((r) => r.id === id ? { ...r, ...(data.request ?? data), mergedIntoTag: data.tag ?? r.mergedIntoTag } : r)
         );
       } else {
-        alert(data.error ?? "Error");
+        toast.error(data.error ?? "Error");
       }
     } catch {
-      alert("Network error — please try again");
+      toast.error("Network error — please try again");
     } finally {
       setLoading(null);
     }
   }
 
   async function handleDeleteRequest(id: string) {
-    if (!confirm("Delete this request?")) return;
+    if (!window.confirm("Delete this request?")) return;
     const res = await fetch(`/api/admin/tag-requests/${id}`, { method: "DELETE" });
     if (res.ok) setRequests((prev) => prev.filter((r) => r.id !== id));
   }
@@ -102,10 +103,10 @@ export function AdminTagRequestsClient({ initialRequests, masterTags, pendingTag
         setApprovedTags((prev) => [...prev, { id: tag.id, name: tag.name, slug: tag.slug, tier }]);
       } else {
         const d = await res.json();
-        alert(d.error ?? "Error approving tag");
+        toast.error(d.error ?? "Error approving tag");
       }
     } catch {
-      alert("Network error — please try again");
+      toast.error("Network error — please try again");
     } finally {
       setLoading(null);
     }
@@ -115,7 +116,7 @@ export function AdminTagRequestsClient({ initialRequests, masterTags, pendingTag
     const targetId = tagMergeTarget[tag.id];
     if (!targetId) return;
     const target = approvedTags.find((t) => t.id === targetId);
-    if (!confirm(`Merge "${tag.name}" into "${target?.name}"?\n\n"${tag.name}" becomes an alias of "${target?.name}". ${tag._count.stories > 0 ? `All ${tag._count.stories} stories re-assigned. ` : ""}This cannot be undone.`)) return;
+    if (!window.confirm(`Merge "${tag.name}" into "${target?.name}"?\n\n"${tag.name}" becomes an alias of "${target?.name}". ${tag._count.stories > 0 ? `All ${tag._count.stories} stories re-assigned. ` : ""}This cannot be undone.`)) return;
     setLoading(tag.id + "merge");
     try {
       const res = await fetch(`/api/admin/tags/${tag.id}`, {
@@ -128,17 +129,17 @@ export function AdminTagRequestsClient({ initialRequests, masterTags, pendingTag
         setTagMergeTarget((prev) => { const n = { ...prev }; delete n[tag.id]; return n; });
       } else {
         const d = await res.json();
-        alert(d.error ?? "Error merging tag");
+        toast.error(d.error ?? "Error merging tag");
       }
     } catch {
-      alert("Network error — please try again");
+      toast.error("Network error — please try again");
     } finally {
       setLoading(null);
     }
   }
 
   async function handleTagDelete(tag: PendingTag) {
-    if (!confirm(`Delete tag "${tag.name}"? This removes it from all stories.`)) return;
+    if (!window.confirm(`Delete tag "${tag.name}"? This removes it from all stories.`)) return;
     const res = await fetch(`/api/admin/tags/${tag.id}`, { method: "DELETE" });
     if (res.ok) setPendingTagList((prev) => prev.filter((t) => t.id !== tag.id));
   }

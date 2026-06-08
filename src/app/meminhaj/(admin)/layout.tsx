@@ -8,6 +8,7 @@ import {
   Layers, Library, UserCircle, Users, UserRound, BarChart2, SearchCode, KeyRound,
 } from "lucide-react";
 import { MobileAdminNav } from "@/components/admin/MobileAdminNav";
+import { Toaster } from "sonner";
 import type { Metadata } from "next";
 import type { AdminPermissionKey } from "@/lib/admin-permissions";
 
@@ -222,6 +223,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           {children}
         </div>
       </main>
+      <Toaster richColors position="bottom-right" />
     </div>
   );
 }
