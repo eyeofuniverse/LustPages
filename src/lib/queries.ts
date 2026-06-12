@@ -56,7 +56,7 @@ export async function getPublishedStories({
     include: {
       categories: true,
       author: true,
-      storyTags: { select: { name: true } },
+      storyTags: { select: { name: true, slug: true } },
       _count: { select: { likes: true, comments: true, bookmarks: true } },
       seriesInfo: { select: { coverImage: true } },
     },
@@ -74,7 +74,7 @@ export async function getStoryBySlug(slug: string) {
     include: {
       categories: true,
       author: true,
-      storyTags: { select: { name: true } },
+      storyTags: { select: { name: true, slug: true } },
       _count: { select: { likes: true, comments: true, bookmarks: true } },
       comments: {
         where: { parentId: null },
@@ -536,7 +536,7 @@ async function getTagBasedRecs(
       ],
     },
     include: {
-      storyTags: { select: { name: true } },
+      storyTags: { select: { name: true, slug: true } },
       categories: { select: { id: true, name: true, slug: true, color: true } },
       author: { select: { name: true, slug: true } },
       _count: { select: { likes: true, comments: true } },
@@ -1505,7 +1505,7 @@ export async function getPremiumStoriesPaginated({ take = 15, skip = 0 }: { take
     include: {
       categories: true,
       author: true,
-      storyTags: { select: { name: true } },
+      storyTags: { select: { name: true, slug: true } },
       _count: { select: { likes: true, comments: true, bookmarks: true } },
     },
   });

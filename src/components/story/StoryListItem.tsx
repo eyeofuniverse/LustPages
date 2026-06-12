@@ -12,7 +12,7 @@ interface StoryListItemData {
   coverImage: string | null;
   readingTime: number;
   views: number;
-  storyTags?: { name: string }[];
+  storyTags?: { name: string; slug: string }[];
   series: string | null;
   createdAt: Date;
   categories: { id: string; name: string; slug: string; color: string }[];
@@ -23,7 +23,7 @@ interface StoryListItemData {
 }
 
 export function StoryListItem({ story }: { story: StoryListItemData }) {
-  const tags = story.storyTags?.map((t) => t.name) ?? [];
+  const tags = story.storyTags ?? [];
   const primaryCategory = story.categories[0];
   const primaryColor = primaryCategory?.color ?? "#c4426a";
   const authorInitial = story.author.name.charAt(0).toUpperCase();
@@ -125,8 +125,8 @@ export function StoryListItem({ story }: { story: StoryListItemData }) {
             <div className="flex flex-wrap gap-1.5 mb-3">
               {tags.slice(0, 7).map((tag, i) => (
                 <Link
-                  key={tag}
-                  href={`/tags/${encodeURIComponent(tag.toLowerCase())}`}
+                  key={tag.slug}
+                  href={`/tags/${tag.slug}`}
                   className="text-xs px-2.5 py-0.5 rounded-full transition-opacity hover:opacity-75"
                   style={
                     i === 0
@@ -140,7 +140,7 @@ export function StoryListItem({ story }: { story: StoryListItemData }) {
                         }
                   }
                 >
-                  {tag}
+                  {tag.name}
                 </Link>
               ))}
             </div>

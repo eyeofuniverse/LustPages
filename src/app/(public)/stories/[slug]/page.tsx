@@ -77,8 +77,8 @@ export default async function StoryPage({ params }: Props) {
   if (!story) notFound();
 
   const userId = session?.user?.id;
-  const tagNames = story.storyTags.map((t) => t.name);
-  const tags = tagNames;
+  const tags = story.storyTags;
+  const tagNames = tags.map((t) => t.name);
   const categoryIds = story.categories.map((c) => c.id);
 
   // Effective cover: series cover takes priority when story is in a series
@@ -453,15 +453,15 @@ export default async function StoryPage({ params }: Props) {
             <Tag size={14} style={{ color: "var(--muted-foreground)" }} className="mt-0.5" />
             {tags.map((tag) => (
               <Link
-                key={tag}
-                href={`/tags/${encodeURIComponent(tag)}`}
+                key={tag.slug}
+                href={`/tags/${tag.slug}`}
                 className="px-3 py-1 rounded-full text-sm transition-all hover:opacity-75"
                 style={{
                   background: "var(--muted)",
                   color: "var(--muted-foreground)",
                 }}
               >
-                #{tag}
+                #{tag.name}
               </Link>
             ))}
           </div>
