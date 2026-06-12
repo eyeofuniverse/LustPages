@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 
+// All dates are ISO strings to avoid RSC Date serialization issues
 export type VisitorGroup = {
   ip: string;
   country: string | null;
@@ -7,11 +8,13 @@ export type VisitorGroup = {
   city: string | null;
   paths: string[];
   visitCount: number;
-  firstSeen: Date;
-  lastSeen: Date;
+  firstSeen: string;
+  lastSeen: string;
 };
 
 export type TopPage = { path: string; count: number };
+export type DailyTraffic = { date: string; visits: number };
+export type CountryStat = { country: string; countryCode: string | null; count: number };
 
 export type RecentVisit = {
   id: string;
@@ -19,16 +22,21 @@ export type RecentVisit = {
   country: string | null;
   countryCode: string | null;
   path: string;
-  visitedAt: Date;
+  visitedAt: string;
 };
 
 export type VisitorData = {
   totalVisits: number;
   uniqueVisitors: number;
+  onlineNow: number;
+  avgPagesPerVisitor: number;
   topCountry: string | null;
+  topCountries: CountryStat[];
   visitors: VisitorGroup[];
   topPages: TopPage[];
   recentVisits: RecentVisit[];
+  dailyTraffic: DailyTraffic[];
+  days: number;
 };
 
 type IpApiResult = {
@@ -43,9 +51,7 @@ async function resolveGeo(uncachedIps: string[]): Promise<Map<string, { country:
   const map = new Map<string, { country: string | null; countryCode: string | null; city: string | null }>();
   if (uncachedIps.length === 0) return map;
 
-  const MAX_RESOLVE = 300;
-  const ipsToResolve = uncachedIps.slice(0, MAX_RESOLVE);
-
+  const ipsToResolve = uncachedIps.slice(0, 300);
   for (let i = 0; i < ipsToResolve.length; i += 100) {
     const batch = ipsToResolve.slice(i, i + 100);
     try {
@@ -77,30 +83,29 @@ async function resolveGeo(uncachedIps: string[]): Promise<Map<string, { country:
         });
       if (upserts.length > 0) await prisma.$transaction(upserts);
     } catch {
-      // Non-fatal — geo resolution is best-effort
+      // Non-fatal
     }
   }
   return map;
 }
 
-export async function getVisitorData(): Promise<VisitorData> {
-  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+export async function getVisitorData(days = 7): Promise<VisitorData> {
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
 
   const [visits, cachedGeo] = await Promise.all([
     prisma.pageVisit.findMany({
       where: { visitedAt: { gte: since } },
       orderBy: { visitedAt: "desc" },
-      take: 5000,
+      take: 10000,
       select: { id: true, ip: true, path: true, visitedAt: true },
     }),
     prisma.ipGeoCache.findMany(),
   ]);
 
   const geoMap = new Map(cachedGeo.map((g) => [g.ip, g]));
-
   const uniqueIps = [...new Set(visits.map((v) => v.ip))].filter((ip) => ip !== "unknown");
   const uncachedIps = uniqueIps.filter((ip) => !geoMap.has(ip));
-
   if (uncachedIps.length > 0) {
     const resolved = await resolveGeo(uncachedIps);
     for (const [ip, geo] of resolved) geoMap.set(ip, { ip, ...geo, cachedAt: new Date() });
@@ -108,8 +113,10 @@ export async function getVisitorData(): Promise<VisitorData> {
 
   // Build visitor groups
   const visitorMap = new Map<string, VisitorGroup>();
+  let onlineNow = 0;
   for (const v of visits) {
     const geo = geoMap.get(v.ip);
+    const visitedAt = v.visitedAt.toISOString();
     const existing = visitorMap.get(v.ip);
     if (!existing) {
       visitorMap.set(v.ip, {
@@ -119,15 +126,29 @@ export async function getVisitorData(): Promise<VisitorData> {
         city: geo?.city ?? null,
         paths: [v.path],
         visitCount: 1,
-        firstSeen: v.visitedAt,
-        lastSeen: v.visitedAt,
+        firstSeen: visitedAt,
+        lastSeen: visitedAt,
       });
     } else {
       if (!existing.paths.includes(v.path)) existing.paths.push(v.path);
       existing.visitCount++;
-      if (v.visitedAt < existing.firstSeen) existing.firstSeen = v.visitedAt;
-      if (v.visitedAt > existing.lastSeen) existing.lastSeen = v.visitedAt;
+      if (v.visitedAt.toISOString() < existing.firstSeen) existing.firstSeen = visitedAt;
+      if (v.visitedAt.toISOString() > existing.lastSeen) existing.lastSeen = visitedAt;
     }
+    if (v.visitedAt >= fiveMinutesAgo) onlineNow++;
+  }
+
+  // Daily traffic — fill all days including zero-visit days
+  const dayMap = new Map<string, number>();
+  for (const v of visits) {
+    const day = v.visitedAt.toISOString().slice(0, 10);
+    dayMap.set(day, (dayMap.get(day) ?? 0) + 1);
+  }
+  const dailyTraffic: DailyTraffic[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+    const key = d.toISOString().slice(0, 10);
+    dailyTraffic.push({ date: key, visits: dayMap.get(key) ?? 0 });
   }
 
   // Page hit counts
@@ -138,27 +159,50 @@ export async function getVisitorData(): Promise<VisitorData> {
     .slice(0, 20)
     .map(([path, count]) => ({ path, count }));
 
-  // Top country
-  const countryCount = new Map<string, number>();
+  // Country breakdown
+  const countryMap = new Map<string, { count: number; countryCode: string | null }>();
   for (const vg of visitorMap.values()) {
-    if (vg.country) countryCount.set(vg.country, (countryCount.get(vg.country) ?? 0) + 1);
+    if (vg.country) {
+      const e = countryMap.get(vg.country);
+      if (e) e.count++;
+      else countryMap.set(vg.country, { count: 1, countryCode: vg.countryCode });
+    }
   }
-  const topCountry = countryCount.size > 0
-    ? [...countryCount.entries()].sort((a, b) => b[1] - a[1])[0][0]
-    : null;
+  const topCountries = [...countryMap.entries()]
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 10)
+    .map(([country, { count, countryCode }]) => ({ country, countryCode, count }));
 
-  // Recent visits enriched with geo
+  const topCountry = topCountries[0]?.country ?? null;
+
+  const totalPaths = [...visitorMap.values()].reduce((s, v) => s + v.paths.length, 0);
+  const avgPagesPerVisitor = visitorMap.size > 0
+    ? Math.round((totalPaths / visitorMap.size) * 10) / 10
+    : 0;
+
   const recentVisits: RecentVisit[] = visits.slice(0, 100).map((v) => {
     const geo = geoMap.get(v.ip);
-    return { id: v.id, ip: v.ip, country: geo?.country ?? null, countryCode: geo?.countryCode ?? null, path: v.path, visitedAt: v.visitedAt };
+    return {
+      id: v.id,
+      ip: v.ip,
+      country: geo?.country ?? null,
+      countryCode: geo?.countryCode ?? null,
+      path: v.path,
+      visitedAt: v.visitedAt.toISOString(),
+    };
   });
 
   return {
     totalVisits: visits.length,
     uniqueVisitors: visitorMap.size,
+    onlineNow,
+    avgPagesPerVisitor,
     topCountry,
-    visitors: [...visitorMap.values()].sort((a, b) => b.lastSeen.getTime() - a.lastSeen.getTime()),
+    topCountries,
+    visitors: [...visitorMap.values()].sort((a, b) => b.lastSeen.localeCompare(a.lastSeen)),
     topPages,
     recentVisits,
+    dailyTraffic,
+    days,
   };
 }
