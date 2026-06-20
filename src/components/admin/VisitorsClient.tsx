@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { RefreshCw, Globe, Users, Activity, TrendingUp, Zap, BarChart2 } from "lucide-react";
 import type { VisitorData, VisitorGroup, RecentVisit, TopPage, CountryStat, DailyTraffic } from "@/lib/visitor-analytics";
 
@@ -11,8 +11,10 @@ function flag(code: string | null) {
   return String.fromCodePoint(...[...code.toUpperCase()].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
 }
 
-function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime();
+function timeAgo(iso: string, now: number) {
+  const ts = new Date(iso).getTime();
+  if (isNaN(ts)) return "unknown";
+  const diff = now - ts;
   if (diff < 0) return "just now";
   const m = Math.floor(diff / 60000);
   if (m < 1) return "just now";
@@ -92,7 +94,7 @@ function TrafficChart({ data, days }: { data: DailyTraffic[]; days: number }) {
   );
 }
 
-function VisitorTable({ visitors }: { visitors: VisitorGroup[] }) {
+function VisitorTable({ visitors, now }: { visitors: VisitorGroup[]; now: number }) {
   if (visitors.length === 0) return <EmptyState msg="No visitors yet." />;
   return (
     <div className="overflow-x-auto">
@@ -124,7 +126,7 @@ function VisitorTable({ visitors }: { visitors: VisitorGroup[] }) {
                 </div>
               </td>
               <td className="px-3 py-2.5 text-center font-semibold" style={{ color: "var(--foreground)" }}>{v.visitCount}</td>
-              <td className="px-3 py-2.5 text-xs whitespace-nowrap" style={{ color: "var(--muted-foreground)" }}>{timeAgo(v.lastSeen)}</td>
+              <td className="px-3 py-2.5 text-xs whitespace-nowrap" style={{ color: "var(--muted-foreground)" }}>{timeAgo(v.lastSeen, now)}</td>
             </tr>
           ))}
         </tbody>
@@ -133,7 +135,7 @@ function VisitorTable({ visitors }: { visitors: VisitorGroup[] }) {
   );
 }
 
-function ActivityTable({ visits }: { visits: RecentVisit[] }) {
+function ActivityTable({ visits, now }: { visits: RecentVisit[]; now: number }) {
   if (visits.length === 0) return <EmptyState msg="No activity yet." />;
   return (
     <div className="overflow-x-auto">
@@ -148,7 +150,7 @@ function ActivityTable({ visits }: { visits: RecentVisit[] }) {
         <tbody>
           {visits.map((v) => (
             <tr key={v.id} style={{ borderBottom: "1px solid var(--border)" }} className="hover:opacity-75 transition-opacity">
-              <td className="px-3 py-2.5 text-xs whitespace-nowrap" style={{ color: "var(--muted-foreground)" }}>{timeAgo(v.visitedAt)}</td>
+              <td className="px-3 py-2.5 text-xs whitespace-nowrap" style={{ color: "var(--muted-foreground)" }}>{timeAgo(v.visitedAt, now)}</td>
               <td className="px-3 py-2.5 font-mono text-xs whitespace-nowrap" style={{ color: "var(--foreground)" }}>{v.ip}</td>
               <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--foreground)" }}>
                 <span className="mr-1">{flag(v.countryCode)}</span>
@@ -244,6 +246,12 @@ export function VisitorsClient({ data: initialData }: { data: VisitorData }) {
   const [activeDays, setActiveDays] = useState(initialData.days);
   const [tab, setTab] = useState<Tab>("visitors");
   const [loading, setLoading] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(id);
+  }, []);
 
   const fetchRange = useCallback(async (days: number) => {
     setLoading(true);
@@ -344,8 +352,8 @@ export function VisitorsClient({ data: initialData }: { data: VisitorData }) {
             </span>
           </div>
           <div className="p-1">
-            {tab === "visitors" && <VisitorTable visitors={data.visitors} />}
-            {tab === "activity" && <ActivityTable visits={data.recentVisits} />}
+            {tab === "visitors" && <VisitorTable visitors={data.visitors} now={now} />}
+            {tab === "activity" && <ActivityTable visits={data.recentVisits} now={now} />}
             {tab === "countries" && <CountriesTable countries={data.topCountries} total={data.uniqueVisitors} />}
           </div>
         </div>

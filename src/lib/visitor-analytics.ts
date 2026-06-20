@@ -89,6 +89,10 @@ async function resolveGeo(uncachedIps: string[]): Promise<Map<string, { country:
   return map;
 }
 
+function toDate(val: Date | string): Date {
+  return val instanceof Date ? val : new Date(val);
+}
+
 export async function getVisitorData(days = 7): Promise<VisitorData> {
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
@@ -116,7 +120,8 @@ export async function getVisitorData(days = 7): Promise<VisitorData> {
   let onlineNow = 0;
   for (const v of visits) {
     const geo = geoMap.get(v.ip);
-    const visitedAt = v.visitedAt.toISOString();
+    const vDate = toDate(v.visitedAt as Date | string);
+    const visitedAt = vDate.toISOString();
     const existing = visitorMap.get(v.ip);
     if (!existing) {
       visitorMap.set(v.ip, {
@@ -132,16 +137,16 @@ export async function getVisitorData(days = 7): Promise<VisitorData> {
     } else {
       if (!existing.paths.includes(v.path)) existing.paths.push(v.path);
       existing.visitCount++;
-      if (v.visitedAt.toISOString() < existing.firstSeen) existing.firstSeen = visitedAt;
-      if (v.visitedAt.toISOString() > existing.lastSeen) existing.lastSeen = visitedAt;
+      if (visitedAt < existing.firstSeen) existing.firstSeen = visitedAt;
+      if (visitedAt > existing.lastSeen) existing.lastSeen = visitedAt;
     }
-    if (v.visitedAt >= fiveMinutesAgo) onlineNow++;
+    if (vDate >= fiveMinutesAgo) onlineNow++;
   }
 
   // Daily traffic — fill all days including zero-visit days
   const dayMap = new Map<string, number>();
   for (const v of visits) {
-    const day = v.visitedAt.toISOString().slice(0, 10);
+    const day = toDate(v.visitedAt as Date | string).toISOString().slice(0, 10);
     dayMap.set(day, (dayMap.get(day) ?? 0) + 1);
   }
   const dailyTraffic: DailyTraffic[] = [];
@@ -188,7 +193,7 @@ export async function getVisitorData(days = 7): Promise<VisitorData> {
       country: geo?.country ?? null,
       countryCode: geo?.countryCode ?? null,
       path: v.path,
-      visitedAt: v.visitedAt.toISOString(),
+      visitedAt: toDate(v.visitedAt as Date | string).toISOString(),
     };
   });
 
