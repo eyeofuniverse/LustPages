@@ -12,7 +12,9 @@ declare global {
 }
 
 function WebVitals() {
+  const pathname = usePathname();
   useReportWebVitals((metric) => {
+    if (pathname.startsWith("/meminhaj")) return;
     window.gtag?.("event", metric.name, {
       value: Math.round(metric.name === "CLS" ? metric.value * 1000 : metric.value),
       event_label: metric.id,
@@ -29,6 +31,7 @@ export function AnalyticsEvents() {
 
   useEffect(() => {
     if (!id || typeof window === "undefined") return;
+    if (pathname.startsWith("/meminhaj")) return;
 
     const sendPageView = () => {
       window.gtag?.("event", "page_view", {
@@ -38,7 +41,6 @@ export function AnalyticsEvents() {
     };
 
     if (isFirst.current) {
-      // Fire initial page_view once gtag is ready
       const timer = setTimeout(sendPageView, 100);
       isFirst.current = false;
       return () => clearTimeout(timer);
