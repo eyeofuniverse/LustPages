@@ -9,6 +9,7 @@ export const ADMIN_PERMISSIONS = {
   coin_packages: "Coin Packages",
   comments: "Comments",
   reports: "Reports",
+  ratings: "Ratings",
   emails: "Email Settings",
   authors: "Authors",
   analytics: "Visitor Analytics",

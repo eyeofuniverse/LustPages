@@ -27,8 +27,10 @@ const siteUrl = process.env.NEXTAUTH_URL ?? "https://lustpages.com";
 export const metadata: Metadata = {
   title: { absolute: "LustPages — Premium Adult Fiction & Erotica Stories" },
   description:
-    "Discover thousands of premium adult fiction stories across romance, fantasy, thriller, and contemporary genres. Written by passionate authors. Free to read.",
+    "LustPages (also known as Lust Pages) — Discover thousands of premium adult fiction stories across romance, fantasy, thriller, and contemporary genres. Written by passionate authors. Free to read.",
   keywords: [
+    "LustPages",
+    "Lust Pages",
     "adult fiction",
     "erotica stories",
     "romance stories",
@@ -73,22 +75,32 @@ export default async function HomePage() {
 
   const spotlightAuthors = authors.slice(0, 4);
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: "LustPages",
-    url: siteUrl,
-    description:
-      "Premium adult fiction and erotica stories across multiple genres.",
-    potentialAction: {
-      "@type": "SearchAction",
-      target: {
-        "@type": "EntryPoint",
-        urlTemplate: `${siteUrl}/stories?search={search_term_string}`,
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "LustPages",
+      alternateName: "Lust Pages",
+      url: siteUrl,
+      description:
+        "Premium adult fiction and erotica stories across multiple genres.",
+      potentialAction: {
+        "@type": "SearchAction",
+        target: {
+          "@type": "EntryPoint",
+          urlTemplate: `${siteUrl}/stories?search={search_term_string}`,
+        },
+        "query-input": "required name=search_term_string",
       },
-      "query-input": "required name=search_term_string",
     },
-  };
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "LustPages",
+      alternateName: "Lust Pages",
+      url: siteUrl,
+    },
+  ];
 
   return (
     <>

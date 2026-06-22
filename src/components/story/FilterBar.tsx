@@ -15,7 +15,7 @@ interface FilterBarProps {
   categories: Category[];
   activeCategory?: string;
   activeTag?: string;
-  popularTags?: { tag: string; count: number }[];
+  popularTags?: { tag: string; count: number; name?: string }[];
 }
 
 export function FilterBar({
@@ -76,7 +76,7 @@ export function FilterBar({
             <Hash size={12} />
             Popular:
           </span>
-          {popularTags.map(({ tag }) => {
+          {popularTags.map(({ tag, name }) => {
             const isActive = activeTag === tag;
             return (
               <button
@@ -93,7 +93,7 @@ export function FilterBar({
                     : { background: "var(--muted)", color: "var(--muted-foreground)" }
                 }
               >
-                #{tag}
+                #{name ?? tag}
               </button>
             );
           })}

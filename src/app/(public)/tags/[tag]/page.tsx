@@ -136,7 +136,7 @@ export default async function TagPage({ params, searchParams }: Props) {
         <div className="mb-6 pb-6" style={{ borderBottom: "1px solid var(--border)" }}>
           <FilterBar
             categories={categories}
-            activeTag={tagName}
+            activeTag={tagSlug}
             popularTags={popularTags}
           />
         </div>
