@@ -5,7 +5,7 @@ import { getPendingStoriesCount, getPendingReportsCount, getPendingTagRequestsCo
 import {
   BookOpen, LayoutDashboard, PenSquare, Home, FolderOpen, Tag, CheckSquare,
   Megaphone, Sparkles, MessageCircle, Flag, Tags, Receipt, Mail, Coins,
-  Layers, Library, UserCircle, Users, UserRound, BarChart2, SearchCode, KeyRound,
+  Layers, Library, UserCircle, Users, UserRound, BarChart2, SearchCode, KeyRound, Star,
 } from "lucide-react";
 import { MobileAdminNav } from "@/components/admin/MobileAdminNav";
 import { Toaster } from "sonner";
@@ -89,6 +89,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         { href: "/meminhaj/approvals", icon: <CheckSquare size={16} />, label: "Approvals", badge: pendingCount, permission: "approvals" },
         { href: "/meminhaj/comments", icon: <MessageCircle size={16} />, label: "Comments", permission: "comments" },
         { href: "/meminhaj/reports", icon: <Flag size={16} />, label: "Reports", badge: pendingReports, permission: "reports" },
+        { href: "/meminhaj/ratings", icon: <Star size={16} />, label: "Ratings", permission: "ratings" },
       ],
     },
     {

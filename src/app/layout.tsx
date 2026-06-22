@@ -32,6 +32,7 @@ export const metadata: Metadata = {
   description:
     "Discover thousands of premium adult fiction stories. Romance, fantasy, and contemporary erotica written by talented authors. Free to read.",
   keywords: [
+    "LustPages", "Lust Pages",
     "erotica", "adult fiction", "romance stories", "erotic literature",
     "adult stories", "sexual fiction", "romantic erotica", "fantasy erotica",
   ],

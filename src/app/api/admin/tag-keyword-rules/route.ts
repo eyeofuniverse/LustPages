@@ -26,6 +26,10 @@ export async function POST(req: NextRequest) {
 
   const kw = keyword.trim().toLowerCase();
 
+  const parentTag = await prisma.tag.findUnique({ where: { id: parentTagId }, select: { isApproved: true } });
+  if (!parentTag) return NextResponse.json({ error: "Parent tag not found" }, { status: 404 });
+  if (!parentTag.isApproved) return NextResponse.json({ error: "Parent tag must be approved before assigning keyword rules" }, { status: 400 });
+
   try {
     const rule = await prisma.tagKeywordRule.create({
       data: { keyword: kw, parentTagId },

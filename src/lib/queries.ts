@@ -389,8 +389,8 @@ export async function getAllStructuredTags() {
 }
 
 export async function getTagBySlug(slug: string) {
-  return prisma.tag.findUnique({
-    where: { slug },
+  return prisma.tag.findFirst({
+    where: { slug, isApproved: true },
     include: { _count: { select: { stories: { where: { published: true } } } } },
   });
 }
@@ -2190,4 +2190,51 @@ export async function getTopTagsForCollections(limit = 24) {
     orderBy: { stories: { _count: "desc" } },
     take: limit,
   });
+}
+
+export async function getAdminRatings({
+  take,
+  skip,
+  search,
+  ratingFilter,
+}: {
+  take: number;
+  skip: number;
+  search?: string;
+  ratingFilter?: number;
+}) {
+  const where = {
+    ...(ratingFilter ? { value: ratingFilter } : {}),
+    ...(search
+      ? {
+          OR: [
+            { story: { title: { contains: search, mode: "insensitive" as const } } },
+            { user: { name: { contains: search, mode: "insensitive" as const } } },
+          ],
+        }
+      : {}),
+  };
+
+  const [ratings, total] = await Promise.all([
+    prisma.rating.findMany({
+      where,
+      take,
+      skip,
+      orderBy: { createdAt: "desc" },
+      include: {
+        story: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            author: { select: { name: true } },
+          },
+        },
+        user: { select: { id: true, name: true, email: true } },
+      },
+    }),
+    prisma.rating.count({ where }),
+  ]);
+
+  return { ratings, total };
 }
