@@ -82,7 +82,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "Analytics",
     items: [
-      { href: "/meminhaj/visitors", icon: BarChart2, label: "Visitors", permission: "analytics" },
+      { href: "/meminhaj/analytics", icon: BarChart2, label: "Analytics", permission: "analytics" },
     ],
   },
 ];

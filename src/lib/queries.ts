@@ -2192,6 +2192,109 @@ export async function getTopTagsForCollections(limit = 24) {
   });
 }
 
+export async function getTagAnalytics() {
+  const tags = await prisma.tag.findMany({
+    where: { isApproved: true },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      tier: true,
+      stories: {
+        where: { published: true },
+        select: {
+          views: true,
+          ratingAvg: true,
+          ratingCount: true,
+          _count: { select: { likes: true, comments: true } },
+        },
+      },
+    },
+  });
+
+  return tags
+    .map((tag) => {
+      const storyCount = tag.stories.length;
+      const totalViews = tag.stories.reduce((s, story) => s + story.views, 0);
+      const totalLikes = tag.stories.reduce((s, story) => s + story._count.likes, 0);
+      const totalComments = tag.stories.reduce((s, story) => s + story._count.comments, 0);
+      const rated = tag.stories.filter((s) => s.ratingCount > 0);
+      const avgRating =
+        rated.length > 0
+          ? rated.reduce((s, story) => s + story.ratingAvg * story.ratingCount, 0) /
+            rated.reduce((s, story) => s + story.ratingCount, 0)
+          : 0;
+      return { id: tag.id, name: tag.name, slug: tag.slug, tier: tag.tier, storyCount, totalViews, totalLikes, totalComments, avgRating };
+    })
+    .sort((a, b) => b.totalViews - a.totalViews);
+}
+
+export async function getCategoryAnalytics() {
+  const cats = await prisma.category.findMany({
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      color: true,
+      stories: {
+        where: { published: true },
+        select: {
+          views: true,
+          ratingAvg: true,
+          ratingCount: true,
+          _count: { select: { likes: true, comments: true } },
+        },
+      },
+    },
+  });
+
+  return cats
+    .map((cat) => {
+      const storyCount = cat.stories.length;
+      const totalViews = cat.stories.reduce((s, story) => s + story.views, 0);
+      const totalLikes = cat.stories.reduce((s, story) => s + story._count.likes, 0);
+      const totalComments = cat.stories.reduce((s, story) => s + story._count.comments, 0);
+      const rated = cat.stories.filter((s) => s.ratingCount > 0);
+      const avgRating =
+        rated.length > 0
+          ? rated.reduce((s, story) => s + story.ratingAvg * story.ratingCount, 0) /
+            rated.reduce((s, story) => s + story.ratingCount, 0)
+          : 0;
+      return { id: cat.id, name: cat.name, slug: cat.slug, color: cat.color, storyCount, totalViews, totalLikes, totalComments, avgRating };
+    })
+    .sort((a, b) => b.totalViews - a.totalViews);
+}
+
+export async function getSearchAnalytics(days = 30) {
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const rows = await prisma.searchQuery.findMany({
+    where: { createdAt: { gte: since } },
+    orderBy: { createdAt: "desc" },
+    take: 5000,
+  });
+
+  const counts = new Map<string, { count: number; zeroResults: number }>();
+  for (const row of rows) {
+    const e = counts.get(row.query) ?? { count: 0, zeroResults: 0 };
+    e.count++;
+    if (row.results === 0) e.zeroResults++;
+    counts.set(row.query, e);
+  }
+
+  const topQueries = Array.from(counts.entries())
+    .map(([query, stats]) => ({ query, ...stats }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 100);
+
+  const recentQueries = rows.slice(0, 50).map((r) => ({
+    query: r.query,
+    results: r.results,
+    createdAt: r.createdAt.toISOString(),
+  }));
+
+  return { topQueries, recentQueries, total: rows.length };
+}
+
 export async function getAdminRatings({
   take,
   skip,

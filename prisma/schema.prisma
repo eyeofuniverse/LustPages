@@ -651,3 +651,14 @@ model TagKeywordRule {
   @@unique([keyword, parentTagId])
   @@index([parentTagId])
 }
+
+// Search terms users type in the platform's search bars.
+model SearchQuery {
+  id        String   @id @default(cuid())
+  query     String
+  results   Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([query])
+  @@index([createdAt])
+}
