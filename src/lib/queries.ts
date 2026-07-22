@@ -2341,3 +2341,52 @@ export async function getAdminRatings({
 
   return { ratings, total };
 }
+
+export async function getAdminUsers({
+  take,
+  skip,
+  search,
+  role,
+}: {
+  take: number;
+  skip: number;
+  search?: string;
+  role?: string;
+}) {
+  const where = {
+    ...(role && role !== "all" ? { role } : {}),
+    ...(search
+      ? {
+          OR: [
+            { name: { contains: search, mode: "insensitive" as const } },
+            { email: { contains: search, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  };
+
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      take,
+      skip,
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        coinBalance: true,
+        createdAt: true,
+        author: { select: { id: true, slug: true, name: true } },
+        _count: { select: { comments: true, ratings: true, bookmarks: true } },
+      },
+    }),
+    prisma.user.count({ where }),
+  ]);
+
+  return {
+    users: users.map((u) => ({ ...u, createdAt: u.createdAt.toISOString() })),
+    total,
+  };
+}

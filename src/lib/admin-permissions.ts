@@ -12,6 +12,7 @@ export const ADMIN_PERMISSIONS = {
   ratings: "Ratings",
   emails: "Email Settings",
   authors: "Authors",
+  users: "Users",
   analytics: "Visitor Analytics",
 } as const;
 

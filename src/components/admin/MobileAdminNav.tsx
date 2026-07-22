@@ -53,6 +53,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "People",
     items: [
       { href: "/meminhaj/authors", icon: UserRound, label: "Authors", permission: "authors" },
+      { href: "/meminhaj/users", icon: Users, label: "Users", permission: "users" },
     ],
   },
   {
