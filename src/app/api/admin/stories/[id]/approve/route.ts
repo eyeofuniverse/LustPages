@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendStoryApprovedEmail, sendNewStoryNotification } from "@/lib/email";
 import { sendPushToUsers } from "@/lib/push";
+import { submitToIndexNow, storyUrl, seriesUrl } from "@/lib/indexnow";
 
 export async function POST(
   _req: Request,
@@ -25,8 +26,14 @@ export async function POST(
             likes: { include: { user: { select: { email: true, name: true } } } },
           },
         },
+        series: { select: { slug: true } },
       },
     });
+
+    // Notify Bing/IndexNow — fire-and-forget
+    const indexNowUrls = [storyUrl(story.slug)];
+    if (story.series?.slug) indexNowUrls.push(seriesUrl(story.series.slug));
+    submitToIndexNow(indexNowUrls);
 
     // Notify the author
     if (story.author.user?.email) {

@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sanitizeStoryContent } from "@/lib/sanitize";
 import { resolveNewTags } from "@/lib/tag-helpers";
+import { submitToIndexNow, storyUrl } from "@/lib/indexnow";
 
 async function requireAdmin() {
   const session = await auth();
@@ -43,6 +44,7 @@ export async function PATCH(
         }),
       },
     });
+    if (story.published) submitToIndexNow([storyUrl(story.slug)]);
     return NextResponse.json(story);
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Error";
