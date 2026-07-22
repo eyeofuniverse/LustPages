@@ -7,6 +7,7 @@ import {
   Globe, Sparkles,
 } from "lucide-react";
 import { formatDateShort } from "@/lib/utils";
+import { IndexNowButton } from "@/components/admin/IndexNowButton";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Admin Dashboard" };
@@ -477,6 +478,15 @@ export default async function AdminDashboard() {
             </table>
           </div>
         </div>
+      </div>
+
+      {/* Tools */}
+      <div className="mt-8 p-5 rounded-2xl" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+        <h2 className="text-sm font-semibold mb-3" style={{ color: "var(--foreground)" }}>SEO Tools</h2>
+        <p className="text-xs mb-4" style={{ color: "var(--muted-foreground)" }}>
+          Run once to submit all existing published stories and series to Bing and other IndexNow-compatible search engines. New stories are submitted automatically on approval.
+        </p>
+        <IndexNowButton />
       </div>
     </div>
   );
