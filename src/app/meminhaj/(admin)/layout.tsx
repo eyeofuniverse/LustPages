@@ -81,6 +81,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       label: "People",
       items: [
         { href: "/meminhaj/authors", icon: <UserRound size={16} />, label: "Authors", permission: "authors" },
+        { href: "/meminhaj/users", icon: <Users size={16} />, label: "Users", permission: "users" },
       ],
     },
     {
