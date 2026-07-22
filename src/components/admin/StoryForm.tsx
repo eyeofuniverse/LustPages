@@ -9,7 +9,7 @@ import { TierTagSelector, type TagEntry, type CustomTag } from "@/components/aut
 import {
   Save, ChevronDown, ChevronUp, Star, MessageSquare,
   Lock, Search, BookOpen, Eye, Heart, Bookmark, Plus, X,
-  Wand2, Loader2,
+  Wand2, Loader2, AlignLeft,
 } from "lucide-react";
 import { FieldInfo } from "@/components/ui/FieldInfo";
 import { calculateReadingTime } from "@/lib/utils";
@@ -457,10 +457,9 @@ export function StoryForm({ categories, authors, availableTags, initialData }: S
           </div>
 
           {/* Story content */}
-          <div>
-            <label style={{ ...labelStyle, marginBottom: "0.5rem" }}>Story Content * <FieldInfo text="The full text of the story. Use the rich editor for headings, bold, italic, block quotes, images, and other formatting." /></label>
+          <Panel title="Story Content *" icon={AlignLeft} defaultOpen={true}>
             <StoryEditor content={content} onChange={setContent} />
-          </div>
+          </Panel>
 
           {/* Author's Note */}
           <Panel title="Author's Note" icon={BookOpen}>
