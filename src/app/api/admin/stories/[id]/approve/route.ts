@@ -26,13 +26,13 @@ export async function POST(
             likes: { include: { user: { select: { email: true, name: true } } } },
           },
         },
-        series: { select: { slug: true } },
+        seriesInfo: { select: { slug: true } },
       },
     });
 
     // Notify Bing/IndexNow — fire-and-forget
     const indexNowUrls = [storyUrl(story.slug)];
-    if (story.series?.slug) indexNowUrls.push(seriesUrl(story.series.slug));
+    if (story.seriesInfo?.slug) indexNowUrls.push(seriesUrl(story.seriesInfo.slug));
     submitToIndexNow(indexNowUrls);
 
     // Notify the author
