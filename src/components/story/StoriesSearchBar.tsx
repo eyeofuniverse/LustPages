@@ -47,9 +47,20 @@ export function StoriesSearchBar({ initialSearch }: { initialSearch?: string }) 
     timerRef.current = setTimeout(() => fetchSuggestions(q), 300);
   }
 
+  function trackSearch(q: string) {
+    if (q.trim().length >= 2) {
+      fetch("/api/track/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: q.trim(), results: 0 }),
+      }).catch(() => {});
+    }
+  }
+
   // Always navigate to /stories?search=… regardless of current pathname
   function navigate(search: string) {
     if (search.trim()) {
+      trackSearch(search);
       router.push(`/stories?search=${encodeURIComponent(search.trim())}`);
     } else {
       router.push("/stories");

@@ -6,6 +6,7 @@ import {
   getTrendingStories,
   searchSeries,
 } from "@/lib/queries";
+import { prisma } from "@/lib/prisma";
 import { SearchInput } from "@/components/search/SearchInput";
 import { StoryListItem } from "@/components/story/StoryListItem";
 import { AdSlot } from "@/components/ads/AdSlot";
@@ -92,6 +93,12 @@ export default async function SearchPage({ searchParams }: Props) {
     ]);
 
   const totalResults = storyCount + seriesResults.length;
+
+  if (hasQuery && query.length >= 2) {
+    prisma.searchQuery
+      .create({ data: { query: query.toLowerCase(), results: totalResults } })
+      .catch(() => {});
+  }
 
   const searchActionLd = {
     "@context": "https://schema.org",

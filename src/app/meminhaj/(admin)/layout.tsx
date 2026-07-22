@@ -110,7 +110,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     {
       label: "Analytics",
       items: [
-        { href: "/meminhaj/visitors", icon: <BarChart2 size={16} />, label: "Visitors", permission: "analytics" },
+        { href: "/meminhaj/analytics", icon: <BarChart2 size={16} />, label: "Analytics", permission: "analytics" },
       ],
     },
   ];
