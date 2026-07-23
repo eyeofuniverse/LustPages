@@ -18,6 +18,7 @@ import { ReadingProgressTracker } from "@/components/story/ReadingProgressTracke
 import { ViewTracker } from "@/components/story/ViewTracker";
 import { SafeImage } from "@/components/ui/SafeImage";
 import { ShareButtons } from "@/components/story/ShareButtons";
+import { StoryEndRatingNudge } from "@/components/story/StoryEndRatingNudge";
 import { Clock, Calendar, ArrowLeft, Tag, PenLine } from "lucide-react";
 import type { Metadata } from "next";
 
@@ -371,6 +372,15 @@ export default async function StoryPage({ params }: Props) {
             )}
           </div>
         )}
+
+        {/* Story-end rating nudge — sentinel fires when user scrolls past story content */}
+        <StoryEndRatingNudge
+          storyId={story.id}
+          isLoggedIn={!!userId}
+          isUnlocked={isUnlocked}
+          avgRating={story.ratingAvg}
+          ratingCount={story.ratingCount}
+        />
 
         {/* Story Actions (bottom) */}
         {isUnlocked && (
