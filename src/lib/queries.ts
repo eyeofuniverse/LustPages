@@ -1157,6 +1157,61 @@ export async function getFeaturedPromotions(type: "story" | "series"): Promise<F
     series: p.series,
   });
 
+  // Auto-fill: when paid + admin picks don't reach MAX, surface top content automatically
+  const totalSoFar = paid.length + adminPicks.length;
+  const excludedStoryIds = [
+    ...paidItemIds,
+    ...adminPicks.map((p) => (p as { storyId?: string | null }).storyId).filter(Boolean),
+  ] as string[];
+  const excludedSeriesIds = [
+    ...paidItemIds,
+    ...adminPicks.map((p) => (p as { seriesId?: string | null }).seriesId).filter(Boolean),
+  ] as string[];
+
+  const autoFills: FeaturedEntry[] = totalSoFar < MAX
+    ? type === "story"
+      ? (await prisma.story.findMany({
+          where: {
+            published: true,
+            ...(excludedStoryIds.length ? { id: { notIn: excludedStoryIds } } : {}),
+          },
+          orderBy: [{ views: "desc" }, { ratingAvg: "desc" }],
+          take: MAX - totalSoFar,
+          select: {
+            id: true, title: true, slug: true, coverImage: true,
+            readingTime: true, ratingAvg: true, ratingCount: true,
+            author: { select: { name: true, slug: true } },
+            categories: { select: { id: true, name: true, slug: true, color: true } },
+            seriesInfo: { select: { coverImage: true } },
+          },
+        })).map((s) => ({
+          id: s.id, type: "story" as const, isAdminPick: false, expiresAt: null,
+          story: resolveStoryCover(s),
+          series: null,
+        }))
+      : (await prisma.series.findMany({
+          where: {
+            stories: { some: { published: true } },
+            ...(excludedSeriesIds.length ? { id: { notIn: excludedSeriesIds } } : {}),
+          },
+          orderBy: { stories: { _count: "desc" } },
+          take: MAX - totalSoFar,
+          select: {
+            id: true, name: true, slug: true, coverImage: true,
+            author: { select: { name: true, slug: true } },
+            _count: { select: { stories: true } },
+            stories: {
+              where: { published: true },
+              select: { coverImage: true, ratingAvg: true, ratingCount: true },
+            },
+          },
+        })).map((s) => ({
+          id: s.id, type: "series" as const, isAdminPick: false, expiresAt: null,
+          story: null,
+          series: s,
+        }))
+    : [];
+
   return [
     ...paid.map((p) => ({
       id: p.id, type: p.type as "story" | "series", isAdminPick: false,
@@ -1166,6 +1221,7 @@ export async function getFeaturedPromotions(type: "story" | "series"): Promise<F
       id: p.id, type: p.type as "story" | "series", isAdminPick: true,
       expiresAt: null, ...resolveEntry(p),
     })),
+    ...autoFills,
   ] as FeaturedEntry[];
 }
 
