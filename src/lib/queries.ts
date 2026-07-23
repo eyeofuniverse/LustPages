@@ -1157,8 +1157,10 @@ export async function getFeaturedPromotions(type: "story" | "series"): Promise<F
     series: p.series,
   });
 
-  // Auto-fill: when paid + admin picks don't reach MAX, surface top content automatically
+  // Auto-fill: when paid + admin picks don't reach MAX, surface top content automatically.
+  // Fetches a pool of 50 and rotates through it daily so the selection changes every day.
   const totalSoFar = paid.length + adminPicks.length;
+  const slotsNeeded = MAX - totalSoFar;
   const excludedStoryIds = [
     ...paidItemIds,
     ...adminPicks.map((p) => (p as { storyId?: string | null }).storyId).filter(Boolean),
@@ -1168,44 +1170,61 @@ export async function getFeaturedPromotions(type: "story" | "series"): Promise<F
     ...adminPicks.map((p) => (p as { seriesId?: string | null }).seriesId).filter(Boolean),
   ] as string[];
 
-  const autoFills: FeaturedEntry[] = totalSoFar < MAX
+  // dayIndex changes once per day — used to shift the pool window
+  const dayIndex = Math.floor(Date.now() / 86_400_000);
+
+  function dailySlice<T>(pool: T[], count: number): T[] {
+    if (pool.length <= count) return pool;
+    const offset = (dayIndex * count) % pool.length;
+    return [...pool.slice(offset), ...pool.slice(0, offset)].slice(0, count);
+  }
+
+  const POOL = 50;
+
+  const autoFills: FeaturedEntry[] = slotsNeeded > 0
     ? type === "story"
-      ? (await prisma.story.findMany({
-          where: {
-            published: true,
-            ...(excludedStoryIds.length ? { id: { notIn: excludedStoryIds } } : {}),
-          },
-          orderBy: [{ views: "desc" }, { ratingAvg: "desc" }],
-          take: MAX - totalSoFar,
-          select: {
-            id: true, title: true, slug: true, coverImage: true,
-            readingTime: true, ratingAvg: true, ratingCount: true,
-            author: { select: { name: true, slug: true } },
-            categories: { select: { id: true, name: true, slug: true, color: true } },
-            seriesInfo: { select: { coverImage: true } },
-          },
-        })).map((s) => ({
+      ? dailySlice(
+          await prisma.story.findMany({
+            where: {
+              published: true,
+              ...(excludedStoryIds.length ? { id: { notIn: excludedStoryIds } } : {}),
+            },
+            orderBy: [{ views: "desc" }, { ratingAvg: "desc" }],
+            take: POOL,
+            select: {
+              id: true, title: true, slug: true, coverImage: true,
+              readingTime: true, ratingAvg: true, ratingCount: true,
+              author: { select: { name: true, slug: true } },
+              categories: { select: { id: true, name: true, slug: true, color: true } },
+              seriesInfo: { select: { coverImage: true } },
+            },
+          }),
+          slotsNeeded,
+        ).map((s) => ({
           id: s.id, type: "story" as const, isAdminPick: false, expiresAt: null,
           story: resolveStoryCover(s),
           series: null,
         }))
-      : (await prisma.series.findMany({
-          where: {
-            stories: { some: { published: true } },
-            ...(excludedSeriesIds.length ? { id: { notIn: excludedSeriesIds } } : {}),
-          },
-          orderBy: { stories: { _count: "desc" } },
-          take: MAX - totalSoFar,
-          select: {
-            id: true, name: true, slug: true, coverImage: true,
-            author: { select: { name: true, slug: true } },
-            _count: { select: { stories: true } },
-            stories: {
-              where: { published: true },
-              select: { coverImage: true, ratingAvg: true, ratingCount: true },
+      : dailySlice(
+          await prisma.series.findMany({
+            where: {
+              stories: { some: { published: true } },
+              ...(excludedSeriesIds.length ? { id: { notIn: excludedSeriesIds } } : {}),
             },
-          },
-        })).map((s) => ({
+            orderBy: { stories: { _count: "desc" } },
+            take: POOL,
+            select: {
+              id: true, name: true, slug: true, coverImage: true,
+              author: { select: { name: true, slug: true } },
+              _count: { select: { stories: true } },
+              stories: {
+                where: { published: true },
+                select: { coverImage: true, ratingAvg: true, ratingCount: true },
+              },
+            },
+          }),
+          slotsNeeded,
+        ).map((s) => ({
           id: s.id, type: "series" as const, isAdminPick: false, expiresAt: null,
           story: null,
           series: s,
