@@ -51,6 +51,7 @@ export function Header({ categories }: HeaderProps) {
   }, [mobileOpen]);
 
   const closeMobile = () => setMobileOpen(false);
+  const navCategories = categories.filter((cat) => cat._count.stories >= 10);
   const isAuthor = !!(session?.user as { authorId?: string | null } | undefined)?.authorId;
   const authorSlug = (session?.user as { authorSlug?: string } | undefined)?.authorSlug;
   const isAdmin = (session?.user as { role?: string } | undefined)?.role === "admin";
@@ -123,21 +124,11 @@ export function Header({ categories }: HeaderProps) {
                   >
                     {/* LEFT — Genres */}
                     <div className="flex-1 p-5">
-                      <div className="flex items-center justify-between mb-4">
-                        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--muted-foreground)" }}>
-                          Genres
-                        </p>
-                        <Link
-                          href="/categories"
-                          className="text-[11px] font-semibold transition-opacity hover:opacity-70"
-                          style={{ color: "#c4426a" }}
-                          onClick={() => setBrowseOpen(false)}
-                        >
-                          All Genres →
-                        </Link>
-                      </div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest mb-4" style={{ color: "var(--muted-foreground)" }}>
+                        Genres
+                      </p>
                       <div className="grid grid-cols-3 gap-0.5">
-                        {categories.map((cat) => (
+                        {navCategories.map((cat) => (
                           <Link
                             key={cat.id}
                             href={`/categories/${cat.slug}`}
@@ -459,7 +450,7 @@ export function Header({ categories }: HeaderProps) {
 
             {mobileBrowseOpen && (
               <div className="mt-1 grid grid-cols-2 gap-1 px-1">
-                {categories.map((cat) => (
+                {navCategories.map((cat) => (
                   <Link
                     key={cat.id}
                     href={`/categories/${cat.slug}`}
