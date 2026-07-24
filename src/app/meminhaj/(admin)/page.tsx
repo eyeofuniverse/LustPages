@@ -11,7 +11,6 @@ import { IndexNowButton } from "@/components/admin/IndexNowButton";
 import { DashboardRefresher } from "@/components/admin/DashboardRefresher";
 import type { Metadata } from "next";
 
-export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Admin Dashboard" };
 
 function fmt(n: number) {
