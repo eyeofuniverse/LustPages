@@ -8,8 +8,10 @@ import {
 } from "lucide-react";
 import { formatDateShort } from "@/lib/utils";
 import { IndexNowButton } from "@/components/admin/IndexNowButton";
+import { DashboardRefresher } from "@/components/admin/DashboardRefresher";
 import type { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Admin Dashboard" };
 
 function fmt(n: number) {
@@ -135,6 +137,7 @@ export default async function AdminDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <DashboardRefresher />
           <Link
             href="/"
             target="_blank"
