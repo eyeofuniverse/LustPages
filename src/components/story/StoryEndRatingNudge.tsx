@@ -112,8 +112,8 @@ export function StoryEndRatingNudge({ storyId, isLoggedIn, isUnlocked, avgRating
 
       {show && (
         <div
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[51] w-[calc(100vw-2rem)] max-w-sm"
-          style={{ animation: "push-slide-up 0.3s ease both" }}
+          className="fixed left-1/2 -translate-x-1/2 z-[51] w-[calc(100vw-2rem)] max-w-sm"
+          style={{ bottom: "max(1.5rem, calc(env(safe-area-inset-bottom) + 0.5rem))", animation: "push-slide-up 0.3s ease both" }}
         >
           <div
             className="rounded-2xl p-4 shadow-2xl"
@@ -158,7 +158,7 @@ export function StoryEndRatingNudge({ storyId, isLoggedIn, isUnlocked, avgRating
                         Tap a star — your rating helps readers discover great content.
                       </p>
                       <div
-                        className="flex items-center gap-0.5"
+                        className="flex items-center gap-1"
                         onMouseLeave={() => setHovered(null)}
                         role="group"
                         aria-label="Rate this story"
@@ -170,7 +170,7 @@ export function StoryEndRatingNudge({ storyId, isLoggedIn, isUnlocked, avgRating
                             onMouseEnter={() => setHovered(star)}
                             disabled={loading}
                             aria-label={`${star} star${star !== 1 ? "s" : ""}`}
-                            className="transition-transform hover:scale-110 active:scale-95 disabled:opacity-50 p-0.5"
+                            className="transition-transform hover:scale-110 active:scale-95 disabled:opacity-50 p-1"
                           >
                             <Star
                               size={30}

@@ -52,8 +52,8 @@ export function SignInNudge() {
 
   return (
     <div
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100vw-2rem)] max-w-sm"
-      style={{ animation: "push-slide-up 0.3s ease both" }}
+      className="fixed left-1/2 -translate-x-1/2 z-50 w-[calc(100vw-2rem)] max-w-sm"
+      style={{ bottom: "max(1.5rem, calc(env(safe-area-inset-bottom) + 0.5rem))", animation: "push-slide-up 0.3s ease both" }}
     >
       <div
         className="rounded-2xl p-4 shadow-2xl flex items-start gap-3"
@@ -73,7 +73,7 @@ export function SignInNudge() {
           <p className="text-xs mb-3" style={{ color: "var(--muted-foreground)" }}>
             Like, bookmark, rate stories, and build your personal reading list.
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Link
               href="/register"
               onClick={dismiss}
