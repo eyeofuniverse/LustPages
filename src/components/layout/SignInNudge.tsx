@@ -33,7 +33,6 @@ export function SignInNudge() {
       if (!getCookie(COOKIE)) setShow(true);
     }, DELAY_MS);
 
-    // Hide ourselves if the story-end nudge appears (it has its own sign-in CTA)
     const hideForStory = () => setShow(false);
     window.addEventListener("lp:story-nudge:on", hideForStory);
 
@@ -52,59 +51,64 @@ export function SignInNudge() {
 
   return (
     <div
-      className="fixed left-1/2 -translate-x-1/2 z-50 w-[calc(100vw-2rem)] max-w-sm"
-      style={{ bottom: "max(1.5rem, calc(env(safe-area-inset-bottom) + 0.5rem))", animation: "push-slide-up 0.3s ease both" }}
+      className="fixed inset-x-3 z-50 mx-auto max-w-sm"
+      style={{
+        bottom: "max(0.75rem, calc(env(safe-area-inset-bottom) + 0.5rem))",
+        animation: "push-slide-up 0.3s ease both",
+      }}
     >
       <div
-        className="rounded-2xl p-4 shadow-2xl flex items-start gap-3"
+        className="rounded-2xl p-4 shadow-2xl"
         style={{ background: "var(--card)", border: "1px solid var(--border)" }}
       >
-        <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
-          style={{ background: "rgba(196,66,106,0.12)" }}
-        >
-          <BookOpen size={18} style={{ color: "#c4426a" }} />
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm mb-0.5" style={{ color: "var(--foreground)" }}>
-            Join LustPages for free
-          </p>
-          <p className="text-xs mb-3" style={{ color: "var(--muted-foreground)" }}>
-            Like, bookmark, rate stories, and build your personal reading list.
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/register"
-              onClick={dismiss}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
-              style={{ background: "#c4426a" }}
-            >
-              <UserPlus size={12} /> Create account
-            </Link>
-            <Link
-              href="/signin"
-              onClick={dismiss}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-70"
-              style={{
-                color: "var(--foreground)",
-                background: "var(--muted)",
-                border: "1px solid var(--border)",
-              }}
-            >
-              <LogIn size={12} /> Sign in
-            </Link>
+        <div className="flex items-start gap-3">
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
+            style={{ background: "rgba(196,66,106,0.12)" }}
+          >
+            <BookOpen size={18} style={{ color: "#c4426a" }} />
           </div>
-        </div>
 
-        <button
-          onClick={dismiss}
-          className="p-1 rounded-lg transition-opacity hover:opacity-60 shrink-0"
-          style={{ color: "var(--muted-foreground)" }}
-          aria-label="Dismiss"
-        >
-          <X size={14} />
-        </button>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm mb-0.5" style={{ color: "var(--foreground)" }}>
+              Join LustPages for free
+            </p>
+            <p className="text-xs mb-3" style={{ color: "var(--muted-foreground)" }}>
+              Like, bookmark, and rate stories. Build your personal reading list.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/register"
+                onClick={dismiss}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                style={{ background: "#c4426a" }}
+              >
+                <UserPlus size={13} /> Create account
+              </Link>
+              <Link
+                href="/signin"
+                onClick={dismiss}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-opacity hover:opacity-70"
+                style={{
+                  color: "var(--foreground)",
+                  background: "var(--muted)",
+                  border: "1px solid var(--border)",
+                }}
+              >
+                <LogIn size={13} /> Sign in
+              </Link>
+            </div>
+          </div>
+
+          <button
+            onClick={dismiss}
+            className="p-1.5 rounded-lg transition-opacity hover:opacity-60 shrink-0"
+            style={{ color: "var(--muted-foreground)" }}
+            aria-label="Dismiss"
+          >
+            <X size={15} />
+          </button>
+        </div>
       </div>
     </div>
   );

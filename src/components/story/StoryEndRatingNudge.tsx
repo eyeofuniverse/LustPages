@@ -41,13 +41,10 @@ export function StoryEndRatingNudge({ storyId, isLoggedIn, isUnlocked, avgRating
     if (!isUnlocked) return;
     if (getCookie(cookieKey)) return;
 
-    // For logged-in users, check if they already rated this story
     if (isLoggedIn) {
       fetch(`/api/stories/${storyId}/status`)
         .then((r) => r.json())
-        .then((data) => {
-          if (data.rating) setCookie(cookieKey, DAYS);
-        })
+        .then((data) => { if (data.rating) setCookie(cookieKey, DAYS); })
         .catch(() => {});
     }
 
@@ -107,13 +104,15 @@ export function StoryEndRatingNudge({ storyId, isLoggedIn, isUnlocked, avgRating
 
   return (
     <>
-      {/* Sentinel: placed in the DOM flow; IntersectionObserver fires when user scrolls here */}
       <div ref={sentinelRef} aria-hidden className="h-px" />
 
       {show && (
         <div
-          className="fixed left-1/2 -translate-x-1/2 z-[51] w-[calc(100vw-2rem)] max-w-sm"
-          style={{ bottom: "max(1.5rem, calc(env(safe-area-inset-bottom) + 0.5rem))", animation: "push-slide-up 0.3s ease both" }}
+          className="fixed inset-x-3 z-[51] mx-auto max-w-sm"
+          style={{
+            bottom: "max(0.75rem, calc(env(safe-area-inset-bottom) + 0.5rem))",
+            animation: "push-slide-up 0.3s ease both",
+          }}
         >
           <div
             className="rounded-2xl p-4 shadow-2xl"
@@ -139,74 +138,71 @@ export function StoryEndRatingNudge({ storyId, isLoggedIn, isUnlocked, avgRating
                 </div>
               </div>
             ) : (
-              <div className="flex items-start gap-3">
-                <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
-                  style={{ background: "rgba(196,66,106,0.12)" }}
-                >
-                  <Star size={18} style={{ color: "#c4426a" }} />
+              <>
+                {/* Header row: icon + title + dismiss */}
+                <div className="flex items-start gap-3 mb-2">
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: "rgba(196,66,106,0.12)" }}
+                  >
+                    <Star size={18} style={{ color: "#c4426a" }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm" style={{ color: "var(--foreground)" }}>
+                      How was this story?
+                    </p>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)" }}>
+                      {isLoggedIn
+                        ? "Tap a star — your rating helps others find great content."
+                        : "Sign in to rate and help others find great content."}
+                    </p>
+                  </div>
+                  <button
+                    onClick={dismiss}
+                    className="p-1.5 rounded-lg transition-opacity hover:opacity-60 shrink-0"
+                    style={{ color: "var(--muted-foreground)" }}
+                    aria-label="Dismiss"
+                  >
+                    <X size={15} />
+                  </button>
                 </div>
 
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm mb-0.5" style={{ color: "var(--foreground)" }}>
-                    How was this story?
-                  </p>
-
-                  {isLoggedIn ? (
-                    <>
-                      <p className="text-xs mb-3" style={{ color: "var(--muted-foreground)" }}>
-                        Tap a star — your rating helps readers discover great content.
-                      </p>
-                      <div
-                        className="flex items-center gap-1"
-                        onMouseLeave={() => setHovered(null)}
-                        role="group"
-                        aria-label="Rate this story"
+                {/* Action row: full-width stars or sign-in link */}
+                {isLoggedIn ? (
+                  <div
+                    className="flex items-center justify-between pt-1"
+                    onMouseLeave={() => setHovered(null)}
+                    role="group"
+                    aria-label="Rate this story"
+                  >
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        onClick={() => rate(star)}
+                        onMouseEnter={() => setHovered(star)}
+                        disabled={loading}
+                        aria-label={`${star} star${star !== 1 ? "s" : ""}`}
+                        className="flex-1 flex justify-center py-2 transition-transform hover:scale-110 active:scale-95 disabled:opacity-50"
                       >
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button
-                            key={star}
-                            onClick={() => rate(star)}
-                            onMouseEnter={() => setHovered(star)}
-                            disabled={loading}
-                            aria-label={`${star} star${star !== 1 ? "s" : ""}`}
-                            className="transition-transform hover:scale-110 active:scale-95 disabled:opacity-50 p-1"
-                          >
-                            <Star
-                              size={30}
-                              fill={star <= display ? "#c4426a" : "none"}
-                              style={{ color: star <= display ? "#c4426a" : "var(--muted-foreground)" }}
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-xs mb-3" style={{ color: "var(--muted-foreground)" }}>
-                        Sign in to rate this story and help others find great content.
-                      </p>
-                      <Link
-                        href="/signin"
-                        onClick={dismiss}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
-                        style={{ background: "#c4426a" }}
-                      >
-                        <LogIn size={12} /> Sign in to rate
-                      </Link>
-                    </>
-                  )}
-                </div>
-
-                <button
-                  onClick={dismiss}
-                  className="p-1 rounded-lg transition-opacity hover:opacity-60 shrink-0"
-                  style={{ color: "var(--muted-foreground)" }}
-                  aria-label="Dismiss"
-                >
-                  <X size={14} />
-                </button>
-              </div>
+                        <Star
+                          size={28}
+                          fill={star <= display ? "#c4426a" : "none"}
+                          style={{ color: star <= display ? "#c4426a" : "var(--muted-foreground)" }}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <Link
+                    href="/signin"
+                    onClick={dismiss}
+                    className="mt-2 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                    style={{ background: "#c4426a" }}
+                  >
+                    <LogIn size={13} /> Sign in to rate
+                  </Link>
+                )}
+              </>
             )}
           </div>
         </div>
