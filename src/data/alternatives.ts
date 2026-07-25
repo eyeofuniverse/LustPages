@@ -32,9 +32,9 @@ const alternatives: AlternativePage[] = [
     slug: "literotica-alternative",
     competitor: "Literotica",
     competitorUrl: "https://www.literotica.com",
-    headline: "Best Literotica Alternative in 2025",
+    headline: "Best Literotica Alternative in 2026",
     subheadline: "Literotica built the genre. LustPages built what comes next.",
-    metaTitle: "Best Literotica Alternative in 2025 — LustPages",
+    metaTitle: "Best Literotica Alternative in 2026 — LustPages",
     metaDescription:
       "Looking for a Literotica alternative with a modern design, dark mode, reading lists, and author support? Discover LustPages — the adult fiction platform built for today's readers.",
     keywords: [
@@ -76,14 +76,14 @@ const alternatives: AlternativePage[] = [
     comparison: [
       { feature: "Dark mode", lustpages: "Native dark theme", competitor: "Not available", lustpagesWins: true },
       { feature: "Mobile design", lustpages: "Mobile-first, responsive", competitor: "Desktop-only layout", lustpagesWins: true },
-      { feature: "Author earnings", lustpages: "Coin tips from readers", competitor: "None", lustpagesWins: true },
+      { feature: "Author earnings", lustpages: "Authors keep 80% of tips & earnings", competitor: "None — Literotica pays authors nothing", lustpagesWins: true },
       { feature: "Reading lists / bookmarks", lustpages: "Full bookmark system", competitor: "Basic / unreliable", lustpagesWins: true },
       { feature: "Series support", lustpages: "Full series pages with order", competitor: "Basic list only", lustpagesWins: true },
       { feature: "Story discovery", lustpages: "Tags, categories, collections", competitor: "Category lists only", lustpagesWins: true },
       { feature: "Comment quality", lustpages: "Moderated, threaded", competitor: "Unmoderated, noisy", lustpagesWins: true },
       { feature: "Free to read", lustpages: "Yes", competitor: "Yes", lustpagesWins: false },
       { feature: "Adult content", lustpages: "Yes", competitor: "Yes", lustpagesWins: false },
-      { feature: "Story volume", lustpages: "Growing library", competitor: "Massive archive (25+ years)", lustpagesWins: false },
+      { feature: "Story volume", lustpages: "500+ stories, growing daily", competitor: "Massive archive (25+ years)", lustpagesWins: false },
       { feature: "Story ratings", lustpages: "5-star ratings", competitor: "5-star ratings", lustpagesWins: false },
     ],
     lustpagesFeatures: [
@@ -93,7 +93,7 @@ const alternatives: AlternativePage[] = [
       },
       {
         heading: "Support the authors you love",
-        body: "Every story on LustPages has a tip button. Send coins to writers whose work moves you. Authors can also unlock premium chapters, giving them a real income from their craft.",
+        body: "Every story on LustPages has a tip button. Authors keep 80% of all tips and premium content earnings — Literotica pays authors nothing. Send coins to writers whose work moves you and give them a real income from their craft.",
       },
       {
         heading: "A library that organizes itself",
@@ -183,7 +183,7 @@ const alternatives: AlternativePage[] = [
     comparison: [
       { feature: "Original adult fiction focus", lustpages: "Core focus", competitor: "Secondary to fanfic", lustpagesWins: true },
       { feature: "Dark mode", lustpages: "Native dark theme", competitor: "Requires custom skin", lustpagesWins: true },
-      { feature: "Author earnings", lustpages: "Coin tips + premium chapters", competitor: "None", lustpagesWins: true },
+      { feature: "Author earnings", lustpages: "Authors keep 80% of tips & earnings", competitor: "None", lustpagesWins: true },
       { feature: "Uptime / reliability", lustpages: "Consistent", competitor: "Frequent outages", lustpagesWins: true },
       { feature: "Editorial curation", lustpages: "Curated collections", competitor: "None", lustpagesWins: true },
       { feature: "Mobile experience", lustpages: "Mobile-first", competitor: "Functional but not optimised", lustpagesWins: true },
@@ -204,7 +204,7 @@ const alternatives: AlternativePage[] = [
       },
       {
         heading: "Authors get paid",
-        body: "Unlike AO3's purely voluntary model, LustPages lets readers send direct coin tips to authors and unlock premium chapters. Writers who create the content you love can actually earn from it.",
+        body: "Unlike AO3's purely voluntary model, LustPages lets readers send direct coin tips to authors and unlock premium chapters. Authors keep 80% of all tips and premium content earnings — writers who create the content you love can actually earn a real income from it.",
       },
       {
         heading: "Always on, always fast",
@@ -246,7 +246,7 @@ const alternatives: AlternativePage[] = [
     slug: "wattpad-alternative",
     competitor: "Wattpad",
     competitorUrl: "https://www.wattpad.com",
-    headline: "Best Wattpad Alternative for Adult Fiction in 2025",
+    headline: "Best Wattpad Alternative for Adult Fiction in 2026",
     subheadline: "Wattpad banned explicit content. Here's where to read it.",
     metaTitle: "Best Wattpad Alternative for Adult Fiction — LustPages",
     metaDescription:
@@ -286,12 +286,12 @@ const alternatives: AlternativePage[] = [
     comparison: [
       { feature: "Explicit adult content", lustpages: "Fully supported", competitor: "Banned since 2020", lustpagesWins: true },
       { feature: "Adult audience focus", lustpages: "Yes, 18+ platform", competitor: "Primarily teens/YA", lustpagesWins: true },
-      { feature: "Author earnings", lustpages: "Coin tips + premium chapters", competitor: "Paid Stories (Wattpad takes cut)", lustpagesWins: true },
+      { feature: "Author earnings", lustpages: "Authors keep 80% of tips & earnings", competitor: "Paid Stories (Wattpad takes cut)", lustpagesWins: true },
       { feature: "Free to read", lustpages: "Mostly free", competitor: "Partly paywalled (Paid Stories)", lustpagesWins: true },
       { feature: "Dark mode", lustpages: "Native dark theme", competitor: "Available", lustpagesWins: false },
       { feature: "Mobile app", lustpages: "Responsive PWA", competitor: "Native iOS/Android app", lustpagesWins: false },
       { feature: "Community size", lustpages: "Growing", competitor: "Very large, established", lustpagesWins: false },
-      { feature: "Story volume", lustpages: "Growing library", competitor: "Enormous (billion+ reads)", lustpagesWins: false },
+      { feature: "Story volume", lustpages: "500+ stories, growing daily", competitor: "Enormous (billion+ reads)", lustpagesWins: false },
       { feature: "Content moderation", lustpages: "Pre-approval review", competitor: "Post-publication review", lustpagesWins: true },
       { feature: "Series support", lustpages: "Full series pages", competitor: "Part-based stories", lustpagesWins: false },
     ],
@@ -302,7 +302,7 @@ const alternatives: AlternativePage[] = [
       },
       {
         heading: "Tip your favourite authors directly",
-        body: "When you find a story you love, you can send coins directly to the author. It's the most direct way to support independent creators and encourage them to keep writing.",
+        body: "When you find a story you love, you can send coins directly to the author. Authors keep 80% of all tips and premium content earnings — far more than Wattpad's revenue share. It's the most direct way to support independent creators and keep them writing.",
       },
       {
         heading: "No Paid Stories paywall surprises",
@@ -348,9 +348,9 @@ const alternatives: AlternativePage[] = [
     slug: "adult-fanfiction-alternative",
     competitor: "Adult-FanFiction.org (AFF)",
     competitorUrl: "https://www.adult-fanfiction.org",
-    headline: "Best Adult-FanFiction.org Alternative in 2025",
-    subheadline: "AFF hasn't been updated since 2006. LustPages was built for 2025.",
-    metaTitle: "Best Adult FanFiction Alternative (AFF) in 2025 — LustPages",
+    headline: "Best Adult-FanFiction.org Alternative in 2026",
+    subheadline: "AFF hasn't been updated since 2006. LustPages was built for 2026.",
+    metaTitle: "Best Adult FanFiction Alternative (AFF) in 2026 — LustPages",
     metaDescription:
       "Looking for an adult-fanfiction.org alternative with a modern design and working mobile experience? LustPages offers original adult fiction with a clean UI, author tips, and no broken links.",
     keywords: [
@@ -366,7 +366,7 @@ const alternatives: AlternativePage[] = [
     whyLeaveReasons: [
       {
         heading: "A design from 2003 that hasn't been updated",
-        body: "AFF's interface is one of the most dated on the internet. Tiny fonts, frames-era navigation, no visual hierarchy, and a colour scheme that feels like a relic of early internet. Using it in 2025 is a study in friction.",
+        body: "AFF's interface is one of the most dated on the internet. Tiny fonts, frames-era navigation, no visual hierarchy, and a colour scheme that feels like a relic of early internet. Using it in 2026 is a study in friction.",
       },
       {
         heading: "Completely broken on mobile",
@@ -393,7 +393,7 @@ const alternatives: AlternativePage[] = [
       { feature: "Modern design", lustpages: "Clean, modern UI", competitor: "Early-2000s design", lustpagesWins: true },
       { feature: "Mobile experience", lustpages: "Mobile-first, responsive", competitor: "Broken on mobile", lustpagesWins: true },
       { feature: "Dark mode", lustpages: "Native dark theme", competitor: "Not available", lustpagesWins: true },
-      { feature: "Author earnings", lustpages: "Coin tips + premium chapters", competitor: "None", lustpagesWins: true },
+      { feature: "Author earnings", lustpages: "Authors keep 80% of tips & earnings", competitor: "None", lustpagesWins: true },
       { feature: "Story discovery", lustpages: "Tags, categories, collections", competitor: "Basic category lists", lustpagesWins: true },
       { feature: "Active stories", lustpages: "Curated, actively updated", competitor: "Mostly abandoned", lustpagesWins: true },
       { feature: "Search quality", lustpages: "Full-text, tag-based", competitor: "Basic title search", lustpagesWins: true },
@@ -412,7 +412,7 @@ const alternatives: AlternativePage[] = [
       },
       {
         heading: "Help authors keep writing",
-        body: "LustPages lets readers send coin tips directly to authors. For writers, this is a meaningful incentive to keep publishing. For readers, it's the most direct way to show appreciation.",
+        body: "LustPages lets readers send coin tips directly to authors — and authors keep 80% of all tips and premium content earnings. AFF has no such system at all. For writers, it's a meaningful income. For readers, it's the most direct way to show appreciation.",
       },
       {
         heading: "Actually find what you're looking for",
