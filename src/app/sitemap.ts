@@ -5,6 +5,7 @@ import {
   makeCategoryCollectionSlug,
   makeTagCollectionSlug,
 } from "@/lib/collections";
+import { allAlternativeSlugs } from "@/data/alternatives";
 
 export const revalidate = 3600; // regenerate at most once per hour
 
@@ -45,6 +46,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/terms`, lastModified: new Date("2026-05-26"), changeFrequency: "monthly", priority: 0.3 },
     { url: `${BASE}/privacy`, lastModified: new Date("2026-05-26"), changeFrequency: "monthly", priority: 0.3 },
     { url: `${BASE}/content-warning`, lastModified: new Date("2026-05-26"), changeFrequency: "monthly", priority: 0.3 },
+    { url: `${BASE}/alternatives`, lastModified: new Date("2026-07-26"), changeFrequency: "monthly", priority: 0.7 },
+    ...allAlternativeSlugs.map((slug) => ({
+      url: `${BASE}/alternatives/${slug}`,
+      lastModified: new Date("2026-07-26"),
+      changeFrequency: "monthly" as const,
+      priority: 0.75,
+    })),
   ];
 
   const storyPages: MetadataRoute.Sitemap = stories.map((s) => ({
