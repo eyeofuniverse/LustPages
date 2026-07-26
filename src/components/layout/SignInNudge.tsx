@@ -54,7 +54,7 @@ export function SignInNudge() {
       className="fixed inset-x-3 z-50 mx-auto max-w-sm"
       style={{
         bottom: "max(0.75rem, calc(env(safe-area-inset-bottom) + 0.5rem))",
-        animation: "push-slide-up 0.3s ease both",
+        animation: "nudge-slide-up 0.3s ease both",
       }}
     >
       <div
