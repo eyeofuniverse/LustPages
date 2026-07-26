@@ -154,10 +154,16 @@ body {
   height: 0;
 }
 
-/* Push notification prompt */
+/* Push notification prompt (uses left-1/2 -translate-x-1/2 centering) */
 @keyframes push-slide-up {
   from { opacity: 0; transform: translateX(-50%) translateY(16px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* Nudge banners (uses inset-x-3 mx-auto centering — no translateX) */
+@keyframes nudge-slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .tiptap p { margin-bottom: 1rem; }
