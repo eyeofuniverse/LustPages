@@ -17,7 +17,6 @@ export function OneSignalProvider() {
 
     OneSignal.init({
       appId: APP_ID,
-      notifyButton: { enable: false },
       allowLocalhostAsSecureOrigin: process.env.NODE_ENV === "development",
     }).catch(() => {});
   }, []);
