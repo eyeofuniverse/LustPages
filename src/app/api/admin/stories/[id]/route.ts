@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { sanitizeStoryContent } from "@/lib/sanitize";
 import { resolveNewTags } from "@/lib/tag-helpers";
 import { submitToIndexNow, storyUrl } from "@/lib/indexnow";
+import { pushToAll } from "@/lib/onesignal";
 
 async function requireAdmin() {
   const session = await auth();
@@ -31,6 +32,9 @@ export async function PATCH(
     const allTagIds = tagIds !== undefined
       ? [...(tagIds as string[]), ...pendingTagIds]
       : pendingTagIds.length > 0 ? pendingTagIds : undefined;
+
+    const prev = await prisma.story.findUnique({ where: { id }, select: { published: true } });
+
     const story = await prisma.story.update({
       where: { id },
       data: {
@@ -43,8 +47,17 @@ export async function PATCH(
           storyTags: { set: (allTagIds as string[]).map((tid) => ({ id: tid })) },
         }),
       },
+      include: { author: { select: { name: true } } },
     });
     if (story.published) submitToIndexNow([storyUrl(story.slug)]);
+    // Only notify on unpublished → published transition
+    if (!prev?.published && story.published) {
+      pushToAll({
+        title: story.seriesId ? `New chapter: ${story.title}` : `New story: ${story.title}`,
+        body: `${story.author.name} just published on LustPages`,
+        url: `/stories/${story.slug}`,
+      }).catch(console.error);
+    }
     return NextResponse.json(story);
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Error";
