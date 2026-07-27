@@ -26,22 +26,31 @@ export default async function AccountsPage() {
     );
   }
 
+  const now = new Date();
+
   const [
-    purchaseStats,
+    atlosRevenue,
     unlockStats,
     tipStats,
     subGrantStats,
+    welcomeStats,
     walletStats,
     activeSubs,
     authorRows,
     topHolders,
   ] = await Promise.all([
-    prisma.coinTransaction.aggregate({ where: { type: "purchase" }, _sum: { amount: true }, _count: true }),
+    // Cash revenue: completed Atlos payments
+    prisma.atlosPayment.aggregate({ where: { status: "completed" }, _sum: { amount: true }, _count: true }),
     prisma.storyUnlock.aggregate({ _sum: { coinsSpent: true }, _count: true }),
     prisma.tip.aggregate({ _sum: { amount: true, authorShare: true, platformShare: true }, _count: true }),
     prisma.coinTransaction.aggregate({ where: { type: "subscription_grant" }, _sum: { amount: true }, _count: true }),
+    prisma.coinTransaction.aggregate({ where: { type: "welcome_bonus" }, _sum: { amount: true }, _count: true }),
     prisma.user.aggregate({ _sum: { coinBalance: true } }),
-    prisma.subscription.findMany({ where: { status: "active" }, select: { tier: true } }),
+    // Only count subscriptions whose billing period has not yet ended
+    prisma.subscription.findMany({
+      where: { status: "active", currentPeriodEnd: { gte: now } },
+      select: { tier: true },
+    }),
     prisma.author.findMany({
       select: { id: true, name: true, slug: true, coinEarnings: true, user: { select: { email: true } } },
       orderBy: { coinEarnings: "desc" },
@@ -49,15 +58,14 @@ export default async function AccountsPage() {
     }),
     prisma.user.findMany({
       where: { coinBalance: { gt: 0 } },
-      select: { id: true, name: true, email: true, coinBalance: true, subscription: { select: { tier: true, status: true } } },
+      select: { id: true, name: true, email: true, coinBalance: true, subscription: { select: { tier: true, status: true, currentPeriodEnd: true } } },
       orderBy: { coinBalance: "desc" },
       take: 10,
     }),
   ]);
 
   // ── Computed ──────────────────────────────────────────────
-  const grossCoinsSold = purchaseStats._sum.amount ?? 0;
-  const grossRevenue = grossCoinsSold / C;
+  const grossRevenue = atlosRevenue._sum.amount ?? 0; // USD from completed Atlos payments
 
   const unlockCoins = unlockStats._sum.coinsSpent ?? 0;
   const unlockRevenue = unlockCoins / C;
@@ -69,6 +77,7 @@ export default async function AccountsPage() {
   const tipTotal = (tipStats._sum.amount ?? 0) / C;
 
   const subGrantCoins = subGrantStats._sum.amount ?? 0;
+  const welcomeCoins = welcomeStats._sum.amount ?? 0;
   const subGrantCost = subGrantCoins / C;
 
   const outstandingLiability = (walletStats._sum.coinBalance ?? 0) / C;
@@ -86,7 +95,7 @@ export default async function AccountsPage() {
   const totalActiveSubscribers = activeSubs.length;
 
   // Coin circulation
-  const totalCoinsIssued = grossCoinsSold + subGrantCoins;
+  const totalCoinsIssued = subGrantCoins + welcomeCoins;
   const totalCoinsSpent = unlockCoins + (tipStats._sum.amount ?? 0);
   const coinsInWallets = walletStats._sum.coinBalance ?? 0;
 
@@ -104,9 +113,9 @@ export default async function AccountsPage() {
         </div>
         <div
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
-          style={{ background: "rgba(196,66,106,0.1)", color: "#c4426a", border: "1px solid rgba(196,66,106,0.3)" }}
+          style={{ background: "rgba(34,197,94,0.1)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.3)" }}
         >
-          <AlertCircle size={12} /> Sandbox — figures are theoretical
+          <AlertCircle size={12} /> Live — Atlos payments
         </div>
       </div>
 
@@ -116,7 +125,7 @@ export default async function AccountsPage() {
           icon={<DollarSign size={16} />}
           label="Gross Revenue"
           value={fmt(grossRevenue)}
-          sub={`${fmtCoins(grossCoinsSold)} coins sold`}
+          sub={`${atlosRevenue._count} Atlos payments`}
           accent="#22c55e"
         />
         <KpiCard
@@ -165,7 +174,7 @@ export default async function AccountsPage() {
             <ArrowUp size={14} style={{ color: "#22c55e" }} /> Income
           </h2>
           <div className="space-y-3">
-            <PnlRow label="Coin pack sales" coins={grossCoinsSold} dollars={grossRevenue} accent="#22c55e" />
+            <PnlRow label="Subscription revenue (Atlos)" coins={null} dollars={grossRevenue} accent="#22c55e" />
             <PnlRow label="Platform share — unlocks (20%)" coins={Math.round(unlockPlatformShare * C)} dollars={unlockPlatformShare} accent="#22c55e" />
             <PnlRow label="Platform share — tips (20%)" coins={Math.round(tipPlatformShare * C)} dollars={tipPlatformShare} accent="#22c55e" />
             <PnlRow label="Projected MRR (subscriptions)" coins={null} dollars={mrr} accent="#22c55e" />
@@ -228,7 +237,7 @@ export default async function AccountsPage() {
       <div className="rounded-2xl p-5" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
         <h2 className="text-sm font-semibold mb-5" style={{ color: "var(--foreground)" }}>Coin Circulation</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <CoinFlowCard label="Issued (purchases)" coins={grossCoinsSold} color="#22c55e" />
+          <CoinFlowCard label="Issued (welcome bonus)" coins={welcomeCoins} color="#22c55e" />
           <CoinFlowCard label="Issued (sub grants)" coins={subGrantCoins} color="#6366f1" />
           <CoinFlowCard label="Spent (unlocks + tips)" coins={totalCoinsSpent} color="#f59e0b" />
           <CoinFlowCard label="Sitting in wallets" coins={coinsInWallets} color="#c4426a" />
@@ -367,8 +376,11 @@ export default async function AccountsPage() {
               </thead>
               <tbody>
                 {topHolders.map((u, i) => {
-                  const subTier = u.subscription?.status === "active"
-                    ? SUBSCRIPTION_TIERS[u.subscription.tier as keyof typeof SUBSCRIPTION_TIERS]
+                  const isActiveSub = u.subscription?.status === "active" &&
+                    u.subscription.currentPeriodEnd != null &&
+                    new Date(u.subscription.currentPeriodEnd) > now;
+                  const subTier = isActiveSub
+                    ? SUBSCRIPTION_TIERS[u.subscription!.tier as keyof typeof SUBSCRIPTION_TIERS]
                     : null;
                   return (
                     <tr key={u.id} style={{ borderBottom: i < topHolders.length - 1 ? "1px solid var(--border)" : "none" }}>

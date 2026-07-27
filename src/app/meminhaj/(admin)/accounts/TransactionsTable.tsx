@@ -16,25 +16,28 @@ interface Transaction {
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  purchase: "Purchase",
+  subscription_grant: "Sub Grant",
   unlock: "Unlock",
   tip_sent: "Tip",
-  subscription_grant: "Sub Grant",
+  expired: "Expired",
+  welcome_bonus: "Welcome",
 };
 
 const TYPE_COLORS: Record<string, string> = {
-  purchase: "#22c55e",
+  subscription_grant: "#c4426a",
   unlock: "#6366f1",
   tip_sent: "#f59e0b",
-  subscription_grant: "#c4426a",
+  expired: "#ef4444",
+  welcome_bonus: "#22c55e",
 };
 
 const FILTERS = [
   { value: "all", label: "All" },
-  { value: "purchase", label: "Purchases" },
+  { value: "subscription_grant", label: "Sub Grants" },
   { value: "unlock", label: "Unlocks" },
   { value: "tip_sent", label: "Tips" },
-  { value: "subscription_grant", label: "Sub Grants" },
+  { value: "expired", label: "Expired" },
+  { value: "welcome_bonus", label: "Welcome" },
 ];
 
 const C = 100;

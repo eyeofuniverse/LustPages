@@ -5,11 +5,11 @@ import Link from "next/link";
 import {
   BookOpen, LayoutDashboard, PenSquare, Home, Menu, X, FolderOpen, Tag,
   Tags, CheckSquare, Megaphone, MessageCircle, Flag, Receipt, Mail, Coins,
-  Sparkles, Layers, Library, UserCircle, Users, UserRound, BarChart2, SearchCode, KeyRound, Star,
+  Sparkles, Layers, Library, UserCircle, Users, UserRound, BarChart2, SearchCode, Star, Wallet,
 } from "lucide-react";
 import type { AdminPermissionKey } from "@/lib/admin-permissions";
 
-type PendingCounts = { approvals: number; reports: number; tagRequests: number };
+type PendingCounts = { approvals: number; reports: number; tagRequests: number; payouts: number };
 
 type NavItem = {
   href: string;
@@ -69,7 +69,8 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Monetization",
     items: [
       { href: "/meminhaj/accounts", icon: Receipt, label: "Accounts", permission: "accounts" },
-      { href: "/meminhaj/coin-packages", icon: Coins, label: "Coin Packages", permission: "coin_packages" },
+      { href: "/meminhaj/payouts", icon: Wallet, label: "Payout Requests", permission: "payouts", badgeKey: "payouts" as keyof PendingCounts },
+      { href: "/meminhaj/coin-packages", icon: Coins, label: "Subscription Tiers", permission: "coin_packages" },
     ],
   },
   {
@@ -92,7 +93,7 @@ export function MobileAdminNav({
   userName,
   isSuperAdmin = false,
   adminPermissions = [],
-  pendingCounts = { approvals: 0, reports: 0, tagRequests: 0 },
+  pendingCounts = { approvals: 0, reports: 0, tagRequests: 0, payouts: 0 },
 }: {
   userName?: string | null;
   isSuperAdmin?: boolean;
