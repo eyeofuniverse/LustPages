@@ -8,6 +8,7 @@ import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 import { AnalyticsEvents } from "@/components/analytics/AnalyticsEvents";
 import { PageTracker } from "@/components/analytics/PageTracker";
 import { Suspense } from "react";
+import { Analytics } from "@vercel/analytics/next";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -95,6 +96,7 @@ export default async function RootLayout({
           <AnalyticsEvents />
         </Suspense>
         <PageTracker />
+        <Analytics />
         <SessionProvider session={session}>
           <AgeGate />
           {children}
