@@ -143,7 +143,7 @@ export default async function StoryPage({ params }: Props) {
     inLanguage: "en",
     articleSection: story.categories[0]?.name,
     genre: story.categories.map((c) => c.name),
-    keywords: tags.join(", "),
+    keywords: tagNames.join(", "),
     timeRequired: `PT${story.readingTime}M`,
     wordCount: countWords(story.content),
     interactionStatistic: [

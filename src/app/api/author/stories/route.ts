@@ -23,7 +23,11 @@ export async function POST(req: Request) {
     const { categoryIds, tagIds, newTagNames, action, coinPrice: incomingCoinPrice, ...data } = await req.json();
     if (data.content) data.content = sanitizeStoryContent(data.content);
     const status = action === "submit" ? "pending" : "draft";
-    const coinPrice = data.seriesId ? null : (incomingCoinPrice ?? null);
+    const rawPrice = incomingCoinPrice != null ? Number(incomingCoinPrice) : null;
+    if (rawPrice !== null && (!Number.isInteger(rawPrice) || rawPrice < 1)) {
+      return NextResponse.json({ error: "Coin price must be a whole number of at least 1" }, { status: 400 });
+    }
+    const coinPrice = data.seriesId ? null : rawPrice;
     // Ensure slug uniqueness — auto-append -2, -3, … rather than letting the DB throw
     const baseSlug = (data.slug as string) || "";
     let finalSlug = baseSlug;

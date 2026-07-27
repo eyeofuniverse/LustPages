@@ -47,10 +47,16 @@ export async function PATCH(
   const body = await req.json();
   const { isPremium, coinPrice, freeChapters, name, description, coverImage } = body;
 
+  // Validate coinPrice
+  const parsedCoinPrice = coinPrice != null ? Number(coinPrice) : null;
+  if (isPremium && parsedCoinPrice !== null && (!Number.isInteger(parsedCoinPrice) || parsedCoinPrice < 1)) {
+    return NextResponse.json({ error: "Coin price must be a whole number of at least 1" }, { status: 400 });
+  }
+
   // Lock price once readers have unlocked
-  let resolvedCoinPrice = coinPrice;
+  let resolvedCoinPrice = parsedCoinPrice;
   const hasUnlocks = (await prisma.seriesUnlock.count({ where: { seriesId: id } })) > 0;
-  if (hasUnlocks && coinPrice !== ownership.series.coinPrice) {
+  if (hasUnlocks && parsedCoinPrice !== ownership.series.coinPrice) {
     resolvedCoinPrice = ownership.series.coinPrice;
   }
 
