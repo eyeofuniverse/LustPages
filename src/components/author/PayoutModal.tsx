@@ -96,8 +96,8 @@ export function PayoutModal({ coinEarnings }: Props) {
                 <CheckCircle size={40} style={{ color: "#22c55e" }} />
                 <p className="font-bold text-lg" style={{ color: "var(--foreground)" }}>Request Submitted!</p>
                 <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-                  Your payout of <span className="font-semibold" style={{ color: "#22c55e" }}>${usdAmount}</span> has been logged.
-                  Payments are processed within 7 business days (demo mode).
+                  Your payout of <span className="font-semibold" style={{ color: "#22c55e" }}>${usdAmount}</span> has been submitted.
+                  We&apos;ll process it within 7 business days and reach out to your registered email.
                 </p>
                 <button onClick={close} className="mt-2 px-6 py-2 rounded-xl text-sm font-semibold" style={{ background: "var(--muted)", color: "var(--foreground)" }}>
                   Close
@@ -114,11 +114,11 @@ export function PayoutModal({ coinEarnings }: Props) {
                   <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>${usdAmount} USD</p>
                 </div>
 
-                {/* Demo notice */}
-                <div className="flex items-start gap-2 p-3 rounded-xl" style={{ background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.2)" }}>
-                  <AlertTriangle size={14} className="shrink-0 mt-0.5" style={{ color: "#eab308" }} />
+                {/* Processing notice */}
+                <div className="flex items-start gap-2 p-3 rounded-xl" style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)" }}>
+                  <AlertTriangle size={14} className="shrink-0 mt-0.5" style={{ color: "#22c55e" }} />
                   <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                    <span className="font-semibold" style={{ color: "#eab308" }}>Demo mode</span> — no real transfer occurs. In production this connects to Stripe Connect.
+                    Payout requests are reviewed within 7 business days. You will be contacted at your registered email once processed.
                   </p>
                 </div>
 

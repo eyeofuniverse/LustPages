@@ -69,6 +69,6 @@ export async function POST(req: Request) {
     payoutRequestId: payout.id,
     coinsRequested: author.coinEarnings,
     usdAmount: usdAmount.toFixed(2),
-    message: "Payout request received (demo mode — no real transfer). Earnings reset to 0.",
+    message: "Payout request received. Earnings reset to 0. Processing within 7 business days.",
   });
 }
