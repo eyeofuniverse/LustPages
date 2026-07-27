@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendStoryApprovedEmail, sendNewStoryNotification } from "@/lib/email";
 import { sendPushToUsers } from "@/lib/push";
+import { pushToAll } from "@/lib/onesignal";
 import { submitToIndexNow, storyUrl, seriesUrl } from "@/lib/indexnow";
 
 export async function POST(
@@ -69,33 +70,12 @@ export async function POST(
       }).catch(console.error);
     }
 
-    // Push: notify followers + series readers
-    const followerIds = story.author.likes.map((l) => l.userId);
-    let seriesReaderIds: string[] = [];
-    if (story.seriesId) {
-      const readers = await prisma.readingHistory.findMany({
-        where: {
-          story: { seriesId: story.seriesId },
-          userId: { notIn: [...followerIds, ...(story.author.userId ? [story.author.userId] : [])] },
-        },
-        select: { userId: true },
-        distinct: ["userId"],
-      });
-      seriesReaderIds = readers.map((r) => r.userId);
-    }
-
-    const notifyIds = [...new Set([...followerIds, ...seriesReaderIds])].filter(
-      (uid) => uid !== story.author.userId,
-    );
-
-    if (notifyIds.length > 0) {
-      sendPushToUsers(notifyIds, {
-        title: story.seriesId ? `New chapter: ${story.title}` : `New story: ${story.title}`,
-        body: `${story.author.name} just published`,
-        url: `/stories/${story.slug}`,
-        tag: `new-story-${story.id}`,
-      }).catch(console.error);
-    }
+    // Push: broadcast new story to all subscribers
+    pushToAll({
+      title: story.seriesId ? `New chapter: ${story.title}` : `New story: ${story.title}`,
+      body: `${story.author.name} just published on LustPages`,
+      url: `/stories/${story.slug}`,
+    }).catch(console.error);
 
     return NextResponse.json(story);
   } catch (e: unknown) {
