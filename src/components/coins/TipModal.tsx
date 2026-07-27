@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Coins, Loader2, X, CheckCircle, Heart } from "lucide-react";
 import { PAYMENTS_ENABLED } from "@/lib/feature-flags";
 
-const PRESETS = [1, 5, 10, 50];
+const PRESETS = [10, 25, 50, 100];
 
 interface Props {
   authorId: string;
@@ -56,6 +56,7 @@ export function TipModal({ authorId, authorName, storyId, userBalance, isLoggedI
   }
 
   const canAfford = balance >= finalAmount;
+  const meetsMinimum = finalAmount >= 10;
 
   if (!isLoggedIn) {
     return (
@@ -172,16 +173,22 @@ export function TipModal({ authorId, authorName, storyId, userBalance, isLoggedI
                   <p className="text-xs mb-3 text-center" style={{ color: "#ef4444" }}>{error}</p>
                 )}
 
-                {!canAfford && finalAmount > 0 && (
+                {!meetsMinimum && finalAmount > 0 && (
+                  <p className="text-xs mb-3 text-center" style={{ color: "#ef4444" }}>
+                    Minimum tip is 10 coins
+                  </p>
+                )}
+
+                {meetsMinimum && !canAfford && (
                   <p className="text-xs mb-3 text-center" style={{ color: "#ef4444" }}>
                     Not enough coins.{" "}
-                    <a href="/store" className="underline" style={{ color: "#c4426a" }}>Buy more →</a>
+                    <a href="/store" className="underline" style={{ color: "#c4426a" }}>Get coins →</a>
                   </p>
                 )}
 
                 <button
                   onClick={handleTip}
-                  disabled={sending || !canAfford || finalAmount < 1}
+                  disabled={sending || !canAfford || !meetsMinimum}
                   className="w-full py-2.5 rounded-xl text-sm font-bold text-white transition-opacity hover:opacity-85 disabled:opacity-50 flex items-center justify-center gap-2"
                   style={{ background: "#c4426a" }}
                 >

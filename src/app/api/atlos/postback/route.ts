@@ -33,9 +33,41 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, skipped: true });
   }
 
-  const payment = await prisma.atlosPayment.findUnique({
+  const now = new Date();
+  const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+  // 1. Try to find payment record by OrderId (initial payment or same-orderId renewal)
+  let payment = await prisma.atlosPayment.findUnique({
     where: { orderId: payload.OrderId },
   });
+
+  // 2. If not found by OrderId, this is a renewal postback — look up via SubscriptionId
+  if (!payment && payload.SubscriptionId) {
+    const existingSub = await prisma.subscription.findFirst({
+      where: { atlosSubscriptionId: payload.SubscriptionId },
+      include: { user: { select: { coinBalance: true } } },
+    });
+
+    if (existingSub) {
+      const tier = getTier(existingSub.tier);
+      if (!tier) return NextResponse.json({ error: "Unknown tier" }, { status: 400 });
+
+      // Create a payment record for this renewal
+      payment = await prisma.atlosPayment.create({
+        data: {
+          userId: existingSub.userId,
+          orderId: payload.OrderId,
+          tier: existingSub.tier,
+          amount: tier.price,
+          autoRenew: true,
+          coinsGranted: existingSub.subscriptionCoins > 0 ? existingSub.subscriptionCoins : tier.coinsAutoRenew,
+          transactionId: payload.TransactionId,
+          atlosSubId: payload.SubscriptionId,
+          status: "pending",
+        },
+      });
+    }
+  }
 
   if (!payment) {
     return NextResponse.json({ error: "Unknown orderId" }, { status: 404 });
@@ -50,9 +82,6 @@ export async function POST(req: NextRequest) {
   if (!tier) {
     return NextResponse.json({ error: "Unknown tier" }, { status: 400 });
   }
-
-  const now = new Date();
-  const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
   const existingSub = await prisma.subscription.findUnique({
     where: { userId: payment.userId },
@@ -72,13 +101,13 @@ export async function POST(req: NextRequest) {
     });
 
     if (existingSub) {
-      // Renewal or tier change — expire leftover coins then grant fresh allocation
+      // Renewal or tier change — expire leftover subscription coins then grant fresh allocation
       const leftover = Math.min(existingSub.user?.coinBalance ?? 0, existingSub.subscriptionCoins);
-      await tx.user.update({
-        where: { id: payment.userId },
-        data: { coinBalance: { decrement: leftover } },
-      });
       if (leftover > 0) {
+        await tx.user.update({
+          where: { id: payment.userId },
+          data: { coinBalance: { decrement: leftover } },
+        });
         await tx.coinTransaction.create({
           data: {
             userId: payment.userId,
