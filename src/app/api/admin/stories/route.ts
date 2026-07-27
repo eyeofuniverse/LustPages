@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { sanitizeStoryContent } from "@/lib/sanitize";
 import { resolveNewTags } from "@/lib/tag-helpers";
 import { submitToIndexNow, storyUrl } from "@/lib/indexnow";
+import { pushToAll } from "@/lib/onesignal";
 
 async function requireAdmin() {
   const session = await auth();
@@ -32,8 +33,16 @@ export async function POST(req: Request) {
           storyTags: { connect: allTagIds.map((id) => ({ id })) },
         }),
       },
+      include: { author: { select: { name: true } } },
     });
-    if (story.published) submitToIndexNow([storyUrl(story.slug)]);
+    if (story.published) {
+      submitToIndexNow([storyUrl(story.slug)]);
+      pushToAll({
+        title: story.seriesId ? `New chapter: ${story.title}` : `New story: ${story.title}`,
+        body: `${story.author.name} just published on LustPages`,
+        url: `/stories/${story.slug}`,
+      }).catch(console.error);
+    }
     return NextResponse.json(story, { status: 201 });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Error";
