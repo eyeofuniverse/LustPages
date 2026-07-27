@@ -12,8 +12,8 @@ export async function POST(req: NextRequest) {
   const userId = session.user.id as string;
 
   const { authorId, storyId, amount, message } = await req.json();
-  if (!authorId || !amount || typeof amount !== "number" || amount < 1) {
-    return NextResponse.json({ error: "Invalid tip data" }, { status: 400 });
+  if (!authorId || !amount || typeof amount !== "number" || !Number.isInteger(amount) || amount < 10) {
+    return NextResponse.json({ error: "Tip must be a whole number of at least 10 coins" }, { status: 400 });
   }
 
   const author = await prisma.author.findUnique({ where: { id: authorId } });

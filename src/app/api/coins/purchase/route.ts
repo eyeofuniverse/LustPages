@@ -1,6 +1,5 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { getTier } from "@/lib/subscription-tiers";
 import { NextRequest, NextResponse } from "next/server";
 import { createPayment, getMinAmount, type SupportedCurrency } from "@/lib/nowpayments";
 
@@ -31,18 +30,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Package price is invalid." }, { status: 422 });
   }
 
-  const sub = await prisma.subscription.findUnique({
-    where: { userId: session.user.id },
-    select: { tier: true, status: true },
-  });
-
-  const isActiveSubscriber = sub?.status === "active";
-  const tierDef = isActiveSubscriber ? getTier(sub!.tier) : null;
-  const discountPct = tierDef?.discount ?? 0;
-
-  const baseTotal = pkg.coins + pkg.bonusCoins;
-  const subscriberBonus = isActiveSubscriber ? Math.floor(baseTotal * discountPct) : 0;
-  const totalCoins = baseTotal + subscriberBonus;
+  const totalCoins = pkg.coins + pkg.bonusCoins;
 
   // Validate against NOWPayments minimum before attempting to create
   try {
@@ -81,7 +69,7 @@ export async function POST(req: NextRequest) {
         packageId: pkg.id,
         packageName: pkg.name,
         totalCoins,
-        subscriberBonus,
+        subscriberBonus: 0,
         amountUsd: pkg.price,
         payCurrency: payment.pay_currency,
         payAddress: payment.pay_address,

@@ -1,30 +1,54 @@
 export const SUBSCRIPTION_TIERS = {
-  basic: {
-    id: "basic",
-    name: "Basic",
+  spark: {
+    id: "spark",
+    name: "Spark",
     price: 4.99,
-    coinsPerMonth: 600,
-    discount: 0.10,
+    coinsPerMonth: 500,
+    coinsAutoRenew: 625,
     color: "#6366f1",
-    perks: ["600 coins every month", "10% off extra coin purchases", "No ads"],
+    badge: null,
+    perks: [
+      "500 coins every month",
+      "625 coins with auto-renew (+25%)",
+      "Unlock premium stories & chapters",
+      "Tip your favourite authors",
+      "No ads",
+    ],
   },
-  reader: {
-    id: "reader",
-    name: "Reader",
+  flame: {
+    id: "flame",
+    name: "Flame",
     price: 9.99,
-    coinsPerMonth: 1400,
-    discount: 0.20,
+    coinsPerMonth: 1200,
+    coinsAutoRenew: 1500,
     color: "#c4426a",
-    perks: ["1,400 coins every month", "20% off extra coin purchases", "No ads", "Early access to featured stories"],
+    badge: "Most Popular",
+    perks: [
+      "1,200 coins every month",
+      "1,500 coins with auto-renew (+25%)",
+      "Unlock premium stories & chapters",
+      "Tip your favourite authors",
+      "No ads",
+      "Early access to featured stories",
+    ],
   },
-  premium: {
-    id: "premium",
-    name: "Premium",
-    price: 19.99,
-    coinsPerMonth: 3000,
-    discount: 0.30,
+  inferno: {
+    id: "inferno",
+    name: "Inferno",
+    price: 24.99,
+    coinsPerMonth: 3500,
+    coinsAutoRenew: 4375,
     color: "#f59e0b",
-    perks: ["3,000 coins every month", "30% off extra coin purchases", "No ads", "Early access to featured stories", "Priority support"],
+    badge: "Best Value",
+    perks: [
+      "3,500 coins every month",
+      "4,375 coins with auto-renew (+25%)",
+      "Unlock premium stories & chapters",
+      "Tip your favourite authors",
+      "No ads",
+      "Early access to featured stories",
+      "Priority support",
+    ],
   },
 } as const;
 
@@ -33,3 +57,6 @@ export type SubscriptionTierId = keyof typeof SUBSCRIPTION_TIERS;
 export function getTier(tierId: string) {
   return SUBSCRIPTION_TIERS[tierId as SubscriptionTierId] ?? null;
 }
+
+export const WELCOME_COINS = 150;
+export const WELCOME_COINS_DAYS = 7;

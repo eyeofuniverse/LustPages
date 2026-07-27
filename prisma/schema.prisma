@@ -21,6 +21,7 @@ model User {
   image           String?
   bio             String?
   coinBalance     Int               @default(0)
+  welcomeCoinsExpireAt DateTime?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
   likes           Like[]
@@ -41,6 +42,7 @@ model User {
   pushSubscriptions PushSubscription[]
   ratings           Rating[]
   cryptoPayments    CryptoPayment[]
+  atlosPayments     AtlosPayment[]
 }
 
 model Category {
@@ -215,16 +217,39 @@ model CoinPackage {
 }
 
 model Subscription {
-  id                 String   @id @default(cuid())
-  userId             String   @unique
-  tier               String
-  status             String   @default("active")
-  coinsPerMonth      Int
-  currentPeriodStart DateTime @default(now())
-  currentPeriodEnd   DateTime
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  tier                String
+  status              String   @default("active")
+  coinsPerMonth       Int
+  subscriptionCoins   Int      @default(0)
+  autoRenew           Boolean  @default(true)
+  atlosOrderId        String?
+  atlosSubscriptionId String?
+  currentPeriodStart  DateTime @default(now())
+  currentPeriodEnd    DateTime
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AtlosPayment {
+  id           String    @id @default(cuid())
+  userId       String
+  orderId      String    @unique
+  tier         String
+  amount       Float
+  autoRenew    Boolean   @default(true)
+  coinsGranted Int       @default(0)
+  transactionId String?
+  atlosSubId   String?
+  status       String    @default("pending")
+  creditedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
 }
 
 model CoinTransaction {
