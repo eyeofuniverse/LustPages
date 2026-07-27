@@ -2,6 +2,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { NotificationPrompt } from "@/components/layout/NotificationPrompt";
 import { SignInNudge } from "@/components/layout/SignInNudge";
+import { OneSignalProvider } from "@/components/layout/OneSignalProvider";
 import { getCategories } from "@/lib/queries";
 
 export default async function PublicLayout({
@@ -15,6 +16,7 @@ export default async function PublicLayout({
       <Header categories={categories} />
       <main className="flex-1">{children}</main>
       <Footer categories={categories} />
+      <OneSignalProvider />
       <NotificationPrompt />
       <SignInNudge />
     </div>
