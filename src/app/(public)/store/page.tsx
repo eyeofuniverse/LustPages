@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Script from "next/script";
-import { Check, Zap, Flame, Sparkles, RefreshCw } from "lucide-react";
+import { Check, Zap, Flame, Sparkles, RefreshCw, Coins } from "lucide-react";
 import { SUBSCRIPTION_TIERS, type SubscriptionTierId } from "@/lib/subscription-tiers";
 
 declare global {
@@ -35,6 +35,7 @@ export default function StorePage() {
   const [autoRenew, setAutoRenew] = useState(true);
   const [loading, setLoading] = useState<string | null>(null);
   const [currentSub, setCurrentSub] = useState<CurrentSub | null>(null);
+  const [coinBalance, setCoinBalance] = useState<number | null>(null);
   const [scriptReady, setScriptReady] = useState(false);
 
   const fetchSub = useCallback(async () => {
@@ -43,9 +44,24 @@ export default function StorePage() {
     setCurrentSub(data.subscription ?? null);
   }, []);
 
+  const fetchBalance = useCallback(async () => {
+    const res = await fetch("/api/coins/balance");
+    const data = await res.json();
+    setCoinBalance(data.balance ?? 0);
+  }, []);
+
   useEffect(() => {
-    if (session?.user) fetchSub();
-  }, [session, fetchSub]);
+    if (session?.user) {
+      fetchSub();
+      fetchBalance();
+    }
+  }, [session, fetchSub, fetchBalance]);
+
+  // A subscription is only truly active if the billing period hasn't ended yet
+  const isSubActive = !!(
+    currentSub?.status === "active" &&
+    new Date(currentSub.currentPeriodEnd) > new Date()
+  );
 
   async function handleSubscribe(tierId: SubscriptionTierId) {
     if (!session?.user) {
@@ -77,6 +93,7 @@ export default function StorePage() {
         onCompleted: () => {
           setLoading(null);
           fetchSub();
+          fetchBalance();
           alert("Payment successful! Your coins will be credited shortly.");
         },
         onCanceled: () => setLoading(null),
@@ -110,22 +127,37 @@ export default function StorePage() {
             </p>
           </div>
 
-          {/* Current subscription banner */}
-          {currentSub && currentSub.status === "active" && (
+          {/* Current subscription banner — only shown when period is still active */}
+          {isSubActive ? (
             <div
               className="mb-8 rounded-2xl p-4 flex items-center gap-3"
               style={{ background: "rgba(196,66,106,0.1)", border: "1px solid rgba(196,66,106,0.3)" }}
             >
               <Check size={18} style={{ color: "#c4426a" }} className="shrink-0" />
               <div className="text-sm" style={{ color: "var(--foreground)" }}>
-                You&apos;re on the <strong>{SUBSCRIPTION_TIERS[currentSub.tier as SubscriptionTierId]?.name ?? currentSub.tier}</strong> plan.{" "}
+                You&apos;re on the <strong>{SUBSCRIPTION_TIERS[currentSub!.tier as SubscriptionTierId]?.name ?? currentSub!.tier}</strong> plan.{" "}
                 <span style={{ color: "var(--muted-foreground)" }}>
-                  Period ends {new Date(currentSub.currentPeriodEnd).toLocaleDateString()}.
-                  {currentSub.autoRenew ? " Auto-renew on." : " One-time (no auto-renew)."}
+                  Period ends {new Date(currentSub!.currentPeriodEnd).toLocaleDateString()}.
+                  {currentSub!.autoRenew ? " Auto-renew on." : " One-time (no auto-renew)."}
+                  {coinBalance !== null && coinBalance > 0 && (
+                    <> · <span style={{ color: "#f59e0b" }}>{coinBalance.toLocaleString()} coins</span> remaining.</>
+                  )}
                 </span>
               </div>
             </div>
-          )}
+          ) : coinBalance !== null && coinBalance > 0 ? (
+            /* User has coins but no active subscription (legacy coins, welcome bonus, or expired period) */
+            <div
+              className="mb-8 rounded-2xl p-4 flex items-center gap-3"
+              style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)" }}
+            >
+              <Coins size={18} style={{ color: "#f59e0b" }} className="shrink-0" />
+              <div className="text-sm" style={{ color: "var(--foreground)" }}>
+                You have <span style={{ color: "#f59e0b" }} className="font-semibold">{coinBalance.toLocaleString()} coins</span> remaining.{" "}
+                <span style={{ color: "var(--muted-foreground)" }}>Subscribe to get more coins every month.</span>
+              </div>
+            </div>
+          ) : null}
 
           {/* Auto-renew toggle */}
           <div className="flex items-center justify-center gap-3 mb-10">
@@ -158,7 +190,7 @@ export default function StorePage() {
               const Icon = TIER_ICONS[tier.id as SubscriptionTierId];
               const coins = autoRenew ? tier.coinsAutoRenew : tier.coinsPerMonth;
               const isPopular = tier.badge === "Most Popular";
-              const isCurrent = currentSub?.tier === tier.id && currentSub?.status === "active";
+              const isCurrent = currentSub?.tier === tier.id && isSubActive;
 
               return (
                 <div
@@ -228,7 +260,7 @@ export default function StorePage() {
                       <><RefreshCw size={14} className="animate-spin" /> Processing…</>
                     ) : isCurrent ? (
                       "Current plan"
-                    ) : currentSub?.status === "active" ? (
+                    ) : isSubActive ? (
                       "Switch to this plan"
                     ) : (
                       "Get started"
