@@ -48,12 +48,16 @@ export async function PATCH(
 
     let coinPrice: number | null = null;
     if (!targetSeriesId) {
+      const rawPrice = incomingCoinPrice != null ? Number(incomingCoinPrice) : null;
+      if (rawPrice !== null && (!Number.isInteger(rawPrice) || rawPrice < 1)) {
+        return NextResponse.json({ error: "Coin price must be a whole number of at least 1" }, { status: 400 });
+      }
       // Standalone story: apply price lock logic
       const unlockCount = await prisma.storyUnlock.count({ where: { storyId: id } });
-      if (unlockCount > 0 && incomingCoinPrice !== ownership.story.coinPrice) {
+      if (unlockCount > 0 && rawPrice !== ownership.story.coinPrice) {
         coinPrice = ownership.story.coinPrice; // silently preserve original price
       } else {
-        coinPrice = incomingCoinPrice ?? null;
+        coinPrice = rawPrice;
       }
     }
 
