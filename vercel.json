@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/db-ping",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/weekly-push",
+      "schedule": "0 1 * * 0"
     }
   ]
 }
