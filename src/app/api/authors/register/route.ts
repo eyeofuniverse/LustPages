@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import slugify from "slug";
 import { prisma } from "@/lib/prisma";
+import { WELCOME_COINS, WELCOME_COINS_DAYS } from "@/lib/subscription-tiers";
 
 export async function POST(req: Request) {
   try {
@@ -33,6 +34,7 @@ export async function POST(req: Request) {
     }
 
     const hashed = await bcrypt.hash(password, 12);
+    const welcomeExpiry = new Date(Date.now() + WELCOME_COINS_DAYS * 24 * 60 * 60 * 1000);
 
     const user = await prisma.user.create({
       data: {
@@ -40,6 +42,8 @@ export async function POST(req: Request) {
         email: email.toLowerCase().trim(),
         password: hashed,
         role: "author",
+        coinBalance: WELCOME_COINS,
+        welcomeCoinsExpireAt: welcomeExpiry,
         author: {
           create: {
             name: authorName,
@@ -50,6 +54,15 @@ export async function POST(req: Request) {
         },
       },
       select: { id: true, email: true, name: true, role: true },
+    });
+
+    await prisma.coinTransaction.create({
+      data: {
+        userId: user.id,
+        amount: WELCOME_COINS,
+        type: "welcome_bonus",
+        description: `Welcome bonus — ${WELCOME_COINS} coins (expires in ${WELCOME_COINS_DAYS} days)`,
+      },
     });
 
     return NextResponse.json(user, { status: 201 });
