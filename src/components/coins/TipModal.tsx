@@ -19,7 +19,7 @@ export function TipModal({ authorId, authorName, storyId, userBalance, isLoggedI
   if (!PAYMENTS_ENABLED) return null;
 
   const [open, setOpen] = useState(false);
-  const [amount, setAmount] = useState<number>(5);
+  const [amount, setAmount] = useState<number>(10);
   const [custom, setCustom] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -138,7 +138,7 @@ export function TipModal({ authorId, authorName, storyId, userBalance, isLoggedI
                 <div className="mb-4">
                   <input
                     type="number"
-                    min={1}
+                    min={10}
                     max={balance}
                     placeholder="Custom amount"
                     value={custom}
