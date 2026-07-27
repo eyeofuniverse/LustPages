@@ -3,17 +3,11 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { Bell, X, Settings } from "lucide-react";
+import OneSignal from "react-onesignal";
 
 const STORAGE_KEY = "push_prompt_ts";
 const SNOOZE_MS = 30 * 24 * 60 * 60 * 1000;
 const SHOW_DELAY_MS = 7000;
-
-function urlBase64ToUint8Array(base64String: string) {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = window.atob(base64);
-  return new Uint8Array([...rawData].map((c) => c.charCodeAt(0)));
-}
 
 export function NotificationPrompt() {
   const { data: session } = useSession();
@@ -23,7 +17,7 @@ export function NotificationPrompt() {
 
   useEffect(() => {
     if (!session?.user) return;
-    if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
+    if (!("Notification" in window)) return;
     if (Notification.permission === "granted") return;
 
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -46,27 +40,9 @@ export function NotificationPrompt() {
     }
     setLoading(true);
     try {
-      const permission = await Notification.requestPermission();
-      if (permission === "granted") {
-        const reg = await navigator.serviceWorker.ready;
-        const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-        if (vapidKey) {
-          const sub = await reg.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(vapidKey),
-          });
-          await fetch("/api/push/subscribe", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(sub.toJSON()),
-          });
-          window.dispatchEvent(new CustomEvent("push:subscribed"));
-        }
-      } else {
-        localStorage.setItem(STORAGE_KEY, String(Date.now()));
-      }
+      await OneSignal.Notifications.requestPermission();
     } catch {
-      // SW not ready or subscribe failed — fail silently
+      // fail silently — OneSignal not yet initialized or permission denied
     } finally {
       setLoading(false);
       setShow(false);
@@ -77,8 +53,11 @@ export function NotificationPrompt() {
 
   return (
     <div
-      className="fixed bottom-6 left-1/2 z-50 w-[calc(100vw-2rem)] max-w-sm"
-      style={{ animation: "push-slide-up 0.3s ease both" }}
+      className="fixed inset-x-3 z-50 mx-auto max-w-sm"
+      style={{
+        bottom: "max(0.75rem, calc(env(safe-area-inset-bottom) + 0.5rem))",
+        animation: "nudge-slide-up 0.3s ease both",
+      }}
     >
       <div
         className="rounded-2xl p-4 shadow-2xl flex items-start gap-3"
@@ -90,8 +69,7 @@ export function NotificationPrompt() {
         >
           {browserBlocked
             ? <Settings size={18} style={{ color: "#c4426a" }} />
-            : <Bell size={18} style={{ color: "#c4426a" }} />
-          }
+            : <Bell size={18} style={{ color: "#c4426a" }} />}
         </div>
 
         <div className="flex-1 min-w-0">
