@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
 import { Bell, X, Settings } from "lucide-react";
 import OneSignal from "react-onesignal";
 
@@ -10,13 +9,11 @@ const SNOOZE_MS = 30 * 24 * 60 * 60 * 1000;
 const SHOW_DELAY_MS = 7000;
 
 export function NotificationPrompt() {
-  const { data: session } = useSession();
   const [show, setShow] = useState(false);
   const [browserBlocked, setBrowserBlocked] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!session?.user) return;
     if (!("Notification" in window)) return;
     if (Notification.permission === "granted") return;
 
@@ -26,7 +23,7 @@ export function NotificationPrompt() {
     setBrowserBlocked(Notification.permission === "denied");
     const t = setTimeout(() => setShow(true), SHOW_DELAY_MS);
     return () => clearTimeout(t);
-  }, [session]);
+  }, []);
 
   function snooze() {
     localStorage.setItem(STORAGE_KEY, String(Date.now()));
