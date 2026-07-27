@@ -2,10 +2,11 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { getPendingStoriesCount, getPendingReportsCount, getPendingTagRequestsCount } from "@/lib/queries";
+import { prisma } from "@/lib/prisma";
 import {
   BookOpen, LayoutDashboard, PenSquare, Home, FolderOpen, Tag, CheckSquare,
   Megaphone, Sparkles, MessageCircle, Flag, Tags, Receipt, Mail, Coins,
-  Layers, Library, UserCircle, Users, UserRound, BarChart2, SearchCode, KeyRound, Star,
+  Layers, Library, UserCircle, Users, UserRound, BarChart2, SearchCode, Star, Wallet,
 } from "lucide-react";
 import { MobileAdminNav } from "@/components/admin/MobileAdminNav";
 import { Toaster } from "sonner";
@@ -46,10 +47,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const permissions = user.adminPermissions ?? [];
   const displayName = user.adminNickname ?? user.name;
 
-  const [pendingCount, pendingReports, pendingTagRequests] = await Promise.all([
+  const [pendingCount, pendingReports, pendingTagRequests, pendingPayouts] = await Promise.all([
     getPendingStoriesCount(),
     getPendingReportsCount(),
     getPendingTagRequestsCount(),
+    prisma.payoutRequest.count({ where: { status: "pending" } }),
   ]);
 
   const NAV_GROUPS: NavGroup[] = [
@@ -97,7 +99,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       label: "Monetization",
       items: [
         { href: "/meminhaj/accounts", icon: <Receipt size={16} />, label: "Accounts", permission: "accounts" },
-        { href: "/meminhaj/coin-packages", icon: <Coins size={16} />, label: "Coin Packages", permission: "coin_packages" },
+        { href: "/meminhaj/payouts", icon: <Wallet size={16} />, label: "Payout Requests", badge: pendingPayouts, permission: "payouts" },
+        { href: "/meminhaj/coin-packages", icon: <Coins size={16} />, label: "Subscription Tiers", permission: "coin_packages" },
       ],
     },
     {
@@ -215,7 +218,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         userName={displayName}
         isSuperAdmin={isSuperAdmin}
         adminPermissions={permissions}
-        pendingCounts={{ approvals: pendingCount, reports: pendingReports, tagRequests: pendingTagRequests }}
+        pendingCounts={{ approvals: pendingCount, reports: pendingReports, tagRequests: pendingTagRequests, payouts: pendingPayouts }}
       />
 
       {/* Main */}
