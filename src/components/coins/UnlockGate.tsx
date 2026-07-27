@@ -15,6 +15,11 @@ interface Props {
 }
 
 export function UnlockGate({ storyId, coinPrice, userBalance, isLoggedIn }: Props) {
+  const router = useRouter();
+  const [unlocking, setUnlocking] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   if (!PAYMENTS_ENABLED) {
     return (
       <ComingSoonGate
@@ -23,11 +28,6 @@ export function UnlockGate({ storyId, coinPrice, userBalance, isLoggedIn }: Prop
       />
     );
   }
-
-  const router = useRouter();
-  const [unlocking, setUnlocking] = useState(false);
-  const [unlocked, setUnlocked] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function handleUnlock() {
     setUnlocking(true);

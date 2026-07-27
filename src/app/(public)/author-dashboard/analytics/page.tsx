@@ -190,7 +190,7 @@ export default async function AuthorAnalyticsPage() {
     storyStats, weeklyViews, topTags, topCategories, retentionCurve,
     totalViews, totalLikes, totalComments, totalBookmarks,
     allReaders, overallCompletionRate, tips, totalTipCoins, totalTipCount,
-    totalEarnings, totalUnlockCoins,
+    totalEarnings, totalUnlockCoins, pendingEarnings,
   } = await getAuthorAnalytics(author.id);
 
   const hasReaders = allReaders > 0;
@@ -525,16 +525,20 @@ export default async function AuthorAnalyticsPage() {
               <div className="rounded-2xl p-5" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between pb-3" style={{ borderBottom: "1px solid var(--border)" }}>
-                    <span style={{ color: "var(--muted-foreground)" }}>From unlocks</span>
+                    <span style={{ color: "var(--muted-foreground)" }}>From unlocks (80%)</span>
                     <span className="font-semibold" style={{ color: "var(--foreground)" }}>{totalUnlockCoins} coins</span>
                   </div>
                   <div className="flex justify-between pb-3" style={{ borderBottom: "1px solid var(--border)" }}>
-                    <span style={{ color: "var(--muted-foreground)" }}>From tips</span>
+                    <span style={{ color: "var(--muted-foreground)" }}>From tips (80%)</span>
                     <span className="font-semibold" style={{ color: "var(--foreground)" }}>{totalTipCoins} coins</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="font-semibold" style={{ color: "var(--foreground)" }}>Total earned</span>
+                  <div className="flex justify-between pb-3" style={{ borderBottom: "1px solid var(--border)" }}>
+                    <span className="font-semibold" style={{ color: "var(--foreground)" }}>Total earned (all time)</span>
                     <span className="font-bold text-base" style={{ color: "#eab308" }}>{totalEarnings} coins</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span style={{ color: "var(--muted-foreground)" }}>Pending withdrawal</span>
+                    <span className="font-semibold" style={{ color: "#22c55e" }}>{pendingEarnings} coins</span>
                   </div>
                 </div>
 

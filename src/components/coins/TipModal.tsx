@@ -16,8 +16,6 @@ interface Props {
 }
 
 export function TipModal({ authorId, authorName, storyId, userBalance, isLoggedIn, onBalanceChange }: Props) {
-  if (!PAYMENTS_ENABLED) return null;
-
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState<number>(10);
   const [custom, setCustom] = useState("");
@@ -26,6 +24,8 @@ export function TipModal({ authorId, authorName, storyId, userBalance, isLoggedI
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [balance, setBalance] = useState(userBalance);
+
+  if (!PAYMENTS_ENABLED) return null;
 
   const finalAmount = custom ? parseInt(custom, 10) || 0 : amount;
 

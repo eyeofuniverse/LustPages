@@ -1773,7 +1773,7 @@ export async function getAuthorAnalytics(authorId: string) {
   const avgProgressMap: Record<string, number> = {};
   avgProgressByStory.forEach((r) => { avgProgressMap[r.storyId] = Math.round(r._avg.progress ?? 0); });
   const unlockCoinsMap: Record<string, number> = {};
-  unlockCoinsByStory.forEach((r) => { unlockCoinsMap[r.storyId] = r._sum.coinsSpent ?? 0; });
+  unlockCoinsByStory.forEach((r) => { unlockCoinsMap[r.storyId] = Math.floor((r._sum.coinsSpent ?? 0) * 0.8); });
 
   const storyStats = stories.map((story) => {
     const totalReaders = story._count.readingHistory;
@@ -1861,8 +1861,11 @@ export async function getAuthorAnalytics(authorId: string) {
     totalReaders > 0 ? Math.round((allCompleted / totalReaders) * 100) : 0;
   const totalTipCoins = tipTotals._sum.authorShare ?? 0;
   const totalTipCount = tipTotals._count.id;
-  const totalEarnings = authorRecord?.coinEarnings ?? 0;
   const totalUnlockCoins = storyStats.reduce((sum, s) => sum + s.unlockCoins, 0);
+  // All-time earnings = sum of 80% author share from unlocks + tips
+  const totalEarnings = totalUnlockCoins + totalTipCoins;
+  // Current withdrawable balance (resets to 0 after each payout)
+  const pendingEarnings = authorRecord?.coinEarnings ?? 0;
 
   return {
     storyStats,
@@ -1881,6 +1884,7 @@ export async function getAuthorAnalytics(authorId: string) {
     totalTipCount,
     totalEarnings,
     totalUnlockCoins,
+    pendingEarnings,
   };
 }
 

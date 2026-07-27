@@ -10,6 +10,14 @@ interface Props {
 }
 
 export function PayoutModal({ coinEarnings }: Props) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [method, setMethod] = useState("bank");
+  const [accountDetails, setAccountDetails] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
+
   if (!PAYMENTS_ENABLED) {
     return (
       <div
@@ -22,14 +30,6 @@ export function PayoutModal({ coinEarnings }: Props) {
       </div>
     );
   }
-
-  const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [method, setMethod] = useState("bank");
-  const [accountDetails, setAccountDetails] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState("");
 
   const usdAmount = (coinEarnings / 100).toFixed(2);
   const canRequest = coinEarnings >= 100;

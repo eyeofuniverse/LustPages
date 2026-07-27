@@ -37,7 +37,7 @@ export default async function AuthorDashboardPage() {
   const author = await getAuthorByUserId(session.user.id);
   if (!author) redirect("/author-signup");
 
-  const [stories, seriesList, activePromotions, coinBalance, tipEarnings, unlockEarnings] = await Promise.all([
+  const [stories, seriesList, activePromotions, coinBalance, tipEarnings, unlockEarnings, seriesUnlockEarnings] = await Promise.all([
     getAuthorStories(author.id),
     getAuthorSeriesList(author.id),
     getAuthorActivePromotions(author.id),
@@ -49,6 +49,11 @@ export default async function AuthorDashboardPage() {
     }),
     prisma.storyUnlock.aggregate({
       where: { story: { authorId: author.id } },
+      _sum: { coinsSpent: true },
+      _count: true,
+    }),
+    prisma.seriesUnlock.aggregate({
+      where: { series: { authorId: author.id } },
       _sum: { coinsSpent: true },
       _count: true,
     }),
@@ -164,7 +169,10 @@ export default async function AuthorDashboardPage() {
       {PAYMENTS_ENABLED && (() => {
         const tipCoins = tipEarnings._sum.authorShare ?? 0;
         const unlockCoins = Math.floor((unlockEarnings._sum.coinsSpent ?? 0) * 0.8);
-        const totalEarned = tipCoins + unlockCoins;
+        const seriesUnlockCoins = Math.floor((seriesUnlockEarnings._sum.coinsSpent ?? 0) * 0.8);
+        const allUnlockCoins = unlockCoins + seriesUnlockCoins;
+        const allUnlockCount = unlockEarnings._count + seriesUnlockEarnings._count;
+        const totalEarned = tipCoins + allUnlockCoins;
         const usd = (n: number) => `$${(n / 100).toFixed(2)}`;
         return (
           <div className="mb-10 rounded-2xl p-5" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
@@ -198,8 +206,8 @@ export default async function AuthorDashboardPage() {
               </div>
               <div className="p-3 rounded-xl" style={{ background: "rgba(196,66,106,0.07)", border: "1px solid rgba(196,66,106,0.15)" }}>
                 <p className="text-xs mb-1" style={{ color: "var(--muted-foreground)" }}>From Unlocks</p>
-                <p className="text-lg font-bold" style={{ color: "#c4426a" }}>{unlockCoins.toLocaleString()}</p>
-                <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>{unlockEarnings._count} {unlockEarnings._count === 1 ? "reader" : "readers"} · {usd(unlockCoins)}</p>
+                <p className="text-lg font-bold" style={{ color: "#c4426a" }}>{allUnlockCoins.toLocaleString()}</p>
+                <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>{allUnlockCount} {allUnlockCount === 1 ? "reader" : "readers"} · {usd(allUnlockCoins)}</p>
               </div>
               <div className="p-3 rounded-xl" style={{ background: "rgba(234,179,8,0.07)", border: "1px solid rgba(234,179,8,0.15)" }}>
                 <p className="text-xs mb-1" style={{ color: "var(--muted-foreground)" }}>From Tips</p>

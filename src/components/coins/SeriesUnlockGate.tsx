@@ -28,6 +28,11 @@ export function SeriesUnlockGate({
   userBalance,
   isLoggedIn,
 }: Props) {
+  const router = useRouter();
+  const [unlocking, setUnlocking] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   if (!PAYMENTS_ENABLED) {
     return (
       <ComingSoonGate
@@ -36,11 +41,6 @@ export function SeriesUnlockGate({
       />
     );
   }
-
-  const router = useRouter();
-  const [unlocking, setUnlocking] = useState(false);
-  const [unlocked, setUnlocked] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function handleUnlock() {
     setUnlocking(true);

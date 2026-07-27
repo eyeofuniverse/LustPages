@@ -44,25 +44,35 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: formatHint }, { status: 400 });
   }
 
-  const usdAmount = parseFloat((author.coinEarnings / 100).toFixed(2));
+  const coinsToWithdraw = author.coinEarnings;
+  const usdAmount = parseFloat((coinsToWithdraw / 100).toFixed(2));
 
-  // Atomically zero earnings and write the payout ledger record
-  const [, payout] = await prisma.$transaction([
-    prisma.author.update({
-      where: { id: author.id },
-      data: { coinEarnings: 0 },
-    }),
-    prisma.payoutRequest.create({
-      data: {
-        authorId: author.id,
-        coinsRequested: author.coinEarnings,
-        usdAmount,
-        method,
-        accountDetails,
-        status: "pending",
-      },
-    }),
-  ]);
+  // Atomically claim earnings: updateMany with condition prevents concurrent double-payouts
+  let payout;
+  try {
+    payout = await prisma.$transaction(async (tx) => {
+      const claimed = await tx.author.updateMany({
+        where: { id: author.id, coinEarnings: { gte: 100 } },
+        data: { coinEarnings: 0 },
+      });
+      if (claimed.count === 0) throw new Error("ALREADY_WITHDRAWN");
+      return tx.payoutRequest.create({
+        data: {
+          authorId: author.id,
+          coinsRequested: coinsToWithdraw,
+          usdAmount,
+          method,
+          accountDetails,
+          status: "pending",
+        },
+      });
+    });
+  } catch (e) {
+    if (e instanceof Error && e.message === "ALREADY_WITHDRAWN") {
+      return NextResponse.json({ error: "Minimum payout is 100 coins ($1.00)" }, { status: 400 });
+    }
+    throw e;
+  }
 
   return NextResponse.json({
     ok: true,
