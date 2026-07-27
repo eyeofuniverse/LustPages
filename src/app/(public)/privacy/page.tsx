@@ -84,7 +84,7 @@ export default function PrivacyPage() {
           <li><strong style={{ color: "var(--foreground)" }}>Supabase</strong> — database hosting (EU region). Your account data and reading history are stored here.</li>
           <li><strong style={{ color: "var(--foreground)" }}>Vercel</strong> — application hosting and CDN. Processes request logs.</li>
           <li><strong style={{ color: "var(--foreground)" }}>Resend</strong> — transactional email delivery. Your email address is shared only to deliver emails you have requested.</li>
-          <li><strong style={{ color: "var(--foreground)" }}>NOWPayments</strong> — cryptocurrency payment processing. Relevant only when you make a purchase.</li>
+          <li><strong style={{ color: "var(--foreground)" }}>Atlos</strong> — cryptocurrency payment processing for coin subscriptions. Relevant only when you make a purchase.</li>
           <li><strong style={{ color: "var(--foreground)" }}>Cloudinary</strong> — image hosting for story cover images. No personal data is stored.</li>
         </ul>
         <p>Each sub-processor is bound by data processing agreements and is prohibited from using your data for their own purposes.</p>

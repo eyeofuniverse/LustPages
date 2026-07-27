@@ -228,7 +228,7 @@ export function Header({ categories }: HeaderProps) {
                 className="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
                 style={{ color: pathname === "/store" ? "#c4426a" : "var(--muted-foreground)" }}
               >
-                Store
+                Get Coins
               </Link>
             </nav>
 
@@ -431,7 +431,7 @@ export function Header({ categories }: HeaderProps) {
           <NavItem href="/tags" label="Tags" icon={<Tag size={16} />} onClick={closeMobile} active={pathname === "/tags"} />
           <NavItem href="/premium/stories" label="Premium" icon={<Lock size={16} />} onClick={closeMobile} active={pathname.startsWith("/premium")} />
           <NavItem href="/authors" label="Authors" icon={<User size={16} />} onClick={closeMobile} active={pathname === "/authors"} />
-          <NavItem href="/store" label="Coin Store" icon={<Coins size={16} />} onClick={closeMobile} active={pathname === "/store"} />
+          <NavItem href="/store" label="Get Coins" icon={<Coins size={16} />} onClick={closeMobile} active={pathname === "/store"} />
 
           {/* Browse by genre accordion */}
           <div className="mt-1">
