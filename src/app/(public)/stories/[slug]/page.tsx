@@ -489,7 +489,7 @@ export default async function StoryPage({ params }: Props) {
         >
           <div className="flex items-start gap-4">
             {story.author.image ? (
-              <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 relative">
+              <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 relative" style={{ flexShrink: 0 }}>
                 <SafeImage
                   src={story.author.image}
                   alt={story.author.name}
@@ -510,7 +510,7 @@ export default async function StoryPage({ params }: Props) {
                 {story.author.name[0]}
               </div>
             )}
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="text-xs mb-1" style={{ color: "var(--muted-foreground)" }}>
                 Written by
               </p>

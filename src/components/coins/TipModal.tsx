@@ -62,7 +62,7 @@ export function TipModal({ authorId, authorName, storyId, userBalance, isLoggedI
     return (
       <a
         href="/login"
-        className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-opacity hover:opacity-75"
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-opacity hover:opacity-75"
         style={{ background: "rgba(196,66,106,0.1)", color: "#c4426a", border: "1px solid rgba(196,66,106,0.25)" }}
       >
         <Heart size={14} /> Tip Author
@@ -74,7 +74,7 @@ export function TipModal({ authorId, authorName, storyId, userBalance, isLoggedI
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-opacity hover:opacity-75"
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-opacity hover:opacity-75"
         style={{ background: "rgba(196,66,106,0.1)", color: "#c4426a", border: "1px solid rgba(196,66,106,0.25)" }}
       >
         <Heart size={14} /> Tip Author

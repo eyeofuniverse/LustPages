@@ -81,15 +81,6 @@ export function Footer({ categories = [] }: FooterProps) {
                   </Link>
                 </li>
               ))}
-              <li>
-                <Link
-                  href="/categories"
-                  className="text-sm transition-opacity hover:opacity-75 font-medium"
-                  style={{ color: "#c4426a" }}
-                >
-                  All Genres →
-                </Link>
-              </li>
             </ul>
           </div>
 

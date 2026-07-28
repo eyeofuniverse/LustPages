@@ -86,7 +86,7 @@ export function SignInNudge() {
                 <UserPlus size={13} /> Create account
               </Link>
               <Link
-                href="/signin"
+                href="/login"
                 onClick={dismiss}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-opacity hover:opacity-70"
                 style={{
