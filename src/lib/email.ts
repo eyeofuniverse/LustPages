@@ -4,7 +4,11 @@ import { EMAIL_TYPES, type EmailType } from "@/lib/email-config";
 
 let _resend: Resend | null = null;
 function getResend(): Resend {
-  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
+  if (!_resend) {
+    const key = process.env.RESEND_API_KEY;
+    if (!key) throw new Error("RESEND_API_KEY environment variable is not set");
+    _resend = new Resend(key);
+  }
   return _resend;
 }
 const FROM = "LustPages <hello@mail.lustpages.com>";
