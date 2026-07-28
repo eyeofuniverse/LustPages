@@ -80,8 +80,8 @@ export default async function SeriesPage({ params }: Props) {
     },
     numberOfEpisodes: series.stories.length,
     wordCount: totalWordCount,
-    datePublished: series.createdAt.toISOString(),
-    dateModified: series.updatedAt.toISOString(),
+    datePublished: new Date(series.createdAt).toISOString(),
+    dateModified: new Date(series.updatedAt).toISOString(),
     ...(seriesRating.count >= 3 && {
       aggregateRating: {
         "@type": "AggregateRating",
@@ -98,7 +98,7 @@ export default async function SeriesPage({ params }: Props) {
       position: part.chapterNumber ?? idx + 1,
       ...(part.excerpt && { description: part.excerpt }),
       wordCount: part.readingTime * 225,
-      datePublished: part.createdAt.toISOString(),
+      datePublished: new Date(part.createdAt).toISOString(),
     })),
   };
 
