@@ -2,7 +2,11 @@ import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
 import { EMAIL_TYPES, type EmailType } from "@/lib/email-config";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+function getResend(): Resend {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
+}
 const FROM = "LustPages <hello@mail.lustpages.com>";
 const SITE = process.env.SITE_URL ?? "https://lustpages.com";
 
@@ -70,7 +74,7 @@ async function send(to: string, defaultSubject: string, html: string, text: stri
       : "";
     const finalHtml = html.replace("{{CUSTOM_NOTE}}", customNote);
     const finalText = setting?.customNote ? `${text}\n\n${setting.customNote}` : text;
-    const { error } = await resend.emails.send({
+    const { error } = await getResend().emails.send({
       from: FROM,
       to,
       subject,
@@ -409,7 +413,7 @@ export async function sendTestEmail(to: string, type: string) {
     "{{CUSTOM_NOTE}}",
     `<p style="margin:0 0 14px;font-size:11px;color:#888;background:#1a1929;padding:6px 10px;border-radius:4px;display:inline-block;">🧪 This is a test email sent from the admin panel</p>`
   );
-  const { error } = await resend.emails.send({
+  const { error } = await getResend().emails.send({
     from: FROM,
     to,
     subject: `[TEST] ${config.defaultSubject}`,
@@ -526,7 +530,7 @@ export async function sendNewStoryNotification(
 }
 
 export async function sendAdminOtpEmail(to: string, code: string, expiresMinutes = 10) {
-  const { error } = await resend.emails.send({
+  const { error } = await getResend().emails.send({
     from: FROM,
     to,
     subject: `[${code}] Your LustPages admin login code`,
