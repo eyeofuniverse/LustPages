@@ -1,13 +1,14 @@
 import { defineConfig } from "prisma/config";
 
-// Session-mode pooler (port 5432) — supports DDL/migrations on IPv4 networks.
-// Transaction-mode pooler (port 6543) is used at runtime via DATABASE_URL in .env.local.
+// DIRECT_URL: direct Supabase connection (no pooler) — required for DDL/migrations.
+// Set this in .env.local. DATABASE_URL uses the transaction-mode pooler (port 6543)
+// for runtime queries and must NOT be used here.
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: "***REDACTED-USE-DIRECT_URL-ENV-VAR***",
+    url: process.env.DIRECT_URL!,
   },
 });
