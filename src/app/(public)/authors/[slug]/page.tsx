@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { SafeImage } from "@/components/ui/SafeImage";
-import { getAuthorBySlug, getPublishedStories, getSimilarAuthors } from "@/lib/queries";
+import { getCachedAuthorBySlug, getCachedAuthorStories, getCachedSimilarAuthors } from "@/lib/cached-queries";
 import { StoryCard } from "@/components/story/StoryCard";
 import { AdSlot } from "@/components/ads/AdSlot";
 import { AuthorLikeButton } from "@/components/story/AuthorLikeButton";
@@ -25,7 +25,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const author = await getAuthorBySlug(slug);
+  const author = await getCachedAuthorBySlug(slug);
   if (!author) return { title: "Author Not Found" };
 
   const siteUrl = process.env.NEXTAUTH_URL ?? "https://lustpages.com";
@@ -64,14 +64,14 @@ function fmt(n: number) {
 export default async function AuthorPage({ params }: Props) {
   const { slug } = await params;
   const [author, stories, session] = await Promise.all([
-    getAuthorBySlug(slug),
-    getPublishedStories({ authorSlug: slug, take: 24 }),
+    getCachedAuthorBySlug(slug),
+    getCachedAuthorStories(slug),
     auth(),
   ]);
 
   if (!author) notFound();
 
-  const similarAuthors = await getSimilarAuthors(author.id, 4);
+  const similarAuthors = await getCachedSimilarAuthors(author.id);
 
   const hasSeries = author.seriesList && author.seriesList.length > 0;
   const featured = isFeaturedAuthor(author._count.stories, author.totalLikes);

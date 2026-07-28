@@ -796,6 +796,21 @@ export async function getSeriesUnlock(userId: string, seriesId: string) {
   });
 }
 
+export async function getStoryComments(storyId: string) {
+  return prisma.comment.findMany({
+    where: { storyId, parentId: null },
+    include: {
+      user: { select: { id: true, name: true, image: true } },
+      replies: {
+        include: { user: { select: { id: true, name: true, image: true } } },
+        orderBy: { createdAt: "asc" },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  });
+}
+
 export async function getAuthorCoinEarnings(authorId: string) {
   const author = await prisma.author.findUnique({
     where: { id: authorId },

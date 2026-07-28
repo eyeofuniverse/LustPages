@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getStoryBySlug, getStoryRecommendations, getStoryUnlock, getSeriesUnlock, getUserCoinBalance } from "@/lib/queries";
+import { getStoryUnlock, getSeriesUnlock, getUserCoinBalance, getStoryComments } from "@/lib/queries";
+import { getCachedStoryBySlug, getCachedStoryRecommendations } from "@/lib/cached-queries";
 import { auth } from "@/auth";
 import { formatDate, getTextPreview, countWords, splitHtmlAtParagraph } from "@/lib/utils";
 import { sanitizeStoryContent } from "@/lib/sanitize";
@@ -28,7 +29,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const story = await getStoryBySlug(slug);
+  const story = await getCachedStoryBySlug(slug);
   if (!story) return { title: "Story Not Found" };
 
   const siteUrl = process.env.NEXTAUTH_URL ?? "https://lustpages.com";
@@ -70,45 +71,49 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function StoryPage({ params }: Props) {
   const { slug } = await params;
-  const [story, session] = await Promise.all([
-    getStoryBySlug(slug),
+  const [storyData, session] = await Promise.all([
+    getCachedStoryBySlug(slug),
     auth(),
   ]);
 
-  if (!story) notFound();
+  if (!storyData) notFound();
 
   const userId = session?.user?.id;
-  const tags = story.storyTags;
+  const tags = storyData.storyTags;
   const tagNames = tags.map((t) => t.name);
-  const categoryIds = story.categories.map((c) => c.id);
-
-  // Effective cover: series cover takes priority when story is in a series
-  const coverImage = story.seriesInfo?.coverImage ?? story.coverImage;
+  const categoryIds = storyData.categories.map((c) => c.id);
 
   // Series-aware access logic
-  const seriesInfo = story.seriesInfo;
+  const seriesInfo = storyData.seriesInfo;
   const inSeries = !!seriesInfo;
   const seriesPremium = inSeries && !!seriesInfo.isPremium && !!seriesInfo.coinPrice;
   const freeChapters = seriesInfo?.freeChapters ?? 1;
-  const chapterNum = story.chapterNumber ?? 1;
+  const chapterNum = storyData.chapterNumber ?? 1;
   const isFreeChapter = seriesPremium && chapterNum <= freeChapters;
 
   // A story is premium if:
   // - In a premium series AND beyond the free chapter threshold, OR
   // - Standalone with a coin price set
-  const isPremium = inSeries ? (seriesPremium && !isFreeChapter) : !!story.coinPrice;
+  const isPremium = inSeries ? (seriesPremium && !isFreeChapter) : !!storyData.coinPrice;
 
-  const [recommendations, unlock, userBalance] = await Promise.all([
-    getStoryRecommendations(story.id, tagNames, categoryIds, 6),
+  // Fresh comments fetched on every request; everything else served from cache.
+  const [freshComments, recommendations, unlock, userBalance] = await Promise.all([
+    getStoryComments(storyData.id),
+    getCachedStoryRecommendations(storyData.id, tagNames, categoryIds),
     isPremium && userId
       ? (seriesPremium
           ? getSeriesUnlock(userId, seriesInfo!.id)
-          : getStoryUnlock(userId, story.id))
+          : getStoryUnlock(userId, storyData.id))
       : Promise.resolve(null),
     userId ? getUserCoinBalance(userId) : Promise.resolve(0),
   ]);
 
+  // Merge cached story data with live comments
+  const story = { ...storyData, comments: freshComments };
+
   const isUnlocked = !isPremium || !!unlock;
+  // Effective cover: series cover takes priority when story is in a series
+  const coverImage = storyData.seriesInfo?.coverImage ?? storyData.coverImage;
   const siteUrl = process.env.NEXTAUTH_URL ?? "https://lustpages.com";
 
   const jsonLd = {

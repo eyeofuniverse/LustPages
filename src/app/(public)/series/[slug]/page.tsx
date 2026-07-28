@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { SafeImage } from "@/components/ui/SafeImage";
-import { getSeriesBySlug, computeSeriesRating, getSeriesUnlock, getUserCoinBalance } from "@/lib/queries";
+import { computeSeriesRating, getSeriesUnlock, getUserCoinBalance } from "@/lib/queries";
+import { getCachedSeriesBySlug } from "@/lib/cached-queries";
 import { formatDate } from "@/lib/utils";
 import { auth } from "@/auth";
 import { SeriesUnlockGate } from "@/components/coins/SeriesUnlockGate";
@@ -17,7 +18,7 @@ const SITE = process.env.NEXTAUTH_URL ?? "https://lustpages.com";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const series = await getSeriesBySlug(slug);
+  const series = await getCachedSeriesBySlug(slug);
   if (!series) return { title: "Series Not Found" };
 
   const desc =
@@ -46,7 +47,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function SeriesPage({ params }: Props) {
   const { slug } = await params;
-  const [series, session] = await Promise.all([getSeriesBySlug(slug), auth()]);
+  const [series, session] = await Promise.all([getCachedSeriesBySlug(slug), auth()]);
   if (!series) notFound();
 
   const userId = session?.user?.id;
