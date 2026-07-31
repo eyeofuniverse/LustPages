@@ -8,7 +8,10 @@ if (!process.env.DATABASE_URL) {
 const connectionString = process.env.DATABASE_URL;
 
 function createPrismaClient() {
-  const adapter = new PrismaPg({ connectionString });
+  // max:1 — each serverless function instance is single-threaded and needs
+  // only one connection. Without this, pg defaults to 10, and with many
+  // concurrent Vercel instances the 200-connection Supabase limit is hit.
+  const adapter = new PrismaPg({ connectionString, max: 1 });
   return new PrismaClient({ adapter } as ConstructorParameters<typeof PrismaClient>[0]);
 }
 
@@ -16,4 +19,6 @@ const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+// Always cache — prevents a new pool being opened on every module evaluation
+// in both dev (hot reload) and prod (warm serverless container re-use).
+globalForPrisma.prisma = prisma;
