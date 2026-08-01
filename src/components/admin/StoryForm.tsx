@@ -851,7 +851,7 @@ export function StoryForm({ categories, authors, availableTags, initialData }: S
                 </div>
                 {accessLevel === "Premium" && (
                   <div>
-                    <label style={labelStyle}>Coin Price * <FieldInfo text="How many coins a reader spends to unlock this story. 1 coin ≈ $1. Earnings split: 80% to the author, 20% to the platform." /></label>
+                    <label style={labelStyle}>Coin Price * <FieldInfo text="How many coins a reader spends to unlock this story. 100 coins ≈ $1. Earnings split: 80% to the author, 20% to the platform." /></label>
                     <input
                       type="number"
                       min={1}
@@ -863,7 +863,7 @@ export function StoryForm({ categories, authors, availableTags, initialData }: S
                       style={inputStyle}
                     />
                     <p className="text-xs mt-1" style={{ color: "var(--muted-foreground)" }}>
-                      Readers spend this many coins to unlock. 1 coin = $1.
+                      Readers spend this many coins to unlock. 100 coins ≈ $1.
                     </p>
                   </div>
                 )}

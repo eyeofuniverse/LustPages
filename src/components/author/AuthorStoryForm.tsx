@@ -583,7 +583,7 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
                 </div>
                 {accessLevel === "Premium" && (
                   <div>
-                    <label style={labelStyle}>Coin Price * <FieldInfo text="How many coins readers pay to unlock your story. 1 coin ≈ $1. You earn 80% of each purchase. Cannot be changed once readers have unlocked it." /></label>
+                    <label style={labelStyle}>Coin Price * <FieldInfo text="How many coins readers pay to unlock your story. 100 coins ≈ $1. You earn 80% of each purchase. Cannot be changed once readers have unlocked it." /></label>
                     {isPriceLocked ? (
                       <div
                         className="w-full px-3 py-2 rounded-xl text-sm flex items-center justify-between"
@@ -607,7 +607,7 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
                       />
                     )}
                     <p className="text-xs mt-1" style={{ color: "var(--muted-foreground)" }}>
-                      Readers pay this many coins to unlock. 1 coin = $1. You earn 80% of each unlock.
+                      Readers pay this many coins to unlock. 100 coins ≈ $1. You earn 80% of each unlock.
                     </p>
                   </div>
                 )}
