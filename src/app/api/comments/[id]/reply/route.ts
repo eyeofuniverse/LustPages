@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendCommentReplyEmail } from "@/lib/email";
+import { awardBadgesAsync } from "@/lib/badge-checker";
 
 export async function POST(
   req: Request,
@@ -69,6 +70,8 @@ export async function POST(
       content.trim(),
     ).catch(console.error);
   }
+
+  awardBadgesAsync({ type: "COMMENT", userId: session.user.id });
 
   return NextResponse.json(reply, { status: 201 });
 }

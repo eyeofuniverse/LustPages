@@ -800,9 +800,11 @@ export async function getStoryComments(storyId: string) {
   return prisma.comment.findMany({
     where: { storyId, parentId: null },
     include: {
-      user: { select: { id: true, name: true, image: true } },
+      user: { select: { id: true, name: true, image: true, badges: { select: { badgeId: true } } } },
       replies: {
-        include: { user: { select: { id: true, name: true, image: true } } },
+        include: {
+          user: { select: { id: true, name: true, image: true, badges: { select: { badgeId: true } } } },
+        },
         orderBy: { createdAt: "asc" },
       },
     },

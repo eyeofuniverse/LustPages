@@ -2,9 +2,11 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { SafeImage } from "@/components/ui/SafeImage";
 import { getCachedAuthorBySlug, getCachedAuthorStories, getCachedSimilarAuthors } from "@/lib/cached-queries";
+import { prisma } from "@/lib/prisma";
 import { StoryCard } from "@/components/story/StoryCard";
 import { AdSlot } from "@/components/ads/AdSlot";
 import { AuthorLikeButton } from "@/components/story/AuthorLikeButton";
+import { UserBadges, EarnedBadgeStrip } from "@/components/badges/UserBadges";
 import { auth } from "@/auth";
 import {
   BookOpen,
@@ -15,6 +17,7 @@ import {
   BookMarked,
   Calendar,
   Users,
+  Award,
 } from "lucide-react";
 import { AuthorBadge, isFeaturedAuthor } from "@/components/author/AuthorBadge";
 import type { Metadata } from "next";
@@ -71,7 +74,16 @@ export default async function AuthorPage({ params }: Props) {
 
   if (!author) notFound();
 
-  const similarAuthors = await getCachedSimilarAuthors(author.id);
+  const [similarAuthors, authorBadges] = await Promise.all([
+    getCachedSimilarAuthors(author.id),
+    author.userId
+      ? prisma.userBadge.findMany({
+          where: { userId: author.userId },
+          select: { badgeId: true, awardedAt: true },
+          orderBy: { awardedAt: "desc" },
+        })
+      : Promise.resolve([]),
+  ]);
 
   const hasSeries = author.seriesList && author.seriesList.length > 0;
   const featured = isFeaturedAuthor(author._count.stories, author.totalLikes);
@@ -236,8 +248,15 @@ export default async function AuthorPage({ params }: Props) {
             ))}
           </div>
 
+          {/* Badge strip */}
+          {authorBadges.length > 0 && (
+            <div className="mt-4 flex justify-center sm:justify-start">
+              <EarnedBadgeStrip earned={authorBadges} max={6} />
+            </div>
+          )}
+
           {/* Follow button */}
-          <div className="mt-5 flex justify-center sm:justify-start">
+          <div className="mt-4 flex justify-center sm:justify-start">
             <AuthorLikeButton
               authorId={author.id}
               likeCount={author._count.likes}
@@ -250,6 +269,23 @@ export default async function AuthorPage({ params }: Props) {
       {/* ── Content ──────────────────────────────────────────────── */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
         <AdSlot identifier="author_profile_banner" />
+
+        {/* Author Badges */}
+        {authorBadges.length > 0 && (
+          <div
+            className="p-6 rounded-2xl mb-10"
+            style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+          >
+            <h2
+              className="text-lg font-bold mb-5 flex items-center gap-2"
+              style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
+            >
+              <Award size={18} style={{ color: "#c4426a" }} />
+              Achievements
+            </h2>
+            <UserBadges earned={authorBadges} category="author" showLocked={false} />
+          </div>
+        )}
 
         {/* Series section */}
         {hasSeries && (

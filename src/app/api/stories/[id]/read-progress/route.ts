@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { awardBadgesAsync } from "@/lib/badge-checker";
 
 const COMPLETED_THRESHOLD = 90;
 
@@ -26,6 +27,7 @@ export async function POST(
     where: { userId_storyId: { userId: session.user.id, storyId } },
   });
 
+  const wasCompleted = !!existing?.completedAt;
   const record = await prisma.readingHistory.upsert({
     where: { userId_storyId: { userId: session.user.id, storyId } },
     create: {
@@ -39,6 +41,11 @@ export async function POST(
       ...(isCompleted && !existing?.completedAt ? { completedAt: new Date() } : {}),
     },
   });
+
+  // Only check reading badges when a story is newly completed
+  if (isCompleted && !wasCompleted) {
+    awardBadgesAsync({ type: "STORY_COMPLETE", userId: session.user.id });
+  }
 
   return NextResponse.json(record);
 }

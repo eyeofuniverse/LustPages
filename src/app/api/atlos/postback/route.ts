@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAtlosSignature } from "@/lib/atlos";
 import { getTier } from "@/lib/subscription-tiers";
+import { awardBadgesAsync } from "@/lib/badge-checker";
 
 // Must read raw body before JSON.parse — HMAC is over the raw bytes
 export async function POST(req: NextRequest) {
@@ -164,6 +165,9 @@ export async function POST(req: NextRequest) {
       },
     });
   });
+
+  awardBadgesAsync({ type: "COIN_PURCHASE", userId: payment.userId });
+  awardBadgesAsync({ type: "SUBSCRIPTION",  userId: payment.userId });
 
   return NextResponse.json({ ok: true });
 }

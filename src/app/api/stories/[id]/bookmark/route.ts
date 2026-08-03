@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { awardBadgesAsync } from "@/lib/badge-checker";
 
 export async function POST(
   req: Request,
@@ -24,5 +25,6 @@ export async function POST(
   }
 
   await prisma.bookmark.create({ data: { userId, storyId } });
+  awardBadgesAsync({ type: "BOOKMARK", userId });
   return NextResponse.json({ bookmarked: true });
 }

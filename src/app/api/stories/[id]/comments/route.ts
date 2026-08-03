@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { awardBadgesAsync } from "@/lib/badge-checker";
 
 export async function POST(
   req: Request,
@@ -22,16 +23,16 @@ export async function POST(
     return NextResponse.json({ error: "Comment is too long." }, { status: 400 });
   }
 
-  const comment = await prisma.comment.create({
-    data: {
-      content: content.trim(),
-      userId: session.user.id,
-      storyId,
-    },
-    include: {
-      user: { select: { id: true, name: true, image: true } },
-    },
-  });
+  const [comment, story] = await Promise.all([
+    prisma.comment.create({
+      data: { content: content.trim(), userId: session.user.id, storyId },
+      include: { user: { select: { id: true, name: true, image: true } } },
+    }),
+    prisma.story.findUnique({ where: { id: storyId }, select: { authorId: true } }),
+  ]);
+
+  awardBadgesAsync({ type: "COMMENT", userId: session.user.id });
+  if (story) awardBadgesAsync({ type: "STORY_COMMENTED", authorId: story.authorId });
 
   return NextResponse.json(comment, { status: 201 });
 }

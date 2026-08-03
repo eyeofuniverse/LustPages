@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { awardBadgesAsync } from "@/lib/badge-checker";
 
 export async function POST(
   _req: Request,
@@ -23,6 +24,7 @@ export async function POST(
     return NextResponse.json({ liked: false });
   } else {
     await prisma.authorLike.create({ data: { userId, authorId } });
+    awardBadgesAsync({ type: "AUTHOR_LIKED", authorId });
     return NextResponse.json({ liked: true });
   }
 }

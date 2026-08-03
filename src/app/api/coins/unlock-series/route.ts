@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { awardBadgesAsync } from "@/lib/badge-checker";
 
 const AUTHOR_SHARE = 0.8;
 
@@ -69,6 +70,7 @@ export async function POST(req: NextRequest) {
       return updated!.coinBalance;
     });
 
+    awardBadgesAsync({ type: "UNLOCK", userId });
     return NextResponse.json({ success: true, balance: newBalance });
   } catch (e) {
     if (e instanceof Error && e.message === "INSUFFICIENT_COINS") {

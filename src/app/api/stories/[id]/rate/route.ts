@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { awardBadgesAsync } from "@/lib/badge-checker";
 
 async function recalcRating(storyId: string) {
   const agg = await prisma.rating.aggregate({
@@ -35,12 +36,19 @@ export async function POST(
     return NextResponse.json({ error: "Rating must be 1–5" }, { status: 400 });
   }
 
-  await prisma.rating.upsert({
-    where: { userId_storyId: { userId: session.user.id, storyId } },
-    create: { userId: session.user.id, storyId, value },
-    update: { value, updatedAt: new Date() },
-  });
+  const [, story] = await Promise.all([
+    prisma.rating.upsert({
+      where: { userId_storyId: { userId: session.user.id, storyId } },
+      create: { userId: session.user.id, storyId, value },
+      update: { value, updatedAt: new Date() },
+    }),
+    prisma.story.findUnique({ where: { id: storyId }, select: { authorId: true } }),
+  ]);
   const { avgRating, ratingCount } = await recalcRating(storyId);
+
+  awardBadgesAsync({ type: "RATE", userId: session.user.id });
+  if (story) awardBadgesAsync({ type: "STORY_RATED", authorId: story.authorId });
+
   return NextResponse.json({ rating: value, avgRating, ratingCount });
 }
 

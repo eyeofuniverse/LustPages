@@ -43,6 +43,7 @@ model User {
   ratings           Rating[]
   cryptoPayments    CryptoPayment[]
   atlosPayments     AtlosPayment[]
+  badges            UserBadge[]
 }
 
 model Category {
@@ -686,4 +687,15 @@ model SearchQuery {
 
   @@index([query])
   @@index([createdAt])
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  badgeId   String
+  awardedAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@index([userId])
 }

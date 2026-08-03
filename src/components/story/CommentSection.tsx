@@ -3,12 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDate } from "@/lib/utils";
+import { getTopBadge } from "@/lib/badges";
+import { BadgeChip } from "@/components/badges/BadgeIcon";
 import { Send, MessageCircle, Reply, Trash2, Flag, X, ChevronDown } from "lucide-react";
 
 interface CommentUser {
   id: string;
   name: string;
   image: string | null;
+  badges?: { badgeId: string }[];
 }
 
 interface CommentReply {
@@ -235,10 +238,14 @@ export function CommentSection({ storyId, comments: initial, userId, storyAuthor
               <div className="flex gap-3">
                 <Avatar name={comment.user.name} />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline gap-2 mb-1">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
                     <span className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
                       {comment.user.name}
                     </span>
+                    {comment.user.badges && comment.user.badges.length > 0 && (() => {
+                      const top = getTopBadge(comment.user.badges.map((b) => b.badgeId));
+                      return top ? <BadgeChip badgeId={top.id} /> : null;
+                    })()}
                     <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
                       {formatDate(comment.createdAt)}
                     </span>
@@ -362,10 +369,14 @@ export function CommentSection({ storyId, comments: initial, userId, storyAuthor
                         <div key={reply.id} className="flex gap-2.5">
                           <SmallAvatar name={reply.user.name} />
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-baseline gap-2 mb-0.5">
+                            <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
                               <span className="text-xs font-semibold" style={{ color: "var(--foreground)" }}>
                                 {reply.user.name}
                               </span>
+                              {reply.user.badges && reply.user.badges.length > 0 && (() => {
+                                const top = getTopBadge(reply.user.badges.map((b) => b.badgeId));
+                                return top ? <BadgeChip badgeId={top.id} /> : null;
+                              })()}
                               <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
                                 {formatDate(reply.createdAt)}
                               </span>

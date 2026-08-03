@@ -5,6 +5,7 @@ import { sendStoryApprovedEmail, sendNewStoryNotification } from "@/lib/email";
 import { sendPushToUsers } from "@/lib/push";
 import { pushToAll } from "@/lib/onesignal";
 import { submitToIndexNow, storyUrl, seriesUrl } from "@/lib/indexnow";
+import { awardBadgesAsync } from "@/lib/badge-checker";
 
 export async function POST(
   _req: Request,
@@ -76,6 +77,8 @@ export async function POST(
       body: `${story.author.name} just published on LustPages`,
       url: `/stories/${story.slug}`,
     }).catch(console.error);
+
+    awardBadgesAsync({ type: "STORY_PUBLISH", authorId: story.authorId });
 
     return NextResponse.json(story);
   } catch (e: unknown) {

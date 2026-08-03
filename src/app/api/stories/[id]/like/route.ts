@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { awardBadgesAsync } from "@/lib/badge-checker";
 
 export async function POST(
   req: Request,
@@ -23,6 +24,13 @@ export async function POST(
     return NextResponse.json({ liked: false });
   }
 
-  await prisma.like.create({ data: { userId, storyId } });
+  const [, story] = await Promise.all([
+    prisma.like.create({ data: { userId, storyId } }),
+    prisma.story.findUnique({ where: { id: storyId }, select: { authorId: true } }),
+  ]);
+
+  awardBadgesAsync({ type: "LIKE", userId });
+  if (story) awardBadgesAsync({ type: "STORY_LIKED", authorId: story.authorId });
+
   return NextResponse.json({ liked: true });
 }

@@ -1,10 +1,12 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { getCategories, getUserBookmarks, getReadingHistory, getFinishedStories, getUserLikes, getUserRatedStories } from "@/lib/queries";
+import { prisma } from "@/lib/prisma";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { LibraryClient } from "./LibraryClient";
-import { User } from "lucide-react";
+import { UserBadges } from "@/components/badges/UserBadges";
+import { Award, User } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -27,13 +29,18 @@ export default async function ProfilePage({
   const { tab } = await searchParams;
   const defaultTab: Tab = VALID_TABS.includes(tab as Tab) ? (tab as Tab) : "reading";
 
-  const [categories, reading, finished, bookmarks, likes, rated] = await Promise.all([
+  const [categories, reading, finished, bookmarks, likes, rated, earnedBadges] = await Promise.all([
     getCategories(),
     getReadingHistory(session.user.id),
     getFinishedStories(session.user.id),
     getUserBookmarks(session.user.id),
     getUserLikes(session.user.id),
     getUserRatedStories(session.user.id),
+    prisma.userBadge.findMany({
+      where: { userId: session.user.id },
+      select: { badgeId: true, awardedAt: true },
+      orderBy: { awardedAt: "desc" },
+    }),
   ]);
 
   return (
@@ -66,6 +73,21 @@ export default async function ProfilePage({
               {session.user.name} · {session.user.email}
             </p>
           </div>
+        </div>
+
+        {/* Badges */}
+        <div
+          className="p-6 rounded-2xl mb-8"
+          style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+        >
+          <h2
+            className="text-lg font-bold mb-5 flex items-center gap-2"
+            style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
+          >
+            <Award size={18} style={{ color: "#c4426a" }} />
+            My Badges
+          </h2>
+          <UserBadges earned={earnedBadges} category="reader" showLocked />
         </div>
 
         <LibraryClient
