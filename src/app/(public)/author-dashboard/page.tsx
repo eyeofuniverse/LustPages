@@ -173,16 +173,24 @@ export default async function AuthorDashboardPage() {
 
       {/* Author Badges */}
       <div
-        className="mb-10 p-5 rounded-2xl"
+        className="mb-8 p-5 rounded-2xl"
         style={{ background: "var(--card)", border: "1px solid var(--border)" }}
       >
-        <h2
-          className="font-bold text-lg flex items-center gap-2 mb-5"
-          style={{ color: "var(--foreground)" }}
-        >
-          <Award size={18} style={{ color: "#c4426a" }} />
-          Your Achievements
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2
+            className="font-bold text-base flex items-center gap-2"
+            style={{ color: "var(--foreground)" }}
+          >
+            <Award size={16} style={{ color: "#c4426a" }} />
+            Your Achievements
+          </h2>
+          {authorBadges.length > 0 && (
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full"
+              style={{ background: "rgba(196,66,106,0.1)", color: "#c4426a" }}>
+              {authorBadges.length} earned
+            </span>
+          )}
+        </div>
         <UserBadges earned={authorBadges} category="author" showLocked />
       </div>
 

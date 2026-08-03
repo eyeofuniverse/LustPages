@@ -248,15 +248,9 @@ export default async function AuthorPage({ params }: Props) {
             ))}
           </div>
 
-          {/* Badge strip */}
-          {authorBadges.length > 0 && (
-            <div className="mt-4 flex justify-center sm:justify-start">
-              <EarnedBadgeStrip earned={authorBadges} max={6} />
-            </div>
-          )}
-
-          {/* Follow button */}
-          <div className="mt-4 flex justify-center sm:justify-start">
+          {/* Badges + follow in one responsive row */}
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+            <EarnedBadgeStrip earned={authorBadges} max={8} />
             <AuthorLikeButton
               authorId={author.id}
               likeCount={author._count.likes}
@@ -272,16 +266,24 @@ export default async function AuthorPage({ params }: Props) {
 
         {/* Author Badges */}
         <div
-          className="p-6 rounded-2xl mb-10"
+          className="p-5 rounded-2xl mb-8"
           style={{ background: "var(--card)", border: "1px solid var(--border)" }}
         >
-          <h2
-            className="text-lg font-bold mb-5 flex items-center gap-2"
-            style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
-          >
-            <Award size={18} style={{ color: "#c4426a" }} />
-            Achievements
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2
+              className="text-base font-bold flex items-center gap-2"
+              style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
+            >
+              <Award size={16} style={{ color: "#c4426a" }} />
+              Achievements
+            </h2>
+            {authorBadges.length > 0 && (
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full"
+                style={{ background: "rgba(196,66,106,0.1)", color: "#c4426a" }}>
+                {authorBadges.length} earned
+              </span>
+            )}
+          </div>
           <UserBadges earned={authorBadges} category="author" showLocked={false} />
         </div>
 
