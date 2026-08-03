@@ -291,7 +291,10 @@ export async function checkAndAwardBadges(trigger: BadgeTrigger): Promise<string
     case "RATE":            return checkReaderRatingBadges(trigger.userId);
     case "LIKE":            return checkReaderLikeBadges(trigger.userId);
     case "BOOKMARK":        return checkReaderBookmarkBadges(trigger.userId);
-    case "UNLOCK":          return checkReaderUnlockBadges(trigger.userId);
+    case "UNLOCK":          return Promise.all([
+                              checkReaderUnlockBadges(trigger.userId),
+                              checkReaderSpendingBadges(trigger.userId),
+                            ]).then((r) => r.flat());
     case "TIP_SENT":        return Promise.all([
                               checkReaderTipSentBadges(trigger.userId),
                               checkReaderSpendingBadges(trigger.userId),

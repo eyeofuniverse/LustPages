@@ -52,6 +52,7 @@ export function UserBadges({ earned, category = "all", showLocked = true }: Prop
       {tiers.map(({ tier, badges }) => {
         if (!showLocked && badges.every((b) => !earnedSet.has(b.id))) return null;
         const palette = TIER_COLORS[tier];
+        const earnedInTier = badges.filter((b) => earnedSet.has(b.id)).length;
 
         return (
           <div key={tier}>
@@ -63,16 +64,23 @@ export function UserBadges({ earned, category = "all", showLocked = true }: Prop
                 {TIER_LABEL[tier]}
               </span>
               <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                {badges.filter((b) => earnedSet.has(b.id)).length}/{badges.length}
+                {earnedInTier}/{badges.length}
               </span>
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            <div
+              className="grid gap-3"
+              style={{ gridTemplateColumns: "repeat(auto-fill, minmax(68px, 1fr))" }}
+            >
               {badges.map((badge) => {
                 const isEarned = earnedSet.has(badge.id);
                 const awardedAt = earnedMap.get(badge.id);
                 return (
-                  <div key={badge.id} className="flex flex-col items-center gap-1" title={isEarned ? `Earned: ${new Date(awardedAt!).toLocaleDateString()}` : badge.description}>
+                  <div
+                    key={badge.id}
+                    className="flex flex-col items-center gap-1"
+                    title={isEarned ? `Earned: ${new Date(awardedAt!).toLocaleDateString()}` : badge.description}
+                  >
                     <BadgeIcon badge={badge} size="md" showLabel earned={isEarned} />
                   </div>
                 );

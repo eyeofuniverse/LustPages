@@ -271,21 +271,19 @@ export default async function AuthorPage({ params }: Props) {
         <AdSlot identifier="author_profile_banner" />
 
         {/* Author Badges */}
-        {authorBadges.length > 0 && (
-          <div
-            className="p-6 rounded-2xl mb-10"
-            style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+        <div
+          className="p-6 rounded-2xl mb-10"
+          style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+        >
+          <h2
+            className="text-lg font-bold mb-5 flex items-center gap-2"
+            style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
           >
-            <h2
-              className="text-lg font-bold mb-5 flex items-center gap-2"
-              style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
-            >
-              <Award size={18} style={{ color: "#c4426a" }} />
-              Achievements
-            </h2>
-            <UserBadges earned={authorBadges} category="author" showLocked={false} />
-          </div>
-        )}
+            <Award size={18} style={{ color: "#c4426a" }} />
+            Achievements
+          </h2>
+          <UserBadges earned={authorBadges} category="author" showLocked={false} />
+        </div>
 
         {/* Series section */}
         {hasSeries && (

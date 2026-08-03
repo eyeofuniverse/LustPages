@@ -16,8 +16,9 @@ import { prisma } from "@/lib/prisma";
 import {
   PenSquare, BookOpen, Eye, Heart, Clock,
   CheckCircle, XCircle, AlertCircle, FileText,
-  ArrowRight, Plus, Layers, Coins, MessageCircle, BarChart2, Star, Settings, Lock,
+  ArrowRight, Plus, Layers, Coins, MessageCircle, BarChart2, Star, Settings, Lock, Award,
 } from "lucide-react";
+import { UserBadges } from "@/components/badges/UserBadges";
 import { computeSeriesRating } from "@/lib/queries";
 import type { Metadata } from "next";
 
@@ -37,7 +38,7 @@ export default async function AuthorDashboardPage() {
   const author = await getAuthorByUserId(session.user.id);
   if (!author) redirect("/author-signup");
 
-  const [stories, seriesList, activePromotions, coinBalance, tipEarnings, unlockEarnings, seriesUnlockEarnings] = await Promise.all([
+  const [stories, seriesList, activePromotions, coinBalance, tipEarnings, unlockEarnings, seriesUnlockEarnings, authorBadges] = await Promise.all([
     getAuthorStories(author.id),
     getAuthorSeriesList(author.id),
     getAuthorActivePromotions(author.id),
@@ -56,6 +57,11 @@ export default async function AuthorDashboardPage() {
       where: { series: { authorId: author.id } },
       _sum: { coinsSpent: true },
       _count: true,
+    }),
+    prisma.userBadge.findMany({
+      where: { userId: session.user.id },
+      select: { badgeId: true, awardedAt: true },
+      orderBy: { awardedAt: "desc" },
     }),
   ]);
 
@@ -163,6 +169,21 @@ export default async function AuthorDashboardPage() {
             </div>
           );
         })}
+      </div>
+
+      {/* Author Badges */}
+      <div
+        className="mb-10 p-5 rounded-2xl"
+        style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+      >
+        <h2
+          className="font-bold text-lg flex items-center gap-2 mb-5"
+          style={{ color: "var(--foreground)" }}
+        >
+          <Award size={18} style={{ color: "#c4426a" }} />
+          Your Achievements
+        </h2>
+        <UserBadges earned={authorBadges} category="author" showLocked />
       </div>
 
       {/* Earnings */}
