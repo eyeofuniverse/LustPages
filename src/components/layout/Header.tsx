@@ -9,7 +9,6 @@ import {
   LayoutDashboard, ChevronDown, PenSquare, Coins, Lock, Layers, Tag, TrendingUp,
 } from "lucide-react";
 import { CoinBadge } from "@/components/coins/CoinBadge";
-import { NotificationBell } from "@/components/layout/NotificationBell";
 
 interface Category {
   id: string; name: string; slug: string; color: string;
@@ -238,9 +237,6 @@ export function Header({ categories }: HeaderProps) {
               <div className="hidden sm:block">
                 <CoinBadge />
               </div>
-
-              {/* Notification bell */}
-              <NotificationBell />
 
               {/* Search */}
               <Link
