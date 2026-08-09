@@ -13,7 +13,7 @@ export async function StickyAdSidebar({ slot }: Props) {
   if (!ad && !fillCode) return null;
 
   return (
-    <div style={{ position: "sticky", top: "5.5rem" }}>
+    <div style={{ position: "sticky", top: "5.5rem", overflow: "hidden", maxWidth: "300px" }}>
       <div
         style={{
           display: "flex",

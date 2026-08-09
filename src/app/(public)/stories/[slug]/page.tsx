@@ -176,7 +176,7 @@ export default async function StoryPage({ params }: Props) {
       />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
-        <div className="xl:flex xl:items-start xl:gap-8">
+        <div className="xl:flex xl:gap-8">
           <article className="min-w-0 flex-1 max-w-4xl mx-auto xl:mx-0">
         {/* Back */}
         <Link
