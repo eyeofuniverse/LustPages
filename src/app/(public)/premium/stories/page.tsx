@@ -1,4 +1,5 @@
 import { getPremiumStoriesPaginated, getPremiumStoriesCount, getPremiumSeriesList } from "@/lib/queries";
+import { AdSlot } from "@/components/ads/AdSlot";
 import { StoryListItem } from "@/components/story/StoryListItem";
 import Link from "next/link";
 import { SafeImage } from "@/components/ui/SafeImage";
@@ -186,6 +187,8 @@ export default async function PremiumStoriesPage({ searchParams }: Props) {
           </div>
         </section>
       )}
+
+      <AdSlot identifier="premium_stories_banner" />
 
       {/* Premium Stories */}
       <section>

@@ -25,13 +25,13 @@ export const AD_SLOTS = {
     recommended: "728×90 or responsive",
   },
   story_detail_before_content: {
-    label: "Story Detail — Before Content (deprecated)",
-    description: "No longer rendered on the page. Replaced by Mid Content slot.",
+    label: "Story Detail — Before Content",
+    description: "Above the story body, below the series navigation",
     recommended: "728×90 or 300×250",
   },
   story_detail_mid_content: {
     label: "Story Detail — Mid Content",
-    description: "Injected at ~40% through the story body, at a natural paragraph break",
+    description: "Injected at ~65% through the story body, at a natural paragraph break",
     recommended: "728×90 or 300×250",
   },
   story_detail_after_content: {
@@ -72,6 +72,36 @@ export const AD_SLOTS = {
   search_results_banner: {
     label: "Search Results — Banner",
     description: "Between story results and series results on the search page",
+    recommended: "728×90 or responsive",
+  },
+  story_detail_pre_comments: {
+    label: "Story Detail — Before Comments",
+    description: "Below author bio, above the comment section",
+    recommended: "728×90 or 300×250",
+  },
+  story_detail_gate_bottom: {
+    label: "Story Detail — Below Lock Gate",
+    description: "Below the coin unlock gate, visible only to locked-out users",
+    recommended: "728×90 or 300×250",
+  },
+  story_sidebar_rectangle: {
+    label: "Story Detail — Sticky Sidebar Rectangle",
+    description: "Sticky sidebar ad shown during reading on desktop (≥1280px screens)",
+    recommended: "300×250 or 300×600",
+  },
+  premium_stories_banner: {
+    label: "Premium Stories Page — Banner",
+    description: "Between the Premium Series section and Premium Stories list",
+    recommended: "728×90 or responsive",
+  },
+  collections_page_banner: {
+    label: "Collections Page — Banner",
+    description: "Between the Live Rankings section and Best by Category",
+    recommended: "728×90 or responsive",
+  },
+  series_list_banner: {
+    label: "Series List — Banner",
+    description: "Between the search bar and the series grid on /series",
     recommended: "728×90 or responsive",
   },
 } as const;

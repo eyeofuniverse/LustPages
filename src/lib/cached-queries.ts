@@ -6,6 +6,7 @@ import {
   getPublishedStories,
   getSimilarAuthors,
   getSeriesBySlug,
+  getActiveAdForSlot,
 } from "./queries";
 
 // Published story content rarely changes — cache 24 hours.
@@ -50,4 +51,11 @@ export const getCachedSeriesBySlug = unstable_cache(
   async (slug: string) => getSeriesBySlug(slug),
   ["series-by-slug"],
   { revalidate: 86400, tags: ["series"] }
+);
+
+// Ad slots change infrequently — cache 5 minutes so uncached renders are rare.
+export const getCachedAdForSlot = unstable_cache(
+  async (slot: string) => getActiveAdForSlot(slot),
+  ["ad-slot"],
+  { revalidate: 300 }
 );

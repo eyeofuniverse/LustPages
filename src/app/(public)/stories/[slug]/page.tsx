@@ -20,6 +20,7 @@ import { ViewTracker } from "@/components/story/ViewTracker";
 import { SafeImage } from "@/components/ui/SafeImage";
 import { ShareButtons } from "@/components/story/ShareButtons";
 import { StoryEndRatingNudge } from "@/components/story/StoryEndRatingNudge";
+import { StickyAdSidebar } from "@/components/ads/StickyAdSidebar";
 import { Clock, Calendar, ArrowLeft, Tag, PenLine } from "lucide-react";
 import type { Metadata } from "next";
 
@@ -174,7 +175,9 @@ export default async function StoryPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <article className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+        <div className="xl:flex xl:items-start xl:gap-8">
+          <article className="min-w-0 flex-1 max-w-4xl mx-auto xl:mx-0">
         {/* Back */}
         <Link
           href="/stories"
@@ -319,10 +322,13 @@ export default async function StoryPage({ params }: Props) {
           />
         )}
 
+        {/* Ad: above story content */}
+        <AdSlot identifier="story_detail_before_content" />
+
         {/* Content — gated if premium and not unlocked */}
         {isUnlocked ? (() => {
           const sanitized = sanitizeStoryContent(story.content);
-          const [first, second] = splitHtmlAtParagraph(sanitized, 0.4, 400);
+          const [first, second] = splitHtmlAtParagraph(sanitized, 0.65, 400);
           return (
             <div
               className="my-8 rounded-2xl px-5 sm:px-8 py-8"
@@ -375,6 +381,7 @@ export default async function StoryPage({ params }: Props) {
                 isLoggedIn={!!userId}
               />
             )}
+            <AdSlot identifier="story_detail_gate_bottom" />
           </div>
         )}
 
@@ -542,6 +549,9 @@ export default async function StoryPage({ params }: Props) {
           </div>
         </div>
 
+        {/* Ad: before comment section */}
+        <AdSlot identifier="story_detail_pre_comments" />
+
         {/* Comments */}
         <CommentSection
           storyId={story.id}
@@ -550,7 +560,12 @@ export default async function StoryPage({ params }: Props) {
           storyAuthorUserId={story.author.userId}
           isAdmin={(session?.user as { role?: string })?.role === "admin"}
         />
-      </article>
+          </article>
+          <aside className="hidden xl:block w-72 shrink-0">
+            <StickyAdSidebar slot="story_sidebar_rectangle" />
+          </aside>
+        </div>
+      </div>
 
     </>
   );

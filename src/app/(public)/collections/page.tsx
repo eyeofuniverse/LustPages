@@ -3,6 +3,7 @@ import {
   getTopCategoriesForCollections,
   getTopTagsForCollections,
 } from "@/lib/queries";
+import { AdSlot } from "@/components/ads/AdSlot";
 import {
   AUTO_COLLECTIONS,
   SECTION_META,
@@ -222,6 +223,8 @@ export default async function CollectionsPage() {
             ))}
           </div>
         </div>
+
+        <AdSlot identifier="collections_page_banner" />
 
         {/* ── Best by Category ─────────────────────────────────────── */}
         {categories.length > 0 && (

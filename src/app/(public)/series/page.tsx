@@ -1,4 +1,5 @@
 import { getSeriesList, getSeriesCount, computeSeriesRating } from "@/lib/queries";
+import { AdSlot } from "@/components/ads/AdSlot";
 import Link from "next/link";
 import { SafeImage } from "@/components/ui/SafeImage";
 import { ChevronLeft, ChevronRight, Layers, BookOpen, Search, Star } from "lucide-react";
@@ -113,6 +114,8 @@ export default async function SeriesPage({ searchParams }: Props) {
           />
         </div>
       </form>
+
+      <AdSlot identifier="series_list_banner" />
 
       {/* Grid */}
       {seriesList.length === 0 ? (

@@ -163,6 +163,32 @@ export function SeriesUnlockGate({
       >
         <BookOpen size={12} /> View series overview
       </Link>
+
+      {/* While you decide — surface free content */}
+      <div
+        className="w-full mt-2 pt-4"
+        style={{ borderTop: "1px solid var(--border)" }}
+      >
+        <p className="text-xs mb-3" style={{ color: "var(--muted-foreground)" }}>
+          While you decide, explore our free stories
+        </p>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Link
+            href="/stories"
+            className="px-4 py-1.5 rounded-xl text-xs font-medium transition-opacity hover:opacity-75"
+            style={{ background: "var(--muted)", color: "var(--foreground)" }}
+          >
+            Browse Free Stories
+          </Link>
+          <Link
+            href="/series"
+            className="px-4 py-1.5 rounded-xl text-xs font-medium transition-opacity hover:opacity-75"
+            style={{ background: "var(--muted)", color: "var(--foreground)" }}
+          >
+            Free Series
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
