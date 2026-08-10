@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Fast pre-check (not a guarantee — atomic check is inside the transaction below)
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { coinBalance: true },
@@ -97,32 +98,43 @@ export async function POST(req: NextRequest) {
   const startedAt = slotAvailable ? now : null;
   const expiresAt = slotAvailable ? new Date(now.getTime() + DURATION_MS) : null;
 
-  await prisma.$transaction([
-    prisma.user.update({
-      where: { id: session.user.id },
-      data: { coinBalance: { decrement: cost } },
-    }),
-    prisma.coinTransaction.create({
-      data: {
-        userId: session.user.id,
-        amount: -cost,
-        type: "feature_promotion",
-        description: `Featured ${type} promotion (7 days)`,
-        ...(type === "story" && { storyId }),
-      },
-    }),
-    prisma.featuredPromotion.create({
-      data: {
-        type,
-        authorId: author.id,
-        ...(type === "story" ? { storyId } : { seriesId }),
-        coinsSpent: cost,
-        status: newStatus,
-        startedAt,
-        expiresAt,
-      },
-    }),
-  ]);
+  const userId = session.user!.id as string;
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Atomic deduction — guards against concurrent requests both passing the pre-check
+      const claimed = await tx.user.updateMany({
+        where: { id: userId, coinBalance: { gte: cost } },
+        data: { coinBalance: { decrement: cost } },
+      });
+      if (claimed.count === 0) throw new Error("INSUFFICIENT_BALANCE");
+
+      await tx.coinTransaction.create({
+        data: {
+          userId,
+          amount: -cost,
+          type: "feature_promotion",
+          description: `Featured ${type} promotion (7 days)`,
+          ...(type === "story" && storyId ? { storyId } : {}),
+        },
+      });
+      await tx.featuredPromotion.create({
+        data: {
+          type,
+          authorId: author.id,
+          ...(type === "story" ? { storyId } : { seriesId }),
+          coinsSpent: cost,
+          status: newStatus,
+          startedAt,
+          expiresAt,
+        },
+      });
+    });
+  } catch (e) {
+    if (e instanceof Error && e.message === "INSUFFICIENT_BALANCE") {
+      return NextResponse.json({ error: "Insufficient coin balance" }, { status: 402 });
+    }
+    throw e;
+  }
 
   return NextResponse.json({
     success: true,

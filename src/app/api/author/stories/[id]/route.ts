@@ -108,9 +108,9 @@ export async function DELETE(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  if (ownership.story.status === "approved") {
+  if (ownership.story.status === "approved" || ownership.story.status === "pending") {
     return NextResponse.json(
-      { error: "Cannot delete a published story" },
+      { error: ownership.story.status === "approved" ? "Cannot delete a published story" : "Cannot delete a story under review" },
       { status: 400 }
     );
   }

@@ -17,6 +17,7 @@ export function PayoutModal({ coinEarnings }: Props) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [submittedUsd, setSubmittedUsd] = useState("");
 
   if (!PAYMENTS_ENABLED) {
     return (
@@ -52,6 +53,7 @@ export function PayoutModal({ coinEarnings }: Props) {
         setError(data.error ?? "Failed to submit payout request.");
         return;
       }
+      setSubmittedUsd(usdAmount);
       setSuccess(true);
       router.refresh();
     } finally {
@@ -64,6 +66,7 @@ export function PayoutModal({ coinEarnings }: Props) {
     setSuccess(false);
     setError("");
     setAccountDetails("");
+    setSubmittedUsd("");
   }
 
   return (
@@ -96,7 +99,7 @@ export function PayoutModal({ coinEarnings }: Props) {
                 <CheckCircle size={40} style={{ color: "#22c55e" }} />
                 <p className="font-bold text-lg" style={{ color: "var(--foreground)" }}>Request Submitted!</p>
                 <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-                  Your payout of <span className="font-semibold" style={{ color: "#22c55e" }}>${usdAmount}</span> has been submitted.
+                  Your payout of <span className="font-semibold" style={{ color: "#22c55e" }}>${submittedUsd}</span> has been submitted.
                   We&apos;ll process it within 7 business days and reach out to your registered email.
                 </p>
                 <button onClick={close} className="mt-2 px-6 py-2 rounded-xl text-sm font-semibold" style={{ background: "var(--muted)", color: "var(--foreground)" }}>

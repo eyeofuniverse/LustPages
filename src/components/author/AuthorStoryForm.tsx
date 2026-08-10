@@ -211,6 +211,10 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
     if (!excerpt.trim()) return "Excerpt is required";
     if (!content || content === "<p></p>") return "Content is required";
     if (categoryIds.length === 0) return "Select at least one category";
+    if (accessLevel === "Premium" && !seriesId) {
+      const parsed = parseInt(coinPrice, 10);
+      if (!coinPrice || isNaN(parsed) || parsed < 1) return "Enter a coin price (minimum 1) for your premium story";
+    }
     return null;
   }
 
@@ -599,6 +603,7 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
                         type="number"
                         min={1}
                         max={9999}
+                        step={1}
                         value={coinPrice}
                         onChange={(e) => setCoinPrice(e.target.value)}
                         placeholder="e.g. 10"
