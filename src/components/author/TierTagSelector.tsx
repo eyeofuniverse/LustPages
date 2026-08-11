@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Search, X, Plus, ChevronDown, ChevronUp } from "lucide-react";
-import { TIER_LABELS } from "@/lib/tag-library";
+import { TIER_LABELS } from "@/lib/tags";
 
 export interface TagEntry {
   id: string;

@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { slugifyTag, INITIAL_TAGS } from "@/lib/tag-library";
-import { applyKeywordRulesToTag } from "@/lib/tag-hierarchy";
+import { slugifyTag, INITIAL_TAGS, applyKeywordRulesToTag } from "@/lib/tags";
 
 async function requireAdmin() {
   const session = await auth();
