@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sanitizeStoryContent } from "@/lib/sanitize";
-import { resolveNewTags } from "@/lib/tags";
+import { resolveNewTags } from "@/lib/tags-db";
 
 async function requireStoryOwner(storyId: string) {
   const session = await auth();

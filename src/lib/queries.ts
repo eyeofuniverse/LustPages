@@ -1,6 +1,6 @@
 import { prisma } from "./prisma";
 import { buildStorySearchWhere, buildSeriesSearchWhere } from "./search";
-import { getTagAndChildrenSlugs } from "./tags";
+import { getTagAndChildrenSlugs } from "./tags-db";
 
 // Resolves effective cover image: series cover takes priority over story's own cover.
 function resolveStoryCover<T extends { coverImage: string | null; seriesInfo?: { coverImage: string | null } | null }>(s: T): T {

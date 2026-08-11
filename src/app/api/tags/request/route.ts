@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { slugifyTag, applyKeywordRulesToTag } from "@/lib/tags";
+import { slugifyTag, applyKeywordRulesToTag } from "@/lib/tags-db";
 
 export async function POST(req: Request) {
   const session = await auth();
