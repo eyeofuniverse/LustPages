@@ -43,15 +43,29 @@ function classifyReferrer(referrer: string | null): { source: string; category: 
   }
 }
 
+type VisitRow = { path: string; referrer?: string | null; deviceType?: string | null; userAgent?: string | null; visitedAt: Date };
+
 export async function getTrafficAnalytics(days: number): Promise<TrafficData> {
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-  const visits = await prisma.pageVisit.findMany({
-    where: { visitedAt: { gte: since } },
-    select: { path: true, referrer: true, deviceType: true, userAgent: true, visitedAt: true },
-    orderBy: { visitedAt: "desc" },
-    take: 20000,
-  });
+  // Try selecting the new columns; fall back to base columns if the DB migration
+  // hasn't been applied yet (referrer/deviceType columns missing).
+  let visits: VisitRow[];
+  try {
+    visits = await prisma.pageVisit.findMany({
+      where: { visitedAt: { gte: since } },
+      select: { path: true, referrer: true, deviceType: true, userAgent: true, visitedAt: true },
+      orderBy: { visitedAt: "desc" },
+      take: 20000,
+    });
+  } catch {
+    visits = await prisma.pageVisit.findMany({
+      where: { visitedAt: { gte: since } },
+      select: { path: true, userAgent: true, visitedAt: true },
+      orderBy: { visitedAt: "desc" },
+      take: 20000,
+    });
+  }
 
   const total = visits.length;
 
