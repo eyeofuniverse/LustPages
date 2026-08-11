@@ -32,6 +32,9 @@ export async function POST(req: NextRequest) {
   if (!series.isPremium || !series.coinPrice) {
     return NextResponse.json({ error: "Series is not premium" }, { status: 400 });
   }
+  if (!series.stories.length) {
+    return NextResponse.json({ error: "Series has no published stories" }, { status: 400 });
+  }
 
   // Fast path: already unlocked (avoids a full transaction on the common case)
   const existing = await prisma.seriesUnlock.findUnique({

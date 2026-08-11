@@ -54,10 +54,11 @@ export function CommentSection({ storyId, comments: initial, userId, storyAuthor
   const [replyText, setReplyText] = useState("");
   const [replySubmitting, setReplySubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [replyError, setReplyError] = useState<string | null>(null);
   const [reportingId, setReportingId] = useState<string | null>(null);
   const [reportReason, setReportReason] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
-  const [reportDone, setReportDone] = useState<string | null>(null);
+  const [reportedIds, setReportedIds] = useState<Set<string>>(new Set());
 
   const totalCount = comments.reduce((sum, c) => sum + 1 + c.replies.length, 0);
 
@@ -88,6 +89,7 @@ export function CommentSection({ storyId, comments: initial, userId, storyAuthor
     if (!userId) { router.push("/login"); return; }
     if (!replyText.trim()) return;
     setReplySubmitting(true);
+    setReplyError(null);
     try {
       const res = await fetch(`/api/comments/${parentId}/reply`, {
         method: "POST",
@@ -102,7 +104,7 @@ export function CommentSection({ storyId, comments: initial, userId, storyAuthor
       setReplyText("");
       setReplyingTo(null);
     } catch {
-      // noop
+      setReplyError("Failed to post reply. Please try again.");
     } finally {
       setReplySubmitting(false);
     }
@@ -138,7 +140,7 @@ export function CommentSection({ storyId, comments: initial, userId, storyAuthor
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason: reportReason, commentId, type: "comment" }),
       });
-      setReportDone(commentId);
+      setReportedIds((prev) => new Set([...prev, commentId]));
       setReportingId(null);
       setReportReason("");
     } catch {
@@ -259,6 +261,7 @@ export function CommentSection({ storyId, comments: initial, userId, storyAuthor
                         onClick={() => {
                           setReplyingTo(replyingTo === comment.id ? null : comment.id);
                           setReplyText("");
+                          setReplyError(null);
                         }}
                         className="flex items-center gap-1 text-xs transition-opacity hover:opacity-75"
                         style={{ color: "var(--muted-foreground)" }}
@@ -276,7 +279,7 @@ export function CommentSection({ storyId, comments: initial, userId, storyAuthor
                         <Trash2 size={12} /> Delete
                       </button>
                     )}
-                    {userId && userId !== comment.user.id && !reportDone?.includes(comment.id) && (
+                    {userId && userId !== comment.user.id && !reportedIds.has(comment.id) && (
                       <button
                         onClick={() => setReportingId(reportingId === comment.id ? null : comment.id)}
                         className="flex items-center gap-1 text-xs transition-opacity hover:opacity-75"
@@ -328,13 +331,14 @@ export function CommentSection({ storyId, comments: initial, userId, storyAuthor
                   {/* Reply form */}
                   {replyingTo === comment.id && (
                     <div className="mt-3 flex gap-2">
+                      <div className="flex-1 flex flex-col gap-1.5">
                       <textarea
                         value={replyText}
                         onChange={(e) => setReplyText(e.target.value)}
                         placeholder="Write a reply…"
                         rows={2}
                         maxLength={1000}
-                        className="flex-1 px-3 py-2 rounded-xl text-sm resize-none"
+                        className="w-full px-3 py-2 rounded-xl text-sm resize-none"
                         style={{
                           background: "var(--card)",
                           border: "1px solid var(--border)",
@@ -342,6 +346,10 @@ export function CommentSection({ storyId, comments: initial, userId, storyAuthor
                           outline: "none",
                         }}
                       />
+                      {replyError && (
+                        <p className="text-xs" style={{ color: "#ef4444" }}>{replyError}</p>
+                      )}
+                      </div>
                       <div className="flex flex-col gap-1.5">
                         <button
                           onClick={() => handleReply(comment.id)}

@@ -23,16 +23,21 @@ export async function POST(
     return NextResponse.json({ error: "Comment is too long." }, { status: 400 });
   }
 
-  const [comment, story] = await Promise.all([
-    prisma.comment.create({
-      data: { content: content.trim(), userId: session.user.id, storyId },
-      include: { user: { select: { id: true, name: true, image: true } } },
-    }),
-    prisma.story.findUnique({ where: { id: storyId }, select: { authorId: true } }),
-  ]);
+  const story = await prisma.story.findFirst({
+    where: { id: storyId, published: true },
+    select: { authorId: true },
+  });
+  if (!story) {
+    return NextResponse.json({ error: "Story not found" }, { status: 404 });
+  }
+
+  const comment = await prisma.comment.create({
+    data: { content: content.trim(), userId: session.user.id, storyId },
+    include: { user: { select: { id: true, name: true, image: true } } },
+  });
 
   awardBadgesAsync({ type: "COMMENT", userId: session.user.id });
-  if (story) awardBadgesAsync({ type: "STORY_COMMENTED", authorId: story.authorId });
+  awardBadgesAsync({ type: "STORY_COMMENTED", authorId: story.authorId });
 
   return NextResponse.json(comment, { status: 201 });
 }

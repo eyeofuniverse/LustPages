@@ -140,6 +140,7 @@ export function TipModal({ authorId, authorName, storyId, userBalance, isLoggedI
                     type="number"
                     min={10}
                     max={balance}
+                    step={1}
                     placeholder="Custom amount"
                     value={custom}
                     onChange={(e) => setCustom(e.target.value)}

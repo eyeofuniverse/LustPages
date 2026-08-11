@@ -16,7 +16,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Password must be at least 8 characters." }, { status: 400 });
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const normalised = email.toLowerCase().trim();
+    const existing = await prisma.user.findUnique({ where: { email: normalised } });
     if (existing) {
       return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
     }
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
     const user = await prisma.user.create({
       data: {
         name: name.trim(),
-        email: email.toLowerCase().trim(),
+        email: normalised,
         password: hashed,
         coinBalance: WELCOME_COINS,
         welcomeCoinsExpireAt: welcomeExpiry,
