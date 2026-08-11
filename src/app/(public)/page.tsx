@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getLatestStories, getLatestSeries, getAuthors, getFeaturedPromotions, getPremiumStories, getCategoriesWithStories, getTrendingStories, getPublicStats } from "@/lib/queries";
+import { getLatestStories, getLatestSeries, getAuthors, getFeaturedPromotions, getPremiumStories, getTrendingStories } from "@/lib/queries";
+import { getCachedPublicStats, getCachedCategoriesWithStories } from "@/lib/cached-queries";
 import { FeaturedCarousel } from "@/components/home/FeaturedCarousel";
 import { PremiumCarousel } from "@/components/home/PremiumCarousel";
 import { LatestCarousel } from "@/components/home/LatestCarousel";
@@ -20,7 +21,7 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 
-export const revalidate = 120;
+export const revalidate = 600;
 
 const siteUrl = process.env.NEXTAUTH_URL ?? "https://lustpages.com";
 
@@ -67,10 +68,10 @@ export default async function HomePage() {
   // Batch 2: below-the-fold content
   const [premiumStories, categoriesWithStories, authors, trendingStories, publicStats] = await Promise.all([
     getPremiumStories(20).catch(() => []),
-    getCategoriesWithStories().catch(() => []),
+    getCachedCategoriesWithStories().catch(() => []),
     getAuthors().catch(() => []),
     getTrendingStories(10).catch(() => []),
-    getPublicStats().catch(() => ({ publishedStories: 0, totalUsers: 0 })),
+    getCachedPublicStats().catch(() => ({ publishedStories: 0, totalUsers: 0 })),
   ]);
 
   const spotlightAuthors = authors.slice(0, 4);

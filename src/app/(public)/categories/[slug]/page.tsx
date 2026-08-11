@@ -1,11 +1,10 @@
 import {
   getPublishedStories,
-  getCategories,
   getStoryCount,
   getTrendingStories,
-  getPopularTags,
   getCategoryBySlug,
 } from "@/lib/queries";
+import { getCachedCategories, getCachedPopularTags } from "@/lib/cached-queries";
 import { notFound } from "next/navigation";
 import { FilterBar } from "@/components/story/FilterBar";
 import { StoriesSearchBar } from "@/components/story/StoriesSearchBar";
@@ -15,6 +14,8 @@ import { AdSlot } from "@/components/ads/AdSlot";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
 import type { Metadata } from "next";
+
+export const revalidate = 300;
 
 const PER_PAGE = 15;
 const BASE = "https://lustpages.com";
@@ -61,13 +62,13 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   const [category, stories, categories, total] = await Promise.all([
     getCategoryBySlug(slug),
     getPublishedStories({ take: PER_PAGE, skip, categorySlug: slug }).catch(() => []),
-    getCategories().catch(() => []),
+    getCachedCategories().catch(() => []),
     getStoryCount({ published: true, categorySlug: slug }).catch(() => 0),
   ]);
 
   const [trendingStories, popularTags] = await Promise.all([
     page === 1 ? getTrendingStories(10).catch(() => []) : Promise.resolve([]),
-    getPopularTags(20).catch(() => []),
+    getCachedPopularTags(20).catch(() => []),
   ]);
 
   if (!category) notFound();

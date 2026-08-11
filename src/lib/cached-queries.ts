@@ -7,6 +7,10 @@ import {
   getSimilarAuthors,
   getSeriesBySlug,
   getActiveAdForSlot,
+  getCategories,
+  getPopularTags,
+  getPublicStats,
+  getCategoriesWithStories,
 } from "./queries";
 
 // Published story content rarely changes — cache 24 hours.
@@ -58,4 +62,32 @@ export const getCachedAdForSlot = unstable_cache(
   async (slot: string) => getActiveAdForSlot(slot),
   ["ad-slot"],
   { revalidate: 300 }
+);
+
+// Categories list — very stable, cache 10 minutes.
+export const getCachedCategories = unstable_cache(
+  async () => getCategories(),
+  ["categories"],
+  { revalidate: 600 }
+);
+
+// Popular tags — sort order shifts slowly, cache 10 minutes.
+export const getCachedPopularTags = unstable_cache(
+  async (take: number) => getPopularTags(take),
+  ["popular-tags"],
+  { revalidate: 600 }
+);
+
+// Public stats (story count, user count) — cache 1 hour.
+export const getCachedPublicStats = unstable_cache(
+  async () => getPublicStats(),
+  ["public-stats"],
+  { revalidate: 3600 }
+);
+
+// Homepage category grid — expensive join, cache 10 minutes.
+export const getCachedCategoriesWithStories = unstable_cache(
+  async () => getCategoriesWithStories(),
+  ["categories-with-stories"],
+  { revalidate: 600 }
 );

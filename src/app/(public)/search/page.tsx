@@ -1,11 +1,10 @@
 import {
   getPublishedStories,
   getStoryCount,
-  getCategories,
-  getPopularTags,
   getTrendingStories,
   searchSeries,
 } from "@/lib/queries";
+import { getCachedCategories, getCachedPopularTags } from "@/lib/cached-queries";
 import { prisma } from "@/lib/prisma";
 import { SearchInput } from "@/components/search/SearchInput";
 import { StoryListItem } from "@/components/story/StoryListItem";
@@ -15,7 +14,7 @@ import { SafeImage } from "@/components/ui/SafeImage";
 import { BookOpen, Layers, TrendingUp, Hash, Search } from "lucide-react";
 import type { Metadata } from "next";
 
-export const revalidate = 60;
+export const revalidate = 180;
 
 interface Props {
   searchParams: Promise<{ q?: string }>;
@@ -87,8 +86,8 @@ export default async function SearchPage({ searchParams }: Props) {
       hasQuery
         ? getStoryCount({ published: true, search: query })
         : Promise.resolve(0),
-      !hasQuery ? getCategories() : Promise.resolve([]),
-      !hasQuery ? getPopularTags(30) : Promise.resolve([]),
+      !hasQuery ? getCachedCategories() : Promise.resolve([]),
+      !hasQuery ? getCachedPopularTags(30) : Promise.resolve([]),
       !hasQuery ? getTrendingStories(6) : Promise.resolve([]),
     ]);
 

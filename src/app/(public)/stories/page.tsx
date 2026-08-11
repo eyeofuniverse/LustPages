@@ -1,11 +1,10 @@
 import {
   getPublishedStories,
-  getCategories,
   getStoryCount,
   getTrendingStories,
-  getPopularTags,
   getPublishedCollections,
 } from "@/lib/queries";
+import { getCachedCategories, getCachedPopularTags } from "@/lib/cached-queries";
 import { AUTO_COLLECTIONS } from "@/lib/collections";
 import { redirect } from "next/navigation";
 import { FilterBar } from "@/components/story/FilterBar";
@@ -17,7 +16,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, BookOpen, Star } from "lucide-react";
 import type { Metadata } from "next";
 
-export const revalidate = 60;
+export const revalidate = 300;
 
 const PER_PAGE = 15;
 
@@ -78,14 +77,14 @@ export default async function StoriesPage({ searchParams }: Props) {
   // Batch 1: core page data
   const [stories, categories, total] = await Promise.all([
     getPublishedStories({ take: PER_PAGE, skip, search: params.search, sort }).catch(() => []),
-    getCategories().catch(() => []),
+    getCachedCategories().catch(() => []),
     getStoryCount({ published: true, search: params.search }).catch(() => 0),
   ]);
 
   // Batch 2: non-critical supplementary data (separate to avoid pool exhaustion)
   const [trendingStories, popularTags, featuredCollections] = await Promise.all([
     showTrending ? getTrendingStories(10).catch(() => []) : Promise.resolve([]),
-    getPopularTags(20).catch(() => []),
+    getCachedPopularTags(20).catch(() => []),
     !params.search && page === 1 ? getPublishedCollections().catch(() => []) : Promise.resolve([]),
   ]);
 

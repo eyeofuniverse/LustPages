@@ -55,7 +55,7 @@ export async function getPublishedStories({
     },
     include: {
       categories: true,
-      author: true,
+      author: { select: { name: true, slug: true, image: true } },
       storyTags: { select: { name: true, slug: true } },
       _count: { select: { likes: true, comments: true, bookmarks: true } },
       seriesInfo: { select: { coverImage: true } },

@@ -5,7 +5,7 @@ import { SafeImage } from "@/components/ui/SafeImage";
 import { ChevronLeft, ChevronRight, Layers, BookOpen, Search, Star } from "lucide-react";
 import type { Metadata } from "next";
 
-export const revalidate = 60;
+export const revalidate = 300;
 
 const PER_PAGE = 18;
 const BASE = "https://lustpages.com";

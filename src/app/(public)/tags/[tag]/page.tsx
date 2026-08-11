@@ -1,12 +1,11 @@
 import {
   getPublishedStories,
-  getCategories,
   getStoryCount,
   getTrendingStories,
-  getPopularTags,
   getTagBySlug,
   getTagCanonicalSlug,
 } from "@/lib/queries";
+import { getCachedCategories, getCachedPopularTags } from "@/lib/cached-queries";
 import { permanentRedirect } from "next/navigation";
 import { FilterBar } from "@/components/story/FilterBar";
 import { StoriesSearchBar } from "@/components/story/StoriesSearchBar";
@@ -16,6 +15,8 @@ import { AdSlot } from "@/components/ads/AdSlot";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
 import type { Metadata } from "next";
+
+export const revalidate = 300;
 
 const PER_PAGE = 15;
 const BASE = "https://lustpages.com";
@@ -65,13 +66,13 @@ export default async function TagPage({ params, searchParams }: Props) {
 
   const [stories, categories, total] = await Promise.all([
     getPublishedStories({ take: PER_PAGE, skip, tag: tagSlug }).catch(() => []),
-    getCategories().catch(() => []),
+    getCachedCategories().catch(() => []),
     getStoryCount({ published: true, tag: tagSlug }).catch(() => 0),
   ]);
 
   const [trendingStories, popularTags] = await Promise.all([
     page === 1 ? getTrendingStories(10).catch(() => []) : Promise.resolve([]),
-    getPopularTags(20).catch(() => []),
+    getCachedPopularTags(20).catch(() => []),
   ]);
 
   const totalPages = Math.ceil(total / PER_PAGE);
