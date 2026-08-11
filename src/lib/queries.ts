@@ -73,7 +73,7 @@ export async function getStoryBySlug(slug: string) {
     where: { slug, published: true },
     include: {
       categories: true,
-      author: { select: { id: true, name: true, slug: true, bio: true, image: true, website: true } },
+      author: { select: { id: true, name: true, slug: true, bio: true, image: true, website: true, userId: true } },
       storyTags: { select: { name: true, slug: true } },
       _count: { select: { likes: true, comments: true, bookmarks: true } },
       comments: {
