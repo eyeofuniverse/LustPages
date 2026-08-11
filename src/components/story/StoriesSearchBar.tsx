@@ -47,12 +47,12 @@ export function StoriesSearchBar({ initialSearch }: { initialSearch?: string }) 
     timerRef.current = setTimeout(() => fetchSuggestions(q), 300);
   }
 
-  function trackSearch(q: string) {
+  function trackSearch(q: string, resultCount?: number) {
     if (q.trim().length >= 2) {
       fetch("/api/track/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: q.trim(), results: 0 }),
+        body: JSON.stringify({ query: q.trim(), results: resultCount ?? suggestions.length }),
       }).catch(() => {});
     }
   }

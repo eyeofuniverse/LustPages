@@ -3,6 +3,22 @@ import { prisma } from "@/lib/prisma";
 
 const BOT_PATTERN = /bot|crawl|spider|slurp|archiv|wget|curl|python|httpclient/i;
 
+function parseDeviceType(ua: string): "mobile" | "tablet" | "desktop" {
+  if (/tablet|ipad|playbook|silk|(android(?!.*mobi))/i.test(ua)) return "tablet";
+  if (/mobile|iphone|ipod|windows\s*phone|blackberry|android/i.test(ua)) return "mobile";
+  return "desktop";
+}
+
+function cleanReferrer(ref: string | null): string | null {
+  if (!ref) return null;
+  try {
+    const url = new URL(ref);
+    return url.origin; // strip path/query/fragments — keep only protocol+host
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     let path = "/";
@@ -25,8 +41,11 @@ export async function POST(req: NextRequest) {
     const ua = req.headers.get("user-agent") ?? "";
     if (BOT_PATTERN.test(ua)) return NextResponse.json({ ok: true });
 
+    const referrer = cleanReferrer(req.headers.get("referer") ?? req.headers.get("referrer") ?? null);
+    const deviceType = parseDeviceType(ua);
+
     await prisma.pageVisit.create({
-      data: { ip, path, userAgent: ua.slice(0, 512) },
+      data: { ip, path, userAgent: ua.slice(0, 512), referrer, deviceType },
     });
 
     return NextResponse.json({ ok: true });

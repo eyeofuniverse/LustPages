@@ -1,5 +1,125 @@
 import { prisma } from "@/lib/prisma";
 
+// ── Traffic / Referrer types ──────────────────────────────────────────────────
+export type TrafficSource = { source: string; category: string; count: number; pct: number };
+export type TopReferrer = { domain: string; count: number; pct: number };
+export type DeviceStat = { device: string; count: number; pct: number };
+export type HourStat = { hour: number; count: number };
+
+export type TrafficData = {
+  totalVisits: number;
+  sources: TrafficSource[];
+  topReferrers: TopReferrer[];
+  topPages: TopPage[];
+  devices: DeviceStat[];
+  peakHours: HourStat[];
+  days: number;
+};
+
+const SITE_HOST = "lustpages.com";
+
+function classifyReferrer(referrer: string | null): { source: string; category: string } {
+  if (!referrer) return { source: "Direct", category: "direct" };
+  try {
+    const host = new URL(referrer).hostname.replace(/^www\./i, "").toLowerCase();
+    if (host === SITE_HOST || host.endsWith(`.${SITE_HOST}`)) return { source: "Internal", category: "internal" };
+    if (/google\./i.test(host))     return { source: "Google", category: "search" };
+    if (/bing\.com/i.test(host))    return { source: "Bing", category: "search" };
+    if (/yandex\./i.test(host))     return { source: "Yandex", category: "search" };
+    if (/duckduckgo\.com/i.test(host)) return { source: "DuckDuckGo", category: "search" };
+    if (/yahoo\./i.test(host))      return { source: "Yahoo", category: "search" };
+    if (/baidu\.com/i.test(host))   return { source: "Baidu", category: "search" };
+    if (/twitter\.com|x\.com/i.test(host)) return { source: "Twitter / X", category: "social" };
+    if (/facebook\.com|fb\.com/i.test(host)) return { source: "Facebook", category: "social" };
+    if (/reddit\.com/i.test(host))  return { source: "Reddit", category: "social" };
+    if (/pinterest\./i.test(host))  return { source: "Pinterest", category: "social" };
+    if (/tiktok\.com/i.test(host))  return { source: "TikTok", category: "social" };
+    if (/instagram\.com/i.test(host)) return { source: "Instagram", category: "social" };
+    if (/t\.me|telegram\./i.test(host)) return { source: "Telegram", category: "social" };
+    if (/tumblr\.com/i.test(host))  return { source: "Tumblr", category: "social" };
+    return { source: host, category: "referral" };
+  } catch {
+    return { source: "Direct", category: "direct" };
+  }
+}
+
+export async function getTrafficAnalytics(days: number): Promise<TrafficData> {
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+  const visits = await prisma.pageVisit.findMany({
+    where: { visitedAt: { gte: since } },
+    select: { path: true, referrer: true, deviceType: true, userAgent: true, visitedAt: true },
+    orderBy: { visitedAt: "desc" },
+    take: 20000,
+  });
+
+  const total = visits.length;
+
+  // Traffic sources
+  const sourceMap = new Map<string, { category: string; count: number }>();
+  const referrerDomainMap = new Map<string, number>();
+  const pageMap = new Map<string, number>();
+  const deviceMap = new Map<string, number>();
+  const hourBuckets = new Array(24).fill(0) as number[];
+
+  for (const visit of visits) {
+    const { source, category } = classifyReferrer(visit.referrer);
+    const existing = sourceMap.get(source);
+    if (existing) existing.count++;
+    else sourceMap.set(source, { category, count: 1 });
+
+    if (visit.referrer && category !== "internal") {
+      referrerDomainMap.set(visit.referrer, (referrerDomainMap.get(visit.referrer) ?? 0) + 1);
+    }
+
+    pageMap.set(visit.path, (pageMap.get(visit.path) ?? 0) + 1);
+
+    // Device: prefer stored deviceType, fall back to parsing userAgent
+    let device = visit.deviceType ?? "unknown";
+    if (device === "unknown" && visit.userAgent) {
+      const ua = visit.userAgent;
+      if (/tablet|ipad/i.test(ua)) device = "tablet";
+      else if (/mobile|iphone|ipod|android/i.test(ua)) device = "mobile";
+      else device = "desktop";
+    }
+    deviceMap.set(device, (deviceMap.get(device) ?? 0) + 1);
+
+    hourBuckets[new Date(visit.visitedAt).getUTCHours()]++;
+  }
+
+  const sources: TrafficSource[] = [...sourceMap.entries()]
+    .map(([source, { category, count }]) => ({
+      source,
+      category,
+      count,
+      pct: total > 0 ? Math.round((count / total) * 1000) / 10 : 0,
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  const topReferrers: TopReferrer[] = [...referrerDomainMap.entries()]
+    .map(([domain, count]) => ({ domain, count, pct: total > 0 ? Math.round((count / total) * 1000) / 10 : 0 }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 25);
+
+  const topPages: TopPage[] = [...pageMap.entries()]
+    .map(([path, count]) => ({ path, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 25);
+
+  const deviceTotal = [...deviceMap.values()].reduce((s, n) => s + n, 0);
+  const devices: DeviceStat[] = [...deviceMap.entries()]
+    .map(([device, count]) => ({
+      device,
+      count,
+      pct: deviceTotal > 0 ? Math.round((count / deviceTotal) * 1000) / 10 : 0,
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  const peakHours: HourStat[] = hourBuckets.map((count, hour) => ({ hour, count }));
+
+  return { totalVisits: total, sources, topReferrers, topPages, devices, peakHours, days };
+}
+
 // All dates are ISO strings to avoid RSC Date serialization issues
 export type VisitorGroup = {
   ip: string;

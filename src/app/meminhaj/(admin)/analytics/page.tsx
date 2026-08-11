@@ -3,12 +3,13 @@ import {
   getCategoryAnalytics,
   getSearchAnalytics,
 } from "@/lib/queries";
-import { getVisitorData } from "@/lib/visitor-analytics";
+import { getVisitorData, getTrafficAnalytics } from "@/lib/visitor-analytics";
 import { VisitorsClient } from "@/components/admin/VisitorsClient";
+import { TrafficClient } from "@/components/admin/TrafficClient";
 import Link from "next/link";
 import {
   Eye, Heart, MessageCircle, Star, Search, BarChart2, Tag, FolderOpen,
-  Users, TrendingUp, AlertCircle,
+  Users, TrendingUp, AlertCircle, Globe,
 } from "lucide-react";
 import { formatDateShort } from "@/lib/utils";
 import type { Metadata } from "next";
@@ -17,6 +18,7 @@ export const metadata: Metadata = { title: "Analytics" };
 
 const TABS = [
   { key: "visitors", label: "Visitors", icon: Users },
+  { key: "traffic",  label: "Traffic",  icon: Globe },
   { key: "tags", label: "Tags", icon: Tag },
   { key: "categories", label: "Categories", icon: FolderOpen },
   { key: "search", label: "Search Terms", icon: Search },
@@ -39,11 +41,12 @@ export default async function AnalyticsPage({ searchParams }: Props) {
   const activeTab = (TABS.some((t) => t.key === sp.tab) ? sp.tab : "visitors") as TabKey;
   const searchDays = Math.min(90, Math.max(7, parseInt(sp.days ?? "30", 10)));
 
-  const [visitorData, tagData, categoryData, searchData] = await Promise.all([
-    activeTab === "visitors" ? getVisitorData(7) : Promise.resolve(null),
-    activeTab === "tags" ? getTagAnalytics() : Promise.resolve(null),
-    activeTab === "categories" ? getCategoryAnalytics() : Promise.resolve(null),
-    activeTab === "search" ? getSearchAnalytics(searchDays) : Promise.resolve(null),
+  const [visitorData, trafficData, tagData, categoryData, searchData] = await Promise.all([
+    activeTab === "visitors" ? getVisitorData(7)          : Promise.resolve(null),
+    activeTab === "traffic"  ? getTrafficAnalytics(7)     : Promise.resolve(null),
+    activeTab === "tags"     ? getTagAnalytics()          : Promise.resolve(null),
+    activeTab === "categories" ? getCategoryAnalytics()   : Promise.resolve(null),
+    activeTab === "search"   ? getSearchAnalytics(searchDays) : Promise.resolve(null),
   ]);
 
   function tabUrl(key: string, extra?: Record<string, string>) {
@@ -94,6 +97,11 @@ export default async function AnalyticsPage({ searchParams }: Props) {
       {/* ── VISITORS TAB ──────────────────────────────────────────── */}
       {activeTab === "visitors" && visitorData && (
         <VisitorsClient data={visitorData} />
+      )}
+
+      {/* ── TRAFFIC TAB ───────────────────────────────────────────── */}
+      {activeTab === "traffic" && trafficData && (
+        <TrafficClient data={trafficData} />
       )}
 
       {/* ── TAGS TAB ──────────────────────────────────────────────── */}

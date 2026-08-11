@@ -628,14 +628,17 @@ model PayoutRequest {
 }
 
 model PageVisit {
-  id        String   @id @default(cuid())
-  ip        String
-  path      String
-  userAgent String?
-  visitedAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  ip         String
+  path       String
+  userAgent  String?
+  referrer   String?
+  deviceType String?
+  visitedAt  DateTime @default(now())
 
   @@index([visitedAt])
   @@index([ip])
+  @@index([referrer])
 }
 
 model IpGeoCache {
