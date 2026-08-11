@@ -24,11 +24,11 @@ export async function POST(
   }
 
   const story = await prisma.story.findFirst({
-    where: { id: storyId, published: true },
+    where: { id: storyId, published: true, commentsEnabled: true },
     select: { authorId: true },
   });
   if (!story) {
-    return NextResponse.json({ error: "Story not found" }, { status: 404 });
+    return NextResponse.json({ error: "Story not found or comments are disabled." }, { status: 404 });
   }
 
   const comment = await prisma.comment.create({

@@ -34,6 +34,14 @@ export async function POST(
     return NextResponse.json({ error: "Cannot reply to a reply." }, { status: 400 });
   }
 
+  const storyCheck = await prisma.story.findFirst({
+    where: { id: parent.storyId, published: true, commentsEnabled: true },
+    select: { id: true },
+  });
+  if (!storyCheck) {
+    return NextResponse.json({ error: "Comments are disabled for this story." }, { status: 403 });
+  }
+
   const [reply, parentComment] = await Promise.all([
     prisma.comment.create({
       data: {

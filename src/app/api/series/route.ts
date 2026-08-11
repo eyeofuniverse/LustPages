@@ -43,15 +43,33 @@ export async function POST(req: Request) {
     slug = `${baseSlug}-${counter++}`;
   }
 
-  const series = await prisma.series.create({
-    data: {
-      name: name.trim(),
-      slug,
-      description: (description as string | undefined)?.trim() || null,
-      authorId: resolvedAuthorId,
-    },
-    include: { _count: { select: { stories: true } } },
-  });
+  let series;
+  try {
+    series = await prisma.series.create({
+      data: {
+        name: name.trim(),
+        slug,
+        description: (description as string | undefined)?.trim() || null,
+        authorId: resolvedAuthorId,
+      },
+      include: { _count: { select: { stories: true } } },
+    });
+  } catch (e: unknown) {
+    if (e instanceof Error && (e as { code?: string }).code === "P2002") {
+      slug = `${slug}-${Date.now()}`;
+      series = await prisma.series.create({
+        data: {
+          name: name.trim(),
+          slug,
+          description: (description as string | undefined)?.trim() || null,
+          authorId: resolvedAuthorId,
+        },
+        include: { _count: { select: { stories: true } } },
+      });
+    } else {
+      throw e;
+    }
+  }
 
   return NextResponse.json(
     {

@@ -36,18 +36,23 @@ export async function POST(
     return NextResponse.json({ error: "Rating must be 1–5" }, { status: 400 });
   }
 
-  const [, story] = await Promise.all([
-    prisma.rating.upsert({
-      where: { userId_storyId: { userId: session.user.id, storyId } },
-      create: { userId: session.user.id, storyId, value },
-      update: { value, updatedAt: new Date() },
-    }),
-    prisma.story.findUnique({ where: { id: storyId }, select: { authorId: true } }),
-  ]);
+  const story = await prisma.story.findUnique({
+    where: { id: storyId, published: true },
+    select: { authorId: true },
+  });
+  if (!story) {
+    return NextResponse.json({ error: "Story not found" }, { status: 404 });
+  }
+
+  await prisma.rating.upsert({
+    where: { userId_storyId: { userId: session.user.id, storyId } },
+    create: { userId: session.user.id, storyId, value },
+    update: { value, updatedAt: new Date() },
+  });
   const { avgRating, ratingCount } = await recalcRating(storyId);
 
   awardBadgesAsync({ type: "RATE", userId: session.user.id });
-  if (story) awardBadgesAsync({ type: "STORY_RATED", authorId: story.authorId });
+  awardBadgesAsync({ type: "STORY_RATED", authorId: story.authorId });
 
   return NextResponse.json({ rating: value, avgRating, ratingCount });
 }

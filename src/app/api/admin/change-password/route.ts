@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { randomInt } from "crypto";
+import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendAdminOtpEmail } from "@/lib/email";
@@ -52,7 +53,8 @@ export async function POST() {
 
   const code = String(randomInt(100000, 999999));
   const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
-  await prisma.adminPasswordOtp.create({ data: { email, code, expiresAt } });
+  const hashedCode = await bcrypt.hash(code, 10);
+  await prisma.adminPasswordOtp.create({ data: { email, code: hashedCode, expiresAt } });
 
   await sendAdminOtpEmail(email, code, OTP_TTL_MINUTES);
 

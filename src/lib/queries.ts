@@ -73,7 +73,7 @@ export async function getStoryBySlug(slug: string) {
     where: { slug, published: true },
     include: {
       categories: true,
-      author: true,
+      author: { select: { id: true, name: true, slug: true, bio: true, image: true, website: true } },
       storyTags: { select: { name: true, slug: true } },
       _count: { select: { likes: true, comments: true, bookmarks: true } },
       comments: {
@@ -1682,7 +1682,7 @@ export async function getAdminComments({ take = 100, skip = 0 }: { take?: number
       take,
       skip,
     }),
-    prisma.comment.count({ where: { parentId: null } }),
+    prisma.comment.count(),
   ]);
   return { comments, total };
 }

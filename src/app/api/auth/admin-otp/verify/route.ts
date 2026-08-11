@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "crypto";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
 const MAX_ATTEMPTS = 5;
@@ -31,7 +32,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Too many failed attempts. Request a new OTP." }, { status: 429 });
     }
 
-    if (otp.code !== code.trim()) {
+    const codeMatch = await bcrypt.compare(code.trim(), otp.code);
+    if (!codeMatch) {
       await prisma.adminOtp.update({
         where: { id: otp.id },
         data: { attempts: { increment: 1 } },

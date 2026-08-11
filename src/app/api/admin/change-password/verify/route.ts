@@ -39,7 +39,8 @@ export async function POST(req: NextRequest) {
     await prisma.adminPasswordOtp.delete({ where: { id: otp.id } });
     return NextResponse.json({ error: "Too many failed attempts." }, { status: 429 });
   }
-  if (otp.code !== String(code).trim()) {
+  const codeMatch = await bcrypt.compare(String(code).trim(), otp.code);
+  if (!codeMatch) {
     await prisma.adminPasswordOtp.update({
       where: { id: otp.id },
       data: { attempts: { increment: 1 } },

@@ -34,6 +34,16 @@ export async function POST(
 
   const reportType = type === "comment" && commentId ? "comment" : "story";
 
+  if (reportType === "comment") {
+    const comment = await prisma.comment.findFirst({
+      where: { id: commentId, storyId },
+      select: { id: true },
+    });
+    if (!comment) {
+      return NextResponse.json({ error: "Comment not found in this story." }, { status: 400 });
+    }
+  }
+
   const existing = await prisma.report.findFirst({
     where: {
       userId: session.user.id,

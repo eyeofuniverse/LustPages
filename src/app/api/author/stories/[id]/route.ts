@@ -36,8 +36,20 @@ export async function PATCH(
   }
 
   try {
-    const { categoryIds, tagIds, newTagNames, action, coinPrice: incomingCoinPrice, ...rest } = await req.json();
-    if (rest.content) rest.content = sanitizeStoryContent(rest.content);
+    const body = await req.json();
+    const { categoryIds, tagIds, newTagNames, action, coinPrice: incomingCoinPrice } = body;
+
+    const ALLOWED_FIELDS = new Set([
+      "title", "slug", "excerpt", "content", "coverImage", "language", "pov",
+      "genderPairing", "contentWarnings", "maturityRating", "accessLevel",
+      "scheduledAt", "visibility", "commentsEnabled", "metaTitle", "metaDescription",
+      "canonicalUrl", "noIndex", "seriesId", "chapterNumber", "authorNote", "tags",
+    ]);
+    const rest: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(body)) {
+      if (ALLOWED_FIELDS.has(key)) rest[key] = value;
+    }
+    if (rest.content) rest.content = sanitizeStoryContent(rest.content as string);
 
     // Series stories cannot have individual coin prices — premium is series-level.
     // Derive where the story will actually live after this update; fall back to the

@@ -15,6 +15,14 @@ export async function POST(
   const { id: storyId } = await params;
   const userId = session.user.id;
 
+  const story = await prisma.story.findUnique({
+    where: { id: storyId, published: true },
+    select: { authorId: true },
+  });
+  if (!story) {
+    return NextResponse.json({ error: "Story not found" }, { status: 404 });
+  }
+
   const existing = await prisma.like.findUnique({
     where: { userId_storyId: { userId, storyId } },
   });
@@ -24,13 +32,10 @@ export async function POST(
     return NextResponse.json({ liked: false });
   }
 
-  const [, story] = await Promise.all([
-    prisma.like.create({ data: { userId, storyId } }),
-    prisma.story.findUnique({ where: { id: storyId }, select: { authorId: true } }),
-  ]);
+  await prisma.like.create({ data: { userId, storyId } });
 
   awardBadgesAsync({ type: "LIKE", userId });
-  if (story) awardBadgesAsync({ type: "STORY_LIKED", authorId: story.authorId });
+  awardBadgesAsync({ type: "STORY_LIKED", authorId: story.authorId });
 
   return NextResponse.json({ liked: true });
 }

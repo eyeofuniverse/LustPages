@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { storyUrl, seriesUrl } from "@/lib/indexnow";
 
-const KEY = "8bb1fb4104ef4d268bfca97bcc53076e";
+const KEY = process.env.INDEXNOW_KEY ?? "8bb1fb4104ef4d268bfca97bcc53076e";
 const HOST = "lustpages.com";
 const BASE = "https://lustpages.com";
 const BATCH = 10000;

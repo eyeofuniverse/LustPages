@@ -139,6 +139,11 @@ model Story {
   storyViews         StoryView[]
   ratings            Rating[]
   collections        CollectionStory[]
+
+  @@index([authorId])
+  @@index([published])
+  @@index([status])
+  @@index([seriesId])
 }
 
 model Like {
@@ -176,6 +181,9 @@ model Comment {
   parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies   Comment[] @relation("CommentReplies")
   reports   Report[]
+
+  @@index([storyId])
+  @@index([parentId])
 }
 
 model Report {
@@ -263,6 +271,8 @@ model CoinTransaction {
   storyId     String?
   createdAt   DateTime @default(now())
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model StoryUnlock {

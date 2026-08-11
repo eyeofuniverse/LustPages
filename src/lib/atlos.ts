@@ -1,4 +1,4 @@
-import { createHmac } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 
 const MERCHANT_ID = process.env.ATLOS_MERCHANT_ID!;
 const API_SECRET = process.env.ATLOS_API_SECRET!;
@@ -11,7 +11,11 @@ export function verifyAtlosSignature(rawBody: string, signature: string | null):
   const hmac = createHmac("sha256", API_SECRET);
   hmac.update(rawBody);
   const expected = hmac.digest("base64");
-  return expected === signature;
+  try {
+    return timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+  } catch {
+    return false;
+  }
 }
 
 async function atlosPost(endpoint: string, body: Record<string, unknown>) {

@@ -21,8 +21,12 @@ export async function DELETE(
     return NextResponse.json({ error: "Cannot delete your own account" }, { status: 400 });
   }
 
-  const user = await prisma.user.findUnique({ where: { id }, select: { id: true } });
+  const user = await prisma.user.findUnique({ where: { id }, select: { id: true, role: true } });
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  if (user.role === "admin" && !me.isSuperAdmin) {
+    return NextResponse.json({ error: "Only super admins can delete admin accounts" }, { status: 403 });
+  }
 
   await prisma.user.delete({ where: { id } });
 

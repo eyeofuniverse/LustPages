@@ -32,12 +32,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const user = await prisma.user.findUnique({ where: { email } });
           if (!user || user.role !== "admin") return null;
 
-          const isSuperAdmin = user.email === "admin@lustpages.com";
-
           const [author, adminProfile] = await Promise.all([
             prisma.author.findUnique({ where: { userId: user.id }, select: { id: true, slug: true } }),
-            prisma.adminProfile.findUnique({ where: { userId: user.id }, select: { permissions: true, nickname: true } }),
+            prisma.adminProfile.findUnique({ where: { userId: user.id }, select: { permissions: true, nickname: true, isSuperAdmin: true } }),
           ]);
+
+          const isSuperAdmin = adminProfile?.isSuperAdmin ?? false;
 
           return {
             id: user.id,
