@@ -62,17 +62,27 @@ export async function postToTumblr({
     ...new Set([...DEFAULT_TAGS, ...tags.map((t) => t.toLowerCase())]),
   ].slice(0, 20);
 
-  const content: object[] = [];
+  // Text block: title as heading + full caption body
+  const textBody = `${title}\n\n${caption}`;
 
+  // Link block: compact preview card.
+  // Image goes in `poster` — the link-preview thumbnail field accepts external URLs.
+  // Do NOT use the NPF `image` content type for external URLs; it requires
+  // Tumblr-hosted media and returns a 400 Bad Request otherwise.
+  const linkBlock: Record<string, unknown> = {
+    type: "link",
+    url,
+    title,
+    description: caption.slice(0, 200),
+  };
   if (coverImageUrl) {
-    content.push({
-      type: "image",
-      media: [{ url: coverImageUrl, type: "image/jpeg" }],
-    });
+    linkBlock.poster = [{ url: coverImageUrl, type: "image/jpeg" }];
   }
 
-  content.push({ type: "text", text: caption });
-  content.push({ type: "link", url, title, description: caption.slice(0, 400) });
+  const content: object[] = [
+    { type: "text", text: textBody },
+    linkBlock,
+  ];
 
   const res = await fetch(`https://api.tumblr.com/v2/blog/${blog}/posts`, {
     method: "POST",
@@ -86,7 +96,12 @@ export async function postToTumblr({
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(
-      `Tumblr post failed: ${err?.meta?.msg ?? err?.errors?.[0]?.detail ?? res.status}`
+      `Tumblr post failed: ${
+        err?.meta?.msg ??
+        err?.errors?.[0]?.detail ??
+        err?.errors?.[0]?.title ??
+        res.status
+      }`
     );
   }
 

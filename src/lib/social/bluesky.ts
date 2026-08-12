@@ -24,13 +24,28 @@ async function uploadBlob(
   }
 }
 
+// Builds the post text (title + caption + hashtag facets).
+// Total must stay within Bluesky's 300-grapheme limit.
 function buildPost(
+  title: string,
   caption: string,
   tags: string[]
 ): { text: string; facets: object[] } {
   const enc = new TextEncoder();
-  const MAX = 290;
-  let text = caption.length > MAX ? caption.slice(0, MAX - 1) + "…" : caption;
+  const MAX = 295; // slight safety margin for multi-byte chars
+
+  // Title prefix always included: "Title\n\n"
+  const prefix = `${title}\n\n`;
+  const prefixGraphemes = [...prefix].length;
+
+  // Trim caption to leave room for the prefix (hashtags carved out below)
+  const captionBudget = MAX - prefixGraphemes;
+  const captionTrimmed =
+    [...caption].length > captionBudget
+      ? [...caption].slice(0, captionBudget - 1).join("") + "…"
+      : caption;
+
+  let text = prefix + captionTrimmed;
   const facets: object[] = [];
 
   for (const rawTag of tags.slice(0, 8)) {
@@ -40,7 +55,7 @@ function buildPost(
       .replace(/[^a-z0-9]/g, "");
     if (!tag) continue;
     const addition = ` #${tag}`;
-    if (text.length + addition.length > MAX) break;
+    if ([...text].length + addition.length > MAX) break;
     const byteStart = enc.encode(text).length + 1; // skip space, land on #
     text += addition;
     const byteEnd = enc.encode(text).length;
@@ -83,7 +98,7 @@ export async function postToBluesky({
   }
   const { accessJwt, did } = await sessionRes.json();
 
-  const { text, facets } = buildPost(caption, tags);
+  const { text, facets } = buildPost(title, caption, tags);
 
   const thumb = coverImageUrl ? await uploadBlob(coverImageUrl, accessJwt) : null;
 

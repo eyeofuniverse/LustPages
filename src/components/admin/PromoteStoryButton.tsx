@@ -71,11 +71,13 @@ export function PromoteStoryButton({
       ? customImageUrl
       : null;
 
+  // Bluesky text = "Title\n\nCaption #tags" — all count toward the 300-char limit
+  const titleChars = storyTitle.length + 2; // title + "\n\n"
   const hashtagChars = tags.reduce((acc, t) => {
     const c = sanitizeTag(t);
     return c ? acc + 2 + c.length : acc; // " #tag" = space + hash + tagname
   }, 0);
-  const bskyTotal = bskyCaption.length + hashtagChars;
+  const bskyTotal = titleChars + bskyCaption.length + hashtagChars;
 
   const activePlatforms = Object.entries(selectedPlatforms)
     .filter(([, v]) => v)
@@ -616,14 +618,12 @@ export function PromoteStoryButton({
                         <span
                           className="text-xs tabular-nums"
                           style={{ color: bskyOver ? "#ef4444" : "var(--muted-foreground)" }}
+                          title={`Title: ${titleChars} + Caption: ${bskyCaption.length} + Tags: ${hashtagChars} = ${bskyTotal}/300`}
                         >
                           {bskyTotal}/300
-                          {hashtagChars > 0 && (
-                            <span style={{ color: "var(--muted-foreground)", opacity: 0.7 }}>
-                              {" "}
-                              ({bskyCaption.length}+{hashtagChars} tags)
-                            </span>
-                          )}
+                          <span style={{ opacity: 0.6 }}>
+                            {" "}(title:{titleChars}+body:{bskyCaption.length}+tags:{hashtagChars})
+                          </span>
                         </span>
                       </div>
                       <textarea
@@ -639,11 +639,14 @@ export function PromoteStoryButton({
                         }}
                         placeholder="Short caption for Bluesky — caption + hashtags must fit in 300 chars…"
                       />
-                      {bskyOver && (
-                        <p className="text-xs mt-1" style={{ color: "#ef4444" }}>
-                          Shorten the caption or remove some hashtags — total must be ≤ 300.
-                        </p>
-                      )}
+                      <p className="text-xs mt-1" style={{ color: "var(--muted-foreground)" }}>
+                        The title is automatically prepended to the post body.
+                        {bskyOver && (
+                          <span style={{ color: "#ef4444" }}>
+                            {" "}Shorten the caption or remove hashtags to fit within 300.
+                          </span>
+                        )}
+                      </p>
                     </div>
                   )}
 
