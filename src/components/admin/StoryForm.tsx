@@ -64,6 +64,8 @@ interface StoryFormProps {
     scheduledAt: Date | null;
     visibility: string;
     commentsEnabled: boolean;
+    coinPrice?: number | null;
+    status?: string;
     metaTitle: string | null;
     metaDescription: string | null;
     canonicalUrl: string | null;
@@ -189,9 +191,7 @@ export function StoryForm({ categories, authors, availableTags, initialData }: S
   const [maturityRating, setMaturityRating] = useState(initialData?.maturityRating ?? "Explicit");
   const [accessLevel, setAccessLevel] = useState(initialData?.accessLevel ?? "Free");
   const [coinPrice, setCoinPrice] = useState(
-    (initialData as { coinPrice?: number | null } | undefined)?.coinPrice != null
-      ? String((initialData as { coinPrice?: number | null }).coinPrice)
-      : ""
+    initialData?.coinPrice != null ? String(initialData.coinPrice) : ""
   );
   const [contentWarnings, setContentWarnings] = useState<string[]>(
     initialData?.contentWarnings ? parseJsonArray(initialData.contentWarnings) : []

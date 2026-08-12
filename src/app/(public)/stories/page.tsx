@@ -32,7 +32,7 @@ interface Props {
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const params = await searchParams;
-  const base = "https://lustpages.com";
+  const base = process.env.NEXTAUTH_URL ?? "https://lustpages.com";
 
   if (params.search) {
     return {
@@ -69,7 +69,8 @@ export default async function StoriesPage({ searchParams }: Props) {
   if (params.category) redirect(`/categories/${params.category}`);
   if (params.tag) redirect(`/tags/${encodeURIComponent(params.tag)}`);
 
-  const page = Math.max(1, parseInt(params.page ?? "1", 10));
+  const rawPage = parseInt(params.page ?? "1", 10);
+  const page = Math.max(1, isNaN(rawPage) ? 1 : rawPage);
   const skip = (page - 1) * PER_PAGE;
   const sort = params.sort === "top-rated" ? "top-rated" as const : "latest" as const;
   const showTrending = !params.search && page === 1 && sort === "latest";

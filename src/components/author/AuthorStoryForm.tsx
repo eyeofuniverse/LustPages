@@ -21,7 +21,7 @@ const CONTENT_WARNINGS = [
 const MATURITY_RATINGS = ["Mild", "Explicit", "Hardcore"] as const;
 const POV_OPTIONS = ["First Person", "Second Person", "Third Person"] as const;
 const GENDER_PAIRINGS = ["M/F", "M/M", "F/F", "M/F/M", "F/M/F", "Multiple", "Other"] as const;
-const LANGUAGES = ["English", "Spanish", "French", "German", "Portuguese", "Italian", "Other"] as const;
+const LANGUAGES = ["English", "Spanish", "French", "German", "Portuguese", "Italian", "Japanese", "Other"] as const;
 
 function slugify(text: string) {
   return text.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim();

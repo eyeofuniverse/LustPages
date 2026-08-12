@@ -18,9 +18,15 @@ export async function POST(
 
   const { id } = await params;
   try {
+    const existing = await prisma.story.findUnique({ where: { id }, select: { status: true } });
+    if (!existing) return NextResponse.json({ error: "Story not found" }, { status: 404 });
+    if (existing.status !== "pending") {
+      return NextResponse.json({ error: "Only pending stories can be approved" }, { status: 400 });
+    }
+
     const story = await prisma.story.update({
       where: { id },
-      data: { published: true, status: "approved", rejectionReason: null },
+      data: { published: true, status: "approved", rejectionReason: null, scheduledAt: null },
       include: {
         author: {
           include: {

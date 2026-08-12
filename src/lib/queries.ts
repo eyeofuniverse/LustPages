@@ -76,18 +76,6 @@ export async function getStoryBySlug(slug: string) {
       author: { select: { id: true, name: true, slug: true, bio: true, image: true, website: true, userId: true } },
       storyTags: { select: { name: true, slug: true } },
       _count: { select: { likes: true, comments: true, bookmarks: true } },
-      comments: {
-        where: { parentId: null },
-        include: {
-          user: { select: { id: true, name: true, image: true } },
-          replies: {
-            include: { user: { select: { id: true, name: true, image: true } } },
-            orderBy: { createdAt: "asc" },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-        take: 50,
-      },
       seriesInfo: {
         select: {
           id: true,
@@ -624,14 +612,16 @@ export async function getAuthorByUserId(userId: string) {
 }
 
 export async function getAuthorStories(authorId: string) {
-  return prisma.story.findMany({
+  const stories = await prisma.story.findMany({
     where: { authorId },
     include: {
       categories: true,
+      seriesInfo: { select: { coverImage: true } },
       _count: { select: { likes: true, comments: true } },
     },
     orderBy: { updatedAt: "desc" },
   });
+  return stories.map(resolveStoryCover);
 }
 
 export async function getAuthorStoryById(id: string, authorId: string) {

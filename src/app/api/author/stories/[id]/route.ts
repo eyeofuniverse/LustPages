@@ -44,6 +44,7 @@ export async function PATCH(
       "genderPairing", "contentWarnings", "maturityRating", "accessLevel",
       "scheduledAt", "visibility", "commentsEnabled", "metaTitle", "metaDescription",
       "canonicalUrl", "noIndex", "seriesId", "chapterNumber", "authorNote", "tags",
+      "readingTime",
     ]);
     const rest: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(body)) {
@@ -95,9 +96,9 @@ export async function PATCH(
         status: newStatus,
         rejectionReason: newStatus === "pending" ? null : ownership.story.rejectionReason,
         submittedAt: newStatus === "pending" ? new Date() : ownership.story.submittedAt,
-        categories: {
-          set: (categoryIds as string[]).map((cid) => ({ id: cid })),
-        },
+        ...(categoryIds !== undefined && {
+          categories: { set: (categoryIds as string[]).map((cid) => ({ id: cid })) },
+        }),
         storyTags: {
           set: allTagIds.map((tid) => ({ id: tid })),
         },

@@ -57,6 +57,8 @@ export default async function EditStoryPage({ params }: { params: Promise<{ id: 
           scheduledAt: story.scheduledAt,
           visibility: story.visibility,
           commentsEnabled: story.commentsEnabled,
+          coinPrice: story.coinPrice,
+          status: story.status,
           metaTitle: story.metaTitle,
           metaDescription: story.metaDescription,
           canonicalUrl: story.canonicalUrl,

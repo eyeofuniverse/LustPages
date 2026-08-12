@@ -33,13 +33,19 @@ export async function PATCH(
       ? [...(tagIds as string[]), ...pendingTagIds]
       : pendingTagIds.length > 0 ? pendingTagIds : undefined;
 
-    const prev = await prisma.story.findUnique({ where: { id }, select: { published: true } });
+    const prev = await prisma.story.findUnique({ where: { id }, select: { published: true, status: true } });
+
+    // Don't silently overwrite "pending" or "rejected" with "draft" when admin just edits content
+    const resolvedStatusUpdate =
+      statusUpdate.status === "draft" && (prev?.status === "pending" || prev?.status === "rejected")
+        ? { status: prev.status }
+        : statusUpdate;
 
     const story = await prisma.story.update({
       where: { id },
       data: {
         ...data,
-        ...statusUpdate,
+        ...resolvedStatusUpdate,
         ...(categoryIds !== undefined && {
           categories: { set: (categoryIds as string[]).map((cid) => ({ id: cid })) },
         }),

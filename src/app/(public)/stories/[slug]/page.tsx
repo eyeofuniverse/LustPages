@@ -36,20 +36,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const siteUrl = process.env.NEXTAUTH_URL ?? "https://lustpages.com";
 
   const ogCover = story.seriesInfo?.coverImage ?? story.coverImage;
+  const metaTitle = story.metaTitle || story.title;
+  const metaDesc = story.metaDescription || story.excerpt;
 
   return {
-    title: story.title,
-    description: story.excerpt,
+    title: metaTitle,
+    description: metaDesc,
     keywords: [
       ...story.storyTags.map((t) => t.name),
       ...story.categories.map((c) => c.name),
       "erotica",
       "adult fiction",
     ],
-    alternates: { canonical: `${siteUrl}/stories/${slug}` },
+    alternates: { canonical: story.canonicalUrl || `${siteUrl}/stories/${slug}` },
+    ...(story.noIndex && { robots: { index: false, follow: false } }),
     openGraph: {
-      title: story.title,
-      description: story.excerpt,
+      title: metaTitle,
+      description: metaDesc,
       type: "article",
       siteName: "LustPages",
       publishedTime: new Date(story.createdAt).toISOString(),
@@ -63,8 +66,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      title: story.title,
-      description: story.excerpt,
+      title: metaTitle,
+      description: metaDesc,
       ...(ogCover && { images: [ogCover] }),
     },
   };
