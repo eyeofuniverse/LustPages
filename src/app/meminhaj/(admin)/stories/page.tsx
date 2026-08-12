@@ -1,5 +1,4 @@
 import { getAdminStories } from "@/lib/queries";
-import { isTumblrConnected } from "@/lib/social/tumblr";
 import Link from "next/link";
 import { PenSquare, Eye, Heart, MessageCircle, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { formatDateShort } from "@/lib/utils";
@@ -25,10 +24,7 @@ export default async function AdminStoriesPage({ searchParams }: Props) {
   const page = Math.max(1, parseInt(sp.page ?? "1", 10));
   const skip = (page - 1) * PER_PAGE;
 
-  const [{ stories, total }, tumblrConnected] = await Promise.all([
-    getAdminStories({ take: PER_PAGE, skip, search, statusFilter }),
-    isTumblrConnected(),
-  ]);
+  const { stories, total } = await getAdminStories({ take: PER_PAGE, skip, search, statusFilter });
 
   const totalPages = Math.ceil(total / PER_PAGE);
 
@@ -188,7 +184,6 @@ export default async function AdminStoriesPage({ searchParams }: Props) {
                             storyTags={story.storyTags
                               .filter((t) => t.isApproved)
                               .map((t) => t.name)}
-                            tumblrConnected={tumblrConnected}
                             compact
                           />
                         )}

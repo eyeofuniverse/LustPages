@@ -7,7 +7,6 @@ import {
   Send,
   CheckCircle,
   XCircle,
-  ExternalLink,
   Loader2,
   Hash,
   ImageIcon,
@@ -20,14 +19,12 @@ interface Props {
   storyUrl: string;
   coverImage?: string | null;
   storyTags?: string[];
-  tumblrConnected: boolean;
   compact?: boolean;
 }
 
 type PlatformResult = { ok: true } | { ok: false; error: string };
 interface Results {
   bluesky?: PlatformResult;
-  tumblr?: PlatformResult;
 }
 
 type ImageMode = "story" | "custom" | "none";
@@ -43,18 +40,12 @@ export function PromoteStoryButton({
   storyUrl,
   coverImage,
   storyTags = [],
-  tumblrConnected,
   compact = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [bskyCaption, setBskyCaption] = useState(() => storyExcerpt.slice(0, 270));
-  const [tumblrCaption, setTumblrCaption] = useState(() => storyExcerpt);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
-  const [selectedPlatforms, setSelectedPlatforms] = useState({
-    bluesky: true,
-    tumblr: true,
-  });
   const [imageMode, setImageMode] = useState<ImageMode>(coverImage ? "story" : "none");
   const [customImageData, setCustomImageData] = useState<string | null>(null);
   const [imageProcessing, setImageProcessing] = useState(false);
@@ -78,28 +69,13 @@ export function PromoteStoryButton({
   }, 0);
   const bskyTotal = titleChars + bskyCaption.length + urlChars + hashtagChars;
 
-  const activePlatforms = Object.entries(selectedPlatforms)
-    .filter(([, v]) => v)
-    .map(([k]) => k);
-
-  const noPlatform = activePlatforms.length === 0;
-  const bskyOver = selectedPlatforms.bluesky && bskyTotal > 300;
-  const bskyEmpty = selectedPlatforms.bluesky && !bskyCaption.trim();
-  const tumblrEmpty = selectedPlatforms.tumblr && !tumblrCaption.trim();
+  const bskyOver = bskyTotal > 300;
+  const bskyEmpty = !bskyCaption.trim();
   const customNotReady = imageMode === "custom" && !customImageData;
 
-  const canPost =
-    !loading &&
-    !noPlatform &&
-    !bskyOver &&
-    !bskyEmpty &&
-    !tumblrEmpty &&
-    !customNotReady;
+  const canPost = !loading && !bskyOver && !bskyEmpty && !customNotReady;
 
-  const allSucceeded =
-    results != null &&
-    (!selectedPlatforms.bluesky || results.bluesky?.ok === true) &&
-    (!selectedPlatforms.tumblr || results.tumblr?.ok === true);
+  const allSucceeded = results != null && results.bluesky?.ok === true;
 
   // Handlers
   async function handlePost() {
@@ -111,9 +87,7 @@ export function PromoteStoryButton({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           storyId,
-          platforms: activePlatforms,
           bskyCaption: bskyCaption.trim(),
-          tumblrCaption: tumblrCaption.trim(),
           tags,
           // Custom image goes as base64 to the server for Cloudinary upload.
           // Story/none modes send the URL directly.
@@ -125,11 +99,7 @@ export function PromoteStoryButton({
       const data = await res.json();
       setResults(data);
     } catch {
-      const err = { ok: false as const, error: "Network error" };
-      setResults({
-        bluesky: selectedPlatforms.bluesky ? err : undefined,
-        tumblr: selectedPlatforms.tumblr ? err : undefined,
-      });
+      setResults({ bluesky: { ok: false as const, error: "Network error" } });
     } finally {
       setLoading(false);
     }
@@ -146,10 +116,6 @@ export function PromoteStoryButton({
 
   function removeTag(tag: string) {
     setTags((t) => t.filter((x) => x !== tag));
-  }
-
-  function togglePlatform(p: "bluesky" | "tumblr") {
-    setSelectedPlatforms((prev) => ({ ...prev, [p]: !prev[p] }));
   }
 
   async function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -217,15 +183,6 @@ export function PromoteStoryButton({
     setOpen(false);
     setResults(null);
   }
-
-  const postLabel =
-    activePlatforms.length === 2
-      ? "Post to Both Platforms"
-      : activePlatforms[0] === "bluesky"
-      ? "Post to Bluesky"
-      : activePlatforms[0] === "tumblr"
-      ? "Post to Tumblr"
-      : "Select a Platform";
 
   return (
     <>
@@ -312,161 +269,34 @@ export function PromoteStoryButton({
                 </p>
               </div>
 
-              {/* ── Platforms ── */}
-              <div className="space-y-2">
-                <p
-                  className="text-xs font-semibold uppercase tracking-wide"
-                  style={{ color: "var(--muted-foreground)" }}
-                >
-                  Post to
-                </p>
-
-                {/* Bluesky row */}
+              {/* Bluesky status */}
+              <div
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
+                style={{ background: "var(--muted)", border: "1px solid rgba(0,133,255,0.3)" }}
+              >
                 <div
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
-                  style={{
-                    background: "var(--muted)",
-                    border: `1px solid ${selectedPlatforms.bluesky ? "rgba(0,133,255,0.4)" : "var(--border)"}`,
-                    opacity: results ? 1 : 1,
-                  }}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold text-white shrink-0"
+                  style={{ background: "#0085ff" }}
                 >
-                  <input
-                    type="checkbox"
-                    id="plat-bsky"
-                    checked={selectedPlatforms.bluesky}
-                    onChange={() => !results && togglePlatform("bluesky")}
-                    disabled={!!results}
-                    className="shrink-0 cursor-pointer"
-                  />
-                  <label
-                    htmlFor="plat-bsky"
-                    className="flex items-center gap-2.5 flex-1 cursor-pointer"
-                  >
-                    <div
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold text-white shrink-0"
-                      style={{ background: "#0085ff" }}
-                    >
-                      B
-                    </div>
-                    <span
-                      className="text-sm font-medium"
-                      style={{ color: "var(--foreground)" }}
-                    >
-                      Bluesky
-                    </span>
-                  </label>
-                  {results ? (
-                    results.bluesky ? (
-                      results.bluesky.ok ? (
-                        <span
-                          className="flex items-center gap-1.5 text-xs font-semibold"
-                          style={{ color: "#22c55e" }}
-                        >
-                          <CheckCircle size={14} /> Posted
-                        </span>
-                      ) : (
-                        <span
-                          className="flex items-center gap-1.5 text-xs font-semibold max-w-[140px] text-right"
-                          style={{ color: "#ef4444" }}
-                        >
-                          <XCircle size={14} className="shrink-0" />
-                          {(results.bluesky as { ok: false; error: string }).error}
-                        </span>
-                      )
-                    ) : (
-                      <span
-                        className="text-xs"
-                        style={{ color: "var(--muted-foreground)" }}
-                      >
-                        Skipped
-                      </span>
-                    )
-                  ) : (
-                    <span
-                      className="text-xs font-semibold"
-                      style={{ color: "#22c55e" }}
-                    >
-                      Connected
-                    </span>
-                  )}
+                  B
                 </div>
-
-                {/* Tumblr row */}
-                <div
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
-                  style={{
-                    background: "var(--muted)",
-                    border: `1px solid ${selectedPlatforms.tumblr ? "rgba(53,70,92,0.6)" : "var(--border)"}`,
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    id="plat-tumblr"
-                    checked={selectedPlatforms.tumblr}
-                    onChange={() => !results && togglePlatform("tumblr")}
-                    disabled={!!results}
-                    className="shrink-0 cursor-pointer"
-                  />
-                  <label
-                    htmlFor="plat-tumblr"
-                    className="flex items-center gap-2.5 flex-1 cursor-pointer"
-                  >
-                    <div
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold text-white shrink-0"
-                      style={{ background: "#35465c" }}
-                    >
-                      t
-                    </div>
-                    <span
-                      className="text-sm font-medium"
-                      style={{ color: "var(--foreground)" }}
-                    >
-                      Tumblr
-                    </span>
-                  </label>
-                  {results ? (
-                    results.tumblr ? (
-                      results.tumblr.ok ? (
-                        <span
-                          className="flex items-center gap-1.5 text-xs font-semibold"
-                          style={{ color: "#22c55e" }}
-                        >
-                          <CheckCircle size={14} /> Posted
-                        </span>
-                      ) : (
-                        <span
-                          className="flex items-center gap-1.5 text-xs font-semibold max-w-[140px] text-right"
-                          style={{ color: "#ef4444" }}
-                        >
-                          <XCircle size={14} className="shrink-0" />
-                          {(results.tumblr as { ok: false; error: string }).error}
-                        </span>
-                      )
-                    ) : (
-                      <span
-                        className="text-xs"
-                        style={{ color: "var(--muted-foreground)" }}
-                      >
-                        Skipped
-                      </span>
-                    )
-                  ) : tumblrConnected ? (
-                    <span
-                      className="text-xs font-semibold"
-                      style={{ color: "#22c55e" }}
-                    >
-                      Connected
+                <span className="text-sm font-medium flex-1" style={{ color: "var(--foreground)" }}>
+                  Bluesky
+                </span>
+                {results?.bluesky ? (
+                  results.bluesky.ok ? (
+                    <span className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: "#22c55e" }}>
+                      <CheckCircle size={14} /> Posted
                     </span>
                   ) : (
-                    <a
-                      href="/api/admin/social/tumblr/connect"
-                      className="flex items-center gap-1 text-xs font-semibold hover:opacity-75 transition-opacity"
-                      style={{ color: "#c4426a" }}
-                    >
-                      Connect <ExternalLink size={11} />
-                    </a>
-                  )}
-                </div>
+                    <span className="flex items-center gap-1.5 text-xs font-semibold max-w-[160px] text-right" style={{ color: "#ef4444" }}>
+                      <XCircle size={14} className="shrink-0" />
+                      {(results.bluesky as { ok: false; error: string }).error}
+                    </span>
+                  )
+                ) : (
+                  <span className="text-xs font-semibold" style={{ color: "#22c55e" }}>Connected</span>
+                )}
               </div>
 
               {!results && (
@@ -618,8 +448,7 @@ export function PromoteStoryButton({
                   </div>
 
                   {/* ── Bluesky caption ── */}
-                  {selectedPlatforms.bluesky && (
-                    <div>
+                  <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-1.5">
                           <div
@@ -667,49 +496,7 @@ export function PromoteStoryButton({
                           </span>
                         )}
                       </p>
-                    </div>
-                  )}
-
-                  {/* ── Tumblr caption ── */}
-                  {selectedPlatforms.tumblr && (
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-1.5">
-                          <div
-                            className="w-4 h-4 rounded flex items-center justify-center text-[9px] font-bold text-white shrink-0"
-                            style={{ background: "#35465c" }}
-                          >
-                            t
-                          </div>
-                          <label
-                            className="text-xs font-semibold uppercase tracking-wide"
-                            style={{ color: "var(--muted-foreground)" }}
-                          >
-                            Tumblr Caption
-                          </label>
-                        </div>
-                        <span
-                          className="text-xs"
-                          style={{ color: "var(--muted-foreground)" }}
-                        >
-                          No limit
-                        </span>
-                      </div>
-                      <textarea
-                        value={tumblrCaption}
-                        onChange={(e) => setTumblrCaption(e.target.value)}
-                        rows={5}
-                        className="w-full px-3 py-2.5 rounded-xl text-sm resize-none"
-                        style={{
-                          background: "var(--muted)",
-                          border: "1px solid var(--border)",
-                          color: "var(--foreground)",
-                          outline: "none",
-                        }}
-                        placeholder="Longer caption for Tumblr — no character limit…"
-                      />
-                    </div>
-                  )}
+                  </div>
 
                   {/* ── Hashtags ── */}
                   <div>
@@ -837,7 +624,7 @@ export function PromoteStoryButton({
                     </>
                   ) : (
                     <>
-                      <Send size={15} /> {postLabel}
+                      <Send size={15} /> Post to Bluesky
                     </>
                   )}
                 </button>
@@ -846,11 +633,6 @@ export function PromoteStoryButton({
               {/* Validation hints */}
               {!results && !loading && (
                 <div className="space-y-1">
-                  {noPlatform && (
-                    <p className="text-xs text-center" style={{ color: "#ef4444" }}>
-                      Select at least one platform.
-                    </p>
-                  )}
                   {customNotReady && (
                     <p className="text-xs text-center" style={{ color: "#ef4444" }}>
                       Upload a custom image or choose another option.

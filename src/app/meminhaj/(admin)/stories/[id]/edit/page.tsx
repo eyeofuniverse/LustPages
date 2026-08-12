@@ -1,7 +1,6 @@
 import { getAdminStoryById, getCategories, getAuthors, getAllStructuredTags } from "@/lib/queries";
 import { StoryForm } from "@/components/admin/StoryForm";
 import { PromoteStoryButton } from "@/components/admin/PromoteStoryButton";
-import { isTumblrConnected } from "@/lib/social/tumblr";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
@@ -9,12 +8,11 @@ export const metadata: Metadata = { title: "Edit Story" };
 
 export default async function EditStoryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [story, categories, authors, availableTags, tumblrConnected] = await Promise.all([
+  const [story, categories, authors, availableTags] = await Promise.all([
     getAdminStoryById(id),
     getCategories(),
     getAuthors(),
     getAllStructuredTags(),
-    isTumblrConnected(),
   ]);
 
   if (!story) notFound();
@@ -38,7 +36,6 @@ export default async function EditStoryPage({ params }: { params: Promise<{ id: 
             storyTags={story.storyTags
               .filter((t) => t.isApproved)
               .map((t) => t.name)}
-            tumblrConnected={tumblrConnected}
           />
         )}
       </div>

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { postToBluesky } from "@/lib/social/bluesky";
-import { postToTumblr } from "@/lib/social/tumblr";
 import crypto from "crypto";
 
 // Upload a base64 data URL to Cloudinary server-side.
@@ -51,7 +50,6 @@ export async function POST(req: NextRequest) {
     storyId,
     platforms,
     bskyCaption,
-    tumblrCaption,
     tags: clientTags,
     imageUrl,
     imageData,
@@ -59,7 +57,6 @@ export async function POST(req: NextRequest) {
     storyId: string;
     platforms?: string[];
     bskyCaption?: string;
-    tumblrCaption?: string;
     tags?: string[];
     imageUrl?: string | null;
     imageData?: string;
@@ -70,7 +67,7 @@ export async function POST(req: NextRequest) {
   const activePlatforms =
     Array.isArray(platforms) && platforms.length > 0
       ? platforms
-      : ["bluesky", "tumblr"];
+      : ["bluesky"];
 
   const story = await prisma.story.findUnique({
     where: { id: storyId, published: true },
@@ -115,7 +112,6 @@ export async function POST(req: NextRequest) {
   const allTags = [...new Set([...(clientTags ?? []), ...storyTagNames])];
 
   const bskyText = bskyCaption?.trim() || story.excerpt.slice(0, 240);
-  const tumblrText = tumblrCaption?.trim() || story.excerpt;
 
   const result: Record<string, { ok: boolean; error?: string }> = {};
 
@@ -127,18 +123,6 @@ export async function POST(req: NextRequest) {
       postToBluesky({
         title: story.title,
         caption: bskyText,
-        url,
-        tags: allTags,
-        coverImageUrl,
-      }),
-    ]);
-  }
-  if (activePlatforms.includes("tumblr")) {
-    tasks.push([
-      "tumblr",
-      postToTumblr({
-        title: story.title,
-        caption: tumblrText,
         url,
         tags: allTags,
         coverImageUrl,
