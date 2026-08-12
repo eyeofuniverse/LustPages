@@ -51,6 +51,7 @@ export async function POST(req: Request) {
 
     const pendingTagIds = await resolveNewTags(newTagNames ?? []);
     const allTagIds = [...(tagIds ?? []), ...pendingTagIds];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const story = await prisma.story.create({
       data: {
         ...data,
@@ -65,7 +66,7 @@ export async function POST(req: Request) {
         storyTags: allTagIds.length
           ? { connect: allTagIds.map((id) => ({ id })) }
           : undefined,
-      },
+      } as any,
     });
     return NextResponse.json(story, { status: 201 });
   } catch (e: unknown) {
