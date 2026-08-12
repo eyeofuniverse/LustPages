@@ -11,7 +11,6 @@ import {
   Loader2,
   Hash,
   ImageIcon,
-  Upload,
 } from "lucide-react";
 
 interface Props {
@@ -48,28 +47,20 @@ export function PromoteStoryButton({
   const [open, setOpen] = useState(false);
   const [bskyCaption, setBskyCaption] = useState(() => storyExcerpt.slice(0, 270));
   const [tumblrCaption, setTumblrCaption] = useState(() => storyExcerpt);
-  const [tags, setTags] = useState<string[]>(storyTags);
+  const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState({
     bluesky: true,
     tumblr: true,
   });
   const [imageMode, setImageMode] = useState<ImageMode>(coverImage ? "story" : "none");
-  const [customImageUrl, setCustomImageUrl] = useState<string | null>(null);
-  const [imageUploading, setImageUploading] = useState(false);
+  const [customImageData, setCustomImageData] = useState<string | null>(null);
+  const [imageProcessing, setImageProcessing] = useState(false);
   const [imageError, setImageError] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<Results | null>(null);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
-
-  // Computed
-  const effectiveImageUrl =
-    imageMode === "story"
-      ? (coverImage ?? null)
-      : imageMode === "custom"
-      ? customImageUrl
-      : null;
 
   // Bluesky text = "Title\n\nCaption #tags" — all count toward the 300-char limit
   const titleChars = storyTitle.length + 2; // title + "\n\n"
@@ -87,7 +78,7 @@ export function PromoteStoryButton({
   const bskyOver = selectedPlatforms.bluesky && bskyTotal > 300;
   const bskyEmpty = selectedPlatforms.bluesky && !bskyCaption.trim();
   const tumblrEmpty = selectedPlatforms.tumblr && !tumblrCaption.trim();
-  const customNotReady = imageMode === "custom" && !customImageUrl;
+  const customNotReady = imageMode === "custom" && !customImageData;
 
   const canPost =
     !loading &&
@@ -116,7 +107,11 @@ export function PromoteStoryButton({
           bskyCaption: bskyCaption.trim(),
           tumblrCaption: tumblrCaption.trim(),
           tags,
-          imageUrl: effectiveImageUrl,
+          // Custom image goes as base64 to the server for Cloudinary upload.
+          // Story/none modes send the URL directly.
+          ...(imageMode === "custom" && customImageData
+            ? { imageData: customImageData }
+            : { imageUrl: imageMode === "story" ? (coverImage ?? null) : null }),
         }),
       });
       const data = await res.json();
@@ -149,7 +144,7 @@ export function PromoteStoryButton({
     setSelectedPlatforms((prev) => ({ ...prev, [p]: !prev[p] }));
   }
 
-  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (imageInputRef.current) imageInputRef.current.value = "";
@@ -158,36 +153,41 @@ export function PromoteStoryButton({
       setImageError("Please select an image file.");
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      setImageError("Image must be under 10 MB.");
+    if (file.size > 15 * 1024 * 1024) {
+      setImageError("Image must be under 15 MB.");
       return;
     }
 
     setImageError("");
-    setImageUploading(true);
+    setImageProcessing(true);
     try {
-      const signRes = await fetch("/api/admin/upload/sign", { method: "POST" });
-      if (!signRes.ok) throw new Error("Failed to get upload signature.");
-      const { signature, timestamp, apiKey, cloudName, folder } = await signRes.json();
-
-      const form = new FormData();
-      form.append("file", file);
-      form.append("api_key", apiKey);
-      form.append("timestamp", String(timestamp));
-      form.append("signature", signature);
-      form.append("folder", folder);
-
-      const upRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-        { method: "POST", body: form }
-      );
-      if (!upRes.ok) throw new Error("Upload failed.");
-      const data = await upRes.json();
-      setCustomImageUrl(data.secure_url as string);
+      // Compress client-side via Canvas (max 1200px, JPEG 85%).
+      // The resulting data URL is sent to our API which uploads to Cloudinary.
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(objectUrl);
+          try {
+            const MAX = 1200;
+            const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            const ctx = canvas.getContext("2d");
+            if (!ctx) { reject(new Error("Canvas unavailable")); return; }
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL("image/jpeg", 0.85));
+          } catch (err) { reject(err); }
+        };
+        img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("Could not load image")); };
+        img.src = objectUrl;
+      });
+      setCustomImageData(dataUrl);
     } catch (err) {
-      setImageError(err instanceof Error ? err.message : "Upload failed.");
+      setImageError(err instanceof Error ? err.message : "Failed to process image.");
     } finally {
-      setImageUploading(false);
+      setImageProcessing(false);
     }
   }
 
@@ -517,9 +517,9 @@ export function PromoteStoryButton({
                           </span>
                           {imageMode === "custom" && (
                             <div className="flex items-center gap-2">
-                              {customImageUrl && (
+                              {customImageData && (
                                 <img
-                                  src={customImageUrl}
+                                  src={customImageData}
                                   alt=""
                                   className="w-8 h-10 rounded object-cover shrink-0"
                                 />
@@ -527,7 +527,7 @@ export function PromoteStoryButton({
                               <button
                                 type="button"
                                 onClick={() => imageInputRef.current?.click()}
-                                disabled={imageUploading}
+                                disabled={imageProcessing}
                                 className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
                                 style={{
                                   background: "var(--card)",
@@ -535,14 +535,12 @@ export function PromoteStoryButton({
                                   color: "var(--foreground)",
                                 }}
                               >
-                                {imageUploading ? (
+                                {imageProcessing ? (
                                   <Loader2 size={11} className="animate-spin" />
-                                ) : (
-                                  <Upload size={11} />
-                                )}
-                                {imageUploading
-                                  ? "Uploading…"
-                                  : customImageUrl
+                                ) : null}
+                                {imageProcessing
+                                  ? "Processing…"
+                                  : customImageData
                                   ? "Change"
                                   : "Choose"}
                               </button>
@@ -551,7 +549,7 @@ export function PromoteStoryButton({
                                 type="file"
                                 accept="image/*"
                                 className="hidden"
-                                onChange={handleImageUpload}
+                                onChange={handleImageSelect}
                               />
                             </div>
                           )}
@@ -561,12 +559,12 @@ export function PromoteStoryButton({
                             {imageError}
                           </p>
                         )}
-                        {imageMode === "custom" && !customImageUrl && !imageUploading && (
+                        {imageMode === "custom" && !customImageData && !imageProcessing && (
                           <p
                             className="text-xs mt-1 ml-6"
                             style={{ color: "var(--muted-foreground)" }}
                           >
-                            Click Choose to upload an image
+                            Click Choose to select an image
                           </p>
                         )}
                       </div>

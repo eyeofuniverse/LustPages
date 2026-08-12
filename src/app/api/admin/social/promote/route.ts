@@ -3,6 +3,42 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { postToBluesky } from "@/lib/social/bluesky";
 import { postToTumblr } from "@/lib/social/tumblr";
+import crypto from "crypto";
+
+// Upload a base64 data URL to Cloudinary server-side.
+// Returns the secure_url on success, null on failure.
+async function uploadToCloudinary(dataUrl: string): Promise<string | null> {
+  try {
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+    if (!cloudName || !apiKey || !apiSecret) return null;
+
+    const timestamp = Math.round(Date.now() / 1000);
+    const folder = "story-covers";
+    const signature = crypto
+      .createHash("sha1")
+      .update(`folder=${folder}&timestamp=${timestamp}${apiSecret}`)
+      .digest("hex");
+
+    const form = new FormData();
+    form.append("file", dataUrl); // Cloudinary accepts data: URIs directly
+    form.append("api_key", apiKey);
+    form.append("timestamp", String(timestamp));
+    form.append("signature", signature);
+    form.append("folder", folder);
+
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      { method: "POST", body: form }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return (data.secure_url as string) ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -18,6 +54,7 @@ export async function POST(req: NextRequest) {
     tumblrCaption,
     tags: clientTags,
     imageUrl,
+    imageData,
   } = body as {
     storyId: string;
     platforms?: string[];
@@ -25,6 +62,7 @@ export async function POST(req: NextRequest) {
     tumblrCaption?: string;
     tags?: string[];
     imageUrl?: string | null;
+    imageData?: string;
   };
 
   if (!storyId) return NextResponse.json({ error: "storyId required" }, { status: 400 });
@@ -55,23 +93,29 @@ export async function POST(req: NextRequest) {
 
   const url = `${process.env.SITE_URL}/stories/${story.slug}`;
 
-  // imageUrl from client: null = no image, string = use that URL, undefined = story cover
-  const coverImageUrl =
-    typeof imageUrl === "string"
-      ? imageUrl
-      : imageUrl === null
-      ? null
-      : (story.coverImage ?? story.seriesInfo?.coverImage ?? null);
+  // Determine image URL:
+  // - imageData (base64 DataURL): custom upload → upload to Cloudinary server-side
+  // - imageUrl (string): story cover URL passed from client
+  // - imageUrl (null): admin chose "no image"
+  // - neither: fall back to story's DB cover
+  let coverImageUrl: string | null;
+  if (typeof imageData === "string" && imageData.startsWith("data:")) {
+    coverImageUrl = await uploadToCloudinary(imageData);
+  } else if (typeof imageUrl === "string") {
+    coverImageUrl = imageUrl;
+  } else if (imageUrl === null) {
+    coverImageUrl = null;
+  } else {
+    coverImageUrl = story.coverImage ?? story.seriesInfo?.coverImage ?? null;
+  }
 
   const storyTagNames = story.storyTags
     .filter((t) => t.isApproved)
     .map((t) => t.name);
   const allTags = [...new Set([...(clientTags ?? []), ...storyTagNames])];
 
-  const bskyText =
-    bskyCaption?.trim() || story.excerpt.slice(0, 270);
-  const tumblrText =
-    tumblrCaption?.trim() || story.excerpt;
+  const bskyText = bskyCaption?.trim() || story.excerpt.slice(0, 240);
+  const tumblrText = tumblrCaption?.trim() || story.excerpt;
 
   const result: Record<string, { ok: boolean; error?: string }> = {};
 
