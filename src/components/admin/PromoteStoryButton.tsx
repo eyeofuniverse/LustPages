@@ -17,6 +17,7 @@ interface Props {
   storyId: string;
   storyTitle: string;
   storyExcerpt: string;
+  storyUrl: string;
   coverImage?: string | null;
   storyTags?: string[];
   tumblrConnected: boolean;
@@ -39,6 +40,7 @@ export function PromoteStoryButton({
   storyId,
   storyTitle,
   storyExcerpt,
+  storyUrl,
   coverImage,
   storyTags = [],
   tumblrConnected,
@@ -62,13 +64,19 @@ export function PromoteStoryButton({
 
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  // Bluesky text = "Title\n\nCaption #tags" — all count toward the 300-char limit
+  // Bluesky text = "Title\n\nCaption #tags" — all count toward the 300-char limit.
+  // When a standalone image is used (embed.images), the story URL is appended
+  // as "\n\nURL" so readers can click through (no link card with standalone images).
+  const hasImage =
+    (imageMode === "story" && !!coverImage) ||
+    (imageMode === "custom" && !!customImageData);
   const titleChars = storyTitle.length + 2; // title + "\n\n"
+  const urlChars = hasImage ? 2 + [...storyUrl].length : 0; // "\n\n" + URL graphemes
   const hashtagChars = tags.reduce((acc, t) => {
     const c = sanitizeTag(t);
     return c ? acc + 2 + c.length : acc; // " #tag" = space + hash + tagname
   }, 0);
-  const bskyTotal = titleChars + bskyCaption.length + hashtagChars;
+  const bskyTotal = titleChars + bskyCaption.length + urlChars + hashtagChars;
 
   const activePlatforms = Object.entries(selectedPlatforms)
     .filter(([, v]) => v)
@@ -616,11 +624,11 @@ export function PromoteStoryButton({
                         <span
                           className="text-xs tabular-nums"
                           style={{ color: bskyOver ? "#ef4444" : "var(--muted-foreground)" }}
-                          title={`Title: ${titleChars} + Caption: ${bskyCaption.length} + Tags: ${hashtagChars} = ${bskyTotal}/300`}
+                          title={`Title: ${titleChars} + Caption: ${bskyCaption.length}${urlChars ? ` + URL: ${urlChars}` : ""} + Tags: ${hashtagChars} = ${bskyTotal}/300`}
                         >
                           {bskyTotal}/300
                           <span style={{ opacity: 0.6 }}>
-                            {" "}(title:{titleChars}+body:{bskyCaption.length}+tags:{hashtagChars})
+                            {" "}(title:{titleChars}+body:{bskyCaption.length}{urlChars ? `+url:${urlChars}` : ""}+tags:{hashtagChars})
                           </span>
                         </span>
                       </div>
@@ -638,7 +646,7 @@ export function PromoteStoryButton({
                         placeholder="Short caption for Bluesky — caption + hashtags must fit in 300 chars…"
                       />
                       <p className="text-xs mt-1" style={{ color: "var(--muted-foreground)" }}>
-                        The title is automatically prepended to the post body.
+                        Title is prepended. {hasImage ? "Story link is appended (standalone image mode)." : "Link card carries the story URL."}
                         {bskyOver && (
                           <span style={{ color: "#ef4444" }}>
                             {" "}Shorten the caption or remove hashtags to fit within 300.

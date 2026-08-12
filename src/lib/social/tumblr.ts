@@ -42,6 +42,19 @@ async function getAccessToken(): Promise<string> {
 
 const DEFAULT_TAGS = ["erotica", "lustpages", "adult fiction", "erotic fiction"];
 
+// Build HTML caption for Tumblr photo posts.
+// Tumblr photo captions support basic HTML.
+function buildPhotoCaption(title: string, body: string, url: string): string {
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const bodyHtml = esc(body).replace(/\n/g, "<br>");
+  return [
+    `<p><strong>${esc(title)}</strong></p>`,
+    `<p>${bodyHtml}</p>`,
+    `<p><a href="${url}">Read on LustPages →</a></p>`,
+  ].join("");
+}
+
 export async function postToTumblr({
   title,
   caption,
@@ -62,35 +75,48 @@ export async function postToTumblr({
     ...new Set([...DEFAULT_TAGS, ...tags.map((t) => t.toLowerCase())]),
   ].slice(0, 20);
 
-  // Text block: title as heading + full caption body
-  const textBody = `${title}\n\n${caption}`;
+  // Tags must be a comma-separated string for the legacy API.
+  const tagsStr = allTags.join(",");
 
-  // Link block: compact preview card.
-  // Image goes in `poster` — the link-preview thumbnail field accepts external URLs.
-  // Do NOT use the NPF `image` content type for external URLs; it requires
-  // Tumblr-hosted media and returns a 400 Bad Request otherwise.
-  const linkBlock: Record<string, unknown> = {
-    type: "link",
-    url,
-    title,
-    description: caption.slice(0, 200),
-  };
+  // We use the LEGACY /post endpoint (not the NPF /posts endpoint).
+  //
+  // Reason: the NPF API's `image` content block requires Tumblr-hosted media
+  // (not external URLs), causing 400 Bad Request. The NPF `link.poster` field
+  // has the same restriction. The legacy `photo` type with `source` is the
+  // documented, stable way to post an external image — Tumblr downloads and
+  // re-hosts it, displaying it full-width as a standalone image (not a link card).
+  const endpoint = `https://api.tumblr.com/v2/blog/${blog}/post`;
+
+  let postBody: Record<string, string>;
+
   if (coverImageUrl) {
-    linkBlock.poster = [{ url: coverImageUrl, type: "image/jpeg" }];
+    // Photo post: image is displayed full-width; story link goes in the caption.
+    postBody = {
+      type: "photo",
+      source: coverImageUrl,
+      caption: buildPhotoCaption(title, caption, url),
+      tags: tagsStr,
+      state: "published",
+    };
+  } else {
+    // No image: standard link post.
+    postBody = {
+      type: "link",
+      url,
+      title,
+      description: caption.slice(0, 500),
+      tags: tagsStr,
+      state: "published",
+    };
   }
 
-  const content: object[] = [
-    { type: "text", text: textBody },
-    linkBlock,
-  ];
-
-  const res = await fetch(`https://api.tumblr.com/v2/blog/${blog}/posts`, {
+  const res = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${accessToken}`,
     },
-    body: JSON.stringify({ content, tags: allTags, state: "published" }),
+    body: JSON.stringify(postBody),
   });
 
   if (!res.ok) {

@@ -24,22 +24,23 @@ async function uploadBlob(
   }
 }
 
-// Builds the post text (title + caption + hashtag facets).
-// Total must stay within Bluesky's 300-grapheme limit.
+// Builds post text with optional story URL link facet and hashtag facets.
+// storyUrl is included in the text only when using embed.images (standalone image),
+// making the link clickable since there's no separate link card.
 function buildPost(
   title: string,
   caption: string,
-  tags: string[]
+  tags: string[],
+  storyUrl?: string
 ): { text: string; facets: object[] } {
   const enc = new TextEncoder();
   const MAX = 295; // slight safety margin for multi-byte chars
 
-  // Title prefix always included: "Title\n\n"
   const prefix = `${title}\n\n`;
-  const prefixGraphemes = [...prefix].length;
+  const urlSuffix = storyUrl ? `\n\n${storyUrl}` : "";
+  const reservedGraphemes = [...prefix].length + [...urlSuffix].length;
 
-  // Trim caption to leave room for the prefix (hashtags carved out below)
-  const captionBudget = MAX - prefixGraphemes;
+  const captionBudget = MAX - reservedGraphemes;
   const captionTrimmed =
     [...caption].length > captionBudget
       ? [...caption].slice(0, captionBudget - 1).join("") + "…"
@@ -48,6 +49,18 @@ function buildPost(
   let text = prefix + captionTrimmed;
   const facets: object[] = [];
 
+  // URL link facet (standalone image mode: URL embedded in text, no link card)
+  if (storyUrl) {
+    const urlByteStart = enc.encode(text).length + 2; // skip "\n\n"
+    text += `\n\n${storyUrl}`;
+    const urlByteEnd = enc.encode(text).length;
+    facets.push({
+      index: { byteStart: urlByteStart, byteEnd: urlByteEnd },
+      features: [{ $type: "app.bsky.richtext.facet#link", uri: storyUrl }],
+    });
+  }
+
+  // Hashtag facets
   for (const rawTag of tags.slice(0, 8)) {
     const tag = rawTag
       .toLowerCase()
@@ -98,9 +111,34 @@ export async function postToBluesky({
   }
   const { accessJwt, did } = await sessionRes.json();
 
-  const { text, facets } = buildPost(title, caption, tags);
-
+  // Upload image blob when a cover image is provided.
   const thumb = coverImageUrl ? await uploadBlob(coverImageUrl, accessJwt) : null;
+
+  let text: string;
+  let facets: object[];
+  let embed: object;
+
+  if (thumb) {
+    // Standalone image embed: image appears full-width in feed.
+    // Story URL must be in the text (as a link facet) since there's no link card.
+    ({ text, facets } = buildPost(title, caption, tags, url));
+    embed = {
+      $type: "app.bsky.embed.images",
+      images: [{ alt: title, image: thumb }],
+    };
+  } else {
+    // No image (or blob upload failed): use link card embed.
+    // URL is carried by the card, not duplicated in the text.
+    ({ text, facets } = buildPost(title, caption, tags));
+    embed = {
+      $type: "app.bsky.embed.external",
+      external: {
+        uri: url,
+        title,
+        description: caption.slice(0, 300),
+      },
+    };
+  }
 
   const postRes = await fetch(
     "https://bsky.social/xrpc/com.atproto.repo.createRecord",
@@ -117,15 +155,7 @@ export async function postToBluesky({
           $type: "app.bsky.feed.post",
           text,
           ...(facets.length > 0 && { facets }),
-          embed: {
-            $type: "app.bsky.embed.external",
-            external: {
-              uri: url,
-              title,
-              description: caption.slice(0, 300),
-              ...(thumb && { thumb }),
-            },
-          },
+          embed,
           createdAt: new Date().toISOString(),
         },
       }),

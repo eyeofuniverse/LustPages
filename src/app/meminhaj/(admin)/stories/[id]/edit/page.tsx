@@ -33,6 +33,7 @@ export default async function EditStoryPage({ params }: { params: Promise<{ id: 
             storyId={story.id}
             storyTitle={story.title}
             storyExcerpt={story.excerpt}
+            storyUrl={`${process.env.SITE_URL}/stories/${story.slug}`}
             coverImage={story.coverImage}
             storyTags={story.storyTags
               .filter((t) => t.isApproved)
