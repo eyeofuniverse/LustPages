@@ -161,36 +161,50 @@ export function PromoteStoryButton({
       setImageError("Please select an image file.");
       return;
     }
-    if (file.size > 15 * 1024 * 1024) {
-      setImageError("Image must be under 15 MB.");
+
+    const isGif = file.type === "image/gif";
+    const maxBytes = isGif ? 8 * 1024 * 1024 : 15 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      setImageError(`Image must be under ${isGif ? "8" : "15"} MB.`);
       return;
     }
 
     setImageError("");
     setImageProcessing(true);
     try {
-      // Compress client-side via Canvas (max 1200px, JPEG 85%).
-      // The resulting data URL is sent to our API which uploads to Cloudinary.
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const img = new Image();
-        const objectUrl = URL.createObjectURL(file);
-        img.onload = () => {
-          URL.revokeObjectURL(objectUrl);
-          try {
-            const MAX = 1200;
-            const scale = Math.min(1, MAX / Math.max(img.width, img.height));
-            const canvas = document.createElement("canvas");
-            canvas.width = Math.round(img.width * scale);
-            canvas.height = Math.round(img.height * scale);
-            const ctx = canvas.getContext("2d");
-            if (!ctx) { reject(new Error("Canvas unavailable")); return; }
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            resolve(canvas.toDataURL("image/jpeg", 0.85));
-          } catch (err) { reject(err); }
-        };
-        img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("Could not load image")); };
-        img.src = objectUrl;
-      });
+      let dataUrl: string;
+      if (isGif) {
+        // GIFs: read directly via FileReader — Canvas would flatten to a static JPEG,
+        // losing the animation. Cloudinary preserves GIF animation on upload.
+        dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error("Could not read file"));
+          reader.readAsDataURL(file);
+        });
+      } else {
+        // Non-GIF: compress via Canvas (max 1200px, JPEG 85%) to reduce upload size.
+        dataUrl = await new Promise<string>((resolve, reject) => {
+          const img = new Image();
+          const objectUrl = URL.createObjectURL(file);
+          img.onload = () => {
+            URL.revokeObjectURL(objectUrl);
+            try {
+              const MAX = 1200;
+              const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+              const canvas = document.createElement("canvas");
+              canvas.width = Math.round(img.width * scale);
+              canvas.height = Math.round(img.height * scale);
+              const ctx = canvas.getContext("2d");
+              if (!ctx) { reject(new Error("Canvas unavailable")); return; }
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              resolve(canvas.toDataURL("image/jpeg", 0.85));
+            } catch (err) { reject(err); }
+          };
+          img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("Could not load image")); };
+          img.src = objectUrl;
+        });
+      }
       setCustomImageData(dataUrl);
     } catch (err) {
       setImageError(err instanceof Error ? err.message : "Failed to process image.");
