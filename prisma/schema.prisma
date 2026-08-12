@@ -537,6 +537,15 @@ model AdminProfile {
   @@index([userId])
 }
 
+model SocialToken {
+  id           String    @id @default(cuid())
+  platform     String    @unique
+  accessToken  String
+  refreshToken String?
+  expiresAt    DateTime?
+  updatedAt    DateTime  @updatedAt
+}
+
 model AdminPasswordOtp {
   id        String   @id @default(cuid())
   email     String

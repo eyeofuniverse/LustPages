@@ -1,5 +1,7 @@
 import { getAdminStoryById, getCategories, getAuthors, getAllStructuredTags } from "@/lib/queries";
 import { StoryForm } from "@/components/admin/StoryForm";
+import { PromoteStoryButton } from "@/components/admin/PromoteStoryButton";
+import { isTumblrConnected } from "@/lib/social/tumblr";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
@@ -7,23 +9,34 @@ export const metadata: Metadata = { title: "Edit Story" };
 
 export default async function EditStoryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [story, categories, authors, availableTags] = await Promise.all([
+  const [story, categories, authors, availableTags, tumblrConnected] = await Promise.all([
     getAdminStoryById(id),
     getCategories(),
     getAuthors(),
     getAllStructuredTags(),
+    isTumblrConnected(),
   ]);
 
   if (!story) notFound();
 
   return (
     <div>
-      <h1
-        className="text-2xl font-bold mb-8"
-        style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
-      >
-        Edit Story
-      </h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1
+          className="text-2xl font-bold"
+          style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
+        >
+          Edit Story
+        </h1>
+        {story.published && (
+          <PromoteStoryButton
+            storyId={story.id}
+            storyTitle={story.title}
+            storyExcerpt={story.excerpt}
+            tumblrConnected={tumblrConnected}
+          />
+        )}
+      </div>
       <StoryForm
         categories={categories}
         authors={authors}

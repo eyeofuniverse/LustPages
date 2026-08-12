@@ -1,0 +1,88 @@
+import { prisma } from "@/lib/prisma";
+
+async function getAccessToken(): Promise<string> {
+  const token = await prisma.socialToken.findUnique({ where: { platform: "tumblr" } });
+  if (!token) throw new Error("Tumblr not connected. Use the Connect Tumblr button first.");
+
+  if (!token.expiresAt || token.expiresAt > new Date()) {
+    return token.accessToken;
+  }
+
+  if (!token.refreshToken) {
+    throw new Error("Tumblr token expired. Please reconnect your Tumblr account.");
+  }
+
+  const res = await fetch("https://api.tumblr.com/v2/oauth2/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: token.refreshToken,
+      client_id: process.env.TUMBLR_CONSUMER_KEY!,
+      client_secret: process.env.TUMBLR_CONSUMER_SECRET!,
+    }),
+  });
+
+  if (!res.ok) throw new Error("Tumblr token refresh failed. Please reconnect.");
+  const data = await res.json();
+
+  await prisma.socialToken.update({
+    where: { platform: "tumblr" },
+    data: {
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token ?? token.refreshToken,
+      expiresAt: data.expires_in
+        ? new Date(Date.now() + data.expires_in * 1000)
+        : null,
+    },
+  });
+
+  return data.access_token as string;
+}
+
+export async function postToTumblr({
+  title,
+  caption,
+  url,
+}: {
+  title: string;
+  caption: string;
+  url: string;
+}) {
+  const accessToken = await getAccessToken();
+  const blog = process.env.TUMBLR_BLOG_NAME!;
+
+  const res = await fetch(`https://api.tumblr.com/v2/blog/${blog}/posts`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      content: [
+        { type: "text", text: caption },
+        { type: "link", url, title, description: caption.slice(0, 400) },
+      ],
+      tags: ["erotica", "lustpages", "adult fiction", "erotic fiction"],
+      state: "published",
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(
+      `Tumblr post failed: ${err?.meta?.msg ?? err?.errors?.[0]?.detail ?? res.status}`
+    );
+  }
+
+  const result = await res.json();
+  return { id: String(result.response?.id ?? result.id ?? "") };
+}
+
+export async function isTumblrConnected(): Promise<boolean> {
+  const token = await prisma.socialToken.findUnique({
+    where: { platform: "tumblr" },
+    select: { id: true },
+  });
+  return !!token;
+}
