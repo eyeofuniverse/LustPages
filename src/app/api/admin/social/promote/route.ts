@@ -10,9 +10,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { storyId, bskyCaption, tumblrCaption, tags: clientTags } =
-    await req.json();
+  const body = await req.json();
+  const {
+    storyId,
+    platforms,
+    bskyCaption,
+    tumblrCaption,
+    tags: clientTags,
+    imageUrl,
+  } = body as {
+    storyId: string;
+    platforms?: string[];
+    bskyCaption?: string;
+    tumblrCaption?: string;
+    tags?: string[];
+    imageUrl?: string | null;
+  };
+
   if (!storyId) return NextResponse.json({ error: "storyId required" }, { status: 400 });
+
+  const activePlatforms =
+    Array.isArray(platforms) && platforms.length > 0
+      ? platforms
+      : ["bluesky", "tumblr"];
 
   const story = await prisma.story.findUnique({
     where: { id: storyId, published: true },
@@ -34,7 +54,14 @@ export async function POST(req: NextRequest) {
   }
 
   const url = `${process.env.SITE_URL}/stories/${story.slug}`;
-  const coverImageUrl = story.coverImage ?? story.seriesInfo?.coverImage ?? null;
+
+  // imageUrl from client: null = no image, string = use that URL, undefined = story cover
+  const coverImageUrl =
+    typeof imageUrl === "string"
+      ? imageUrl
+      : imageUrl === null
+      ? null
+      : (story.coverImage ?? story.seriesInfo?.coverImage ?? null);
 
   const storyTagNames = story.storyTags
     .filter((t) => t.isApproved)
@@ -42,35 +69,47 @@ export async function POST(req: NextRequest) {
   const allTags = [...new Set([...(clientTags ?? []), ...storyTagNames])];
 
   const bskyText =
-    (bskyCaption as string | undefined)?.trim() || story.excerpt.slice(0, 270);
+    bskyCaption?.trim() || story.excerpt.slice(0, 270);
   const tumblrText =
-    (tumblrCaption as string | undefined)?.trim() || story.excerpt;
+    tumblrCaption?.trim() || story.excerpt;
 
-  const [bsky, tumblr] = await Promise.allSettled([
-    postToBluesky({
-      title: story.title,
-      caption: bskyText,
-      url,
-      tags: allTags,
-      coverImageUrl,
-    }),
-    postToTumblr({
-      title: story.title,
-      caption: tumblrText,
-      url,
-      tags: allTags,
-      coverImageUrl,
-    }),
-  ]);
+  const result: Record<string, { ok: boolean; error?: string }> = {};
 
-  return NextResponse.json({
-    bluesky:
-      bsky.status === "fulfilled"
+  const tasks: Array<[string, Promise<unknown>]> = [];
+
+  if (activePlatforms.includes("bluesky")) {
+    tasks.push([
+      "bluesky",
+      postToBluesky({
+        title: story.title,
+        caption: bskyText,
+        url,
+        tags: allTags,
+        coverImageUrl,
+      }),
+    ]);
+  }
+  if (activePlatforms.includes("tumblr")) {
+    tasks.push([
+      "tumblr",
+      postToTumblr({
+        title: story.title,
+        caption: tumblrText,
+        url,
+        tags: allTags,
+        coverImageUrl,
+      }),
+    ]);
+  }
+
+  const settled = await Promise.allSettled(tasks.map(([, p]) => p));
+  tasks.forEach(([platform], i) => {
+    const s = settled[i];
+    result[platform] =
+      s.status === "fulfilled"
         ? { ok: true }
-        : { ok: false, error: (bsky as PromiseRejectedResult).reason?.message },
-    tumblr:
-      tumblr.status === "fulfilled"
-        ? { ok: true }
-        : { ok: false, error: (tumblr as PromiseRejectedResult).reason?.message },
+        : { ok: false, error: (s as PromiseRejectedResult).reason?.message };
   });
+
+  return NextResponse.json(result);
 }
