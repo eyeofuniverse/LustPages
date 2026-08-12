@@ -83,7 +83,9 @@ export async function getTrafficAnalytics(days: number): Promise<TrafficData> {
     else sourceMap.set(source, { category, count: 1 });
 
     if (visit.referrer != null && category !== "internal") {
-      referrerDomainMap.set(visit.referrer, (referrerDomainMap.get(visit.referrer) ?? 0) + 1);
+      // Normalize www prefix so reddit.com and www.reddit.com merge into one row
+      const normalizedRef = visit.referrer.replace(/^(https?:\/\/)www\./i, "$1");
+      referrerDomainMap.set(normalizedRef, (referrerDomainMap.get(normalizedRef) ?? 0) + 1);
     }
 
     pageMap.set(visit.path, (pageMap.get(visit.path) ?? 0) + 1);
@@ -251,7 +253,7 @@ export async function getVisitorData(days = 7): Promise<VisitorData> {
 
   // Build visitor groups
   const visitorMap = new Map<string, VisitorGroup>();
-  let onlineNow = 0;
+  const onlineIps = new Set<string>();
   for (const v of visits) {
     const geo = geoMap.get(v.ip);
     const vDate = toDate(v.visitedAt as Date | string);
@@ -274,8 +276,9 @@ export async function getVisitorData(days = 7): Promise<VisitorData> {
       if (visitedAt < existing.firstSeen) existing.firstSeen = visitedAt;
       if (visitedAt > existing.lastSeen) existing.lastSeen = visitedAt;
     }
-    if (vDate >= fiveMinutesAgo) onlineNow++;
+    if (vDate >= fiveMinutesAgo) onlineIps.add(v.ip);
   }
+  const onlineNow = onlineIps.size;
 
   // Daily traffic — fill all days including zero-visit days
   const dayMap = new Map<string, number>();
@@ -314,9 +317,8 @@ export async function getVisitorData(days = 7): Promise<VisitorData> {
 
   const topCountry = topCountries[0]?.country ?? null;
 
-  const totalPaths = [...visitorMap.values()].reduce((s, v) => s + v.paths.length, 0);
   const avgPagesPerVisitor = visitorMap.size > 0
-    ? Math.round((totalPaths / visitorMap.size) * 10) / 10
+    ? Math.round((visits.length / visitorMap.size) * 10) / 10
     : 0;
 
   const recentVisits: RecentVisit[] = visits.slice(0, 100).map((v) => {

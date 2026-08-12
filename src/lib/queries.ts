@@ -925,7 +925,7 @@ export async function getDashboardMetrics() {
       select: {
         name: true,
         color: true,
-        _count: { select: { stories: true } },
+        _count: { select: { stories: { where: { published: true } } } },
         stories: { where: { published: true }, select: { views: true } },
       },
     }),
@@ -933,7 +933,7 @@ export async function getDashboardMetrics() {
       where: { isApproved: true },
       select: {
         name: true,
-        _count: { select: { stories: true } },
+        _count: { select: { stories: { where: { published: true } } } },
         stories: { where: { published: true }, select: { views: true } },
       },
     }),
@@ -2363,11 +2363,11 @@ export async function getCategoryAnalytics() {
 
 export async function getSearchAnalytics(days = 30) {
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-  const rows = await prisma.searchQuery.findMany({
-    where: { createdAt: { gte: since } },
-    orderBy: { createdAt: "desc" },
-    take: 5000,
-  });
+  const where = { createdAt: { gte: since } };
+  const [rows, total] = await Promise.all([
+    prisma.searchQuery.findMany({ where, orderBy: { createdAt: "desc" }, take: 5000 }),
+    prisma.searchQuery.count({ where }),
+  ]);
 
   const counts = new Map<string, { count: number; zeroResults: number }>();
   for (const row of rows) {
@@ -2388,7 +2388,7 @@ export async function getSearchAnalytics(days = 30) {
     createdAt: r.createdAt.toISOString(),
   }));
 
-  return { topQueries, recentQueries, total: rows.length };
+  return { topQueries, recentQueries, total };
 }
 
 export async function getAdminRatings({

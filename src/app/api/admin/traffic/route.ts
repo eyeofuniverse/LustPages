@@ -8,7 +8,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const days = Math.min(90, Math.max(1, parseInt(req.nextUrl.searchParams.get("days") ?? "7", 10)));
+  const rawDays = parseInt(req.nextUrl.searchParams.get("days") ?? "7", 10);
+  const days = isNaN(rawDays) ? 7 : Math.min(90, Math.max(1, rawDays));
   const data = await getTrafficAnalytics(days);
   return NextResponse.json(data);
 }

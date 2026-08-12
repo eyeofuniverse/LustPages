@@ -153,7 +153,7 @@ export function StoriesSearchBar({ initialSearch }: { initialSearch?: string }) 
                 href={`/stories/${s.slug}`}
                 className="flex items-center gap-3 px-4 py-3 hover:opacity-75 transition-opacity"
                 style={{ borderBottom: "1px solid var(--border)" }}
-                onClick={() => setOpen(false)}
+                onClick={() => { setOpen(false); trackSearch(value.trim(), suggestions.length); }}
               >
                 <BookOpen size={14} className="shrink-0" style={{ color }} />
                 <div className="flex-1 min-w-0">

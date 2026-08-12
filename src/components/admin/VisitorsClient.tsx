@@ -255,10 +255,12 @@ export function VisitorsClient({ data: initialData }: { data: VisitorData }) {
 
   const fetchRange = useCallback(async (days: number) => {
     setLoading(true);
-    setActiveDays(days);
     try {
       const res = await fetch(`/api/admin/visitors?days=${days}`);
-      if (res.ok) setData(await res.json());
+      if (res.ok) {
+        setData(await res.json());
+        setActiveDays(days);
+      }
     } finally {
       setLoading(false);
     }
@@ -354,7 +356,7 @@ export function VisitorsClient({ data: initialData }: { data: VisitorData }) {
           <div className="p-1">
             {tab === "visitors" && <VisitorTable visitors={data.visitors} now={now} />}
             {tab === "activity" && <ActivityTable visits={data.recentVisits} now={now} />}
-            {tab === "countries" && <CountriesTable countries={data.topCountries} total={data.uniqueVisitors} />}
+            {tab === "countries" && <CountriesTable countries={data.topCountries} total={data.topCountries.reduce((s, c) => s + c.count, 0)} />}
           </div>
         </div>
 

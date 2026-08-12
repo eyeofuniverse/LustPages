@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   Globe, Monitor, Smartphone, Tablet, Link2, FileText, Clock,
   TrendingUp, RefreshCw, ExternalLink,
@@ -169,7 +169,6 @@ function ReferrersPanel({ referrers }: { referrers: TopReferrer[] }) {
 
 // ── Device Breakdown panel ────────────────────────────────────────────────────
 function DevicesPanel({ devices }: { devices: DeviceStat[] }) {
-  const max = devices[0]?.count ?? 1;
   const deviceColors: Record<string, string> = {
     desktop: "#6366f1", mobile: "#10b981", tablet: "#f59e0b",
   };
@@ -185,7 +184,6 @@ function DevicesPanel({ devices }: { devices: DeviceStat[] }) {
         ) : (
           devices.map((d) => {
             const color = deviceColors[d.device] ?? "#888";
-            const pct = max > 0 ? (d.count / max) * 100 : 0;
             return (
               <div key={d.device}>
                 <div className="flex items-center justify-between mb-1.5">
@@ -198,7 +196,7 @@ function DevicesPanel({ devices }: { devices: DeviceStat[] }) {
                   </span>
                 </div>
                 <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--muted)" }}>
-                  <div className="h-full rounded-full transition-all" style={{ width: `${Math.max(pct, 1)}%`, background: color }} />
+                  <div className="h-full rounded-full transition-all" style={{ width: `${Math.max(d.pct, 1)}%`, background: color }} />
                 </div>
               </div>
             );
@@ -251,16 +249,12 @@ function PeakHoursPanel({ hours }: { hours: HourStat[] }) {
           })}
         </div>
         {/* X-axis labels: every 6h */}
-        <div className="flex mt-1">
+        <div className="relative mt-1" style={{ height: "14px" }}>
           {[0, 6, 12, 18, 23].map((h) => (
             <span
               key={h}
-              className="text-[9px] tabular-nums"
-              style={{
-                marginLeft: h === 0 ? 0 : `${(h / 24) * 100 - (h === 23 ? 4 : 0)}%`,
-                color: "var(--muted-foreground)",
-                position: h === 0 ? "relative" : "absolute",
-              }}
+              className="absolute text-[9px] tabular-nums -translate-x-1/2"
+              style={{ left: `${(h / 23) * 100}%`, color: "var(--muted-foreground)" }}
             >
               {fmtHour(h)}
             </span>
@@ -313,6 +307,7 @@ export function TrafficClient({ data: initial }: { data: TrafficData }) {
   const [data, setData] = useState(initial);
   const [days, setDays] = useState(initial.days);
   const [loading, setLoading] = useState(false);
+  const mounted = useRef(false);
 
   const load = useCallback(async (d: number) => {
     setLoading(true);
@@ -324,7 +319,11 @@ export function TrafficClient({ data: initial }: { data: TrafficData }) {
     }
   }, []);
 
-  useEffect(() => { load(days); }, [days, load]);
+  // Skip initial mount — SSR already provided initial data for the default period
+  useEffect(() => {
+    if (!mounted.current) { mounted.current = true; return; }
+    load(days);
+  }, [days, load]);
 
   const mobile = data.devices.find((d) => d.device === "mobile");
   const directSrc = data.sources.find((s) => s.source === "Direct");
