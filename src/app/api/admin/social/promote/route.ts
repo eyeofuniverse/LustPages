@@ -10,7 +10,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { storyId, caption } = await req.json();
+  const { storyId, bskyCaption, tumblrCaption, tags: clientTags } =
+    await req.json();
   if (!storyId) return NextResponse.json({ error: "storyId required" }, { status: 400 });
 
   const story = await prisma.story.findUnique({
@@ -21,6 +22,7 @@ export async function POST(req: NextRequest) {
       excerpt: true,
       coverImage: true,
       seriesInfo: { select: { coverImage: true } },
+      storyTags: { select: { name: true, isApproved: true } },
     },
   });
 
@@ -32,11 +34,33 @@ export async function POST(req: NextRequest) {
   }
 
   const url = `${process.env.SITE_URL}/stories/${story.slug}`;
-  const text = (caption as string | undefined)?.trim() || story.excerpt;
+  const coverImageUrl = story.coverImage ?? story.seriesInfo?.coverImage ?? null;
+
+  const storyTagNames = story.storyTags
+    .filter((t) => t.isApproved)
+    .map((t) => t.name);
+  const allTags = [...new Set([...(clientTags ?? []), ...storyTagNames])];
+
+  const bskyText =
+    (bskyCaption as string | undefined)?.trim() || story.excerpt.slice(0, 270);
+  const tumblrText =
+    (tumblrCaption as string | undefined)?.trim() || story.excerpt;
 
   const [bsky, tumblr] = await Promise.allSettled([
-    postToBluesky({ title: story.title, caption: text, url }),
-    postToTumblr({ title: story.title, caption: text, url }),
+    postToBluesky({
+      title: story.title,
+      caption: bskyText,
+      url,
+      tags: allTags,
+      coverImageUrl,
+    }),
+    postToTumblr({
+      title: story.title,
+      caption: tumblrText,
+      url,
+      tags: allTags,
+      coverImageUrl,
+    }),
   ]);
 
   return NextResponse.json({

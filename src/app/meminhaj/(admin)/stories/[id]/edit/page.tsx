@@ -33,6 +33,10 @@ export default async function EditStoryPage({ params }: { params: Promise<{ id: 
             storyId={story.id}
             storyTitle={story.title}
             storyExcerpt={story.excerpt}
+            coverImage={story.coverImage}
+            storyTags={story.storyTags
+              .filter((t) => t.isApproved)
+              .map((t) => t.name)}
             tumblrConnected={tumblrConnected}
           />
         )}

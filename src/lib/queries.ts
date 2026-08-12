@@ -698,6 +698,7 @@ export async function getAdminStories({
       include: {
         categories: true,
         author: true,
+        storyTags: { select: { name: true, isApproved: true } },
         _count: { select: { likes: true, comments: true, bookmarks: true } },
       },
       orderBy: { updatedAt: "desc" },

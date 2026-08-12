@@ -1,10 +1,12 @@
 import { getAdminStories } from "@/lib/queries";
+import { isTumblrConnected } from "@/lib/social/tumblr";
 import Link from "next/link";
 import { PenSquare, Eye, Heart, MessageCircle, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { formatDateShort } from "@/lib/utils";
 import { AdminStoryActions } from "@/components/admin/AdminStoryActions";
 import { AdminStoriesFilters } from "@/components/admin/AdminStoriesFilters";
 import { AdminStoryCover } from "@/components/admin/AdminStoryCover";
+import { PromoteStoryButton } from "@/components/admin/PromoteStoryButton";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 
@@ -23,12 +25,10 @@ export default async function AdminStoriesPage({ searchParams }: Props) {
   const page = Math.max(1, parseInt(sp.page ?? "1", 10));
   const skip = (page - 1) * PER_PAGE;
 
-  const { stories, total } = await getAdminStories({
-    take: PER_PAGE,
-    skip,
-    search,
-    statusFilter,
-  });
+  const [{ stories, total }, tumblrConnected] = await Promise.all([
+    getAdminStories({ take: PER_PAGE, skip, search, statusFilter }),
+    isTumblrConnected(),
+  ]);
 
   const totalPages = Math.ceil(total / PER_PAGE);
 
@@ -167,16 +167,31 @@ export default async function AdminStoriesPage({ searchParams }: Props) {
 
                     {/* Inline controls */}
                     <td className="px-4 py-3">
-                      <AdminStoryActions
-                        story={{
-                          id: story.id,
-                          slug: story.slug,
-                          published: story.published,
-                          status: story.status,
-                          scheduledAt: story.scheduledAt?.toISOString() ?? null,
-                          commentsEnabled: story.commentsEnabled,
-                        }}
-                      />
+                      <div className="flex items-center gap-1">
+                        <AdminStoryActions
+                          story={{
+                            id: story.id,
+                            slug: story.slug,
+                            published: story.published,
+                            status: story.status,
+                            scheduledAt: story.scheduledAt?.toISOString() ?? null,
+                            commentsEnabled: story.commentsEnabled,
+                          }}
+                        />
+                        {story.published && (
+                          <PromoteStoryButton
+                            storyId={story.id}
+                            storyTitle={story.title}
+                            storyExcerpt={story.excerpt}
+                            coverImage={story.coverImage}
+                            storyTags={story.storyTags
+                              .filter((t) => t.isApproved)
+                              .map((t) => t.name)}
+                            tumblrConnected={tumblrConnected}
+                            compact
+                          />
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

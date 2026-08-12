@@ -40,17 +40,39 @@ async function getAccessToken(): Promise<string> {
   return data.access_token as string;
 }
 
+const DEFAULT_TAGS = ["erotica", "lustpages", "adult fiction", "erotic fiction"];
+
 export async function postToTumblr({
   title,
   caption,
   url,
+  tags = [],
+  coverImageUrl,
 }: {
   title: string;
   caption: string;
   url: string;
+  tags?: string[];
+  coverImageUrl?: string | null;
 }) {
   const accessToken = await getAccessToken();
   const blog = process.env.TUMBLR_BLOG_NAME!;
+
+  const allTags = [
+    ...new Set([...DEFAULT_TAGS, ...tags.map((t) => t.toLowerCase())]),
+  ].slice(0, 20);
+
+  const content: object[] = [];
+
+  if (coverImageUrl) {
+    content.push({
+      type: "image",
+      media: [{ url: coverImageUrl, type: "image/jpeg" }],
+    });
+  }
+
+  content.push({ type: "text", text: caption });
+  content.push({ type: "link", url, title, description: caption.slice(0, 400) });
 
   const res = await fetch(`https://api.tumblr.com/v2/blog/${blog}/posts`, {
     method: "POST",
@@ -58,14 +80,7 @@ export async function postToTumblr({
       "Content-Type": "application/json",
       Authorization: `Bearer ${accessToken}`,
     },
-    body: JSON.stringify({
-      content: [
-        { type: "text", text: caption },
-        { type: "link", url, title, description: caption.slice(0, 400) },
-      ],
-      tags: ["erotica", "lustpages", "adult fiction", "erotic fiction"],
-      state: "published",
-    }),
+    body: JSON.stringify({ content, tags: allTags, state: "published" }),
   });
 
   if (!res.ok) {
