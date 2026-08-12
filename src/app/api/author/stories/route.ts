@@ -27,7 +27,8 @@ export async function POST(req: Request) {
       "scheduledAt", "visibility", "commentsEnabled", "metaTitle", "metaDescription",
       "canonicalUrl", "noIndex", "seriesId", "chapterNumber", "authorNote", "readingTime",
     ]);
-    const data: Record<string, unknown> = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data: Record<string, any> = {};
     for (const [key, value] of Object.entries(rawData)) {
       if (ALLOWED_CREATE_FIELDS.has(key)) data[key] = value;
     }
