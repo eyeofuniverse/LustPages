@@ -77,12 +77,12 @@ export async function getTrafficAnalytics(days: number): Promise<TrafficData> {
   const hourBuckets = new Array(24).fill(0) as number[];
 
   for (const visit of visits) {
-    const { source, category } = classifyReferrer(visit.referrer);
+    const { source, category } = classifyReferrer(visit.referrer ?? null);
     const existing = sourceMap.get(source);
     if (existing) existing.count++;
     else sourceMap.set(source, { category, count: 1 });
 
-    if (visit.referrer && category !== "internal") {
+    if (visit.referrer != null && category !== "internal") {
       referrerDomainMap.set(visit.referrer, (referrerDomainMap.get(visit.referrer) ?? 0) + 1);
     }
 
