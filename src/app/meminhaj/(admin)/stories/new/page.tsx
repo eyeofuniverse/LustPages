@@ -15,7 +15,7 @@ export default async function NewStoryPage() {
       >
         New Story
       </h1>
-      <StoryForm categories={categories} authors={authors} availableTags={availableTags} />
+      <StoryForm categories={categories} authors={authors} availableTags={availableTags} siteUrl={process.env.SITE_URL} />
     </div>
   );
 }

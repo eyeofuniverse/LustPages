@@ -43,6 +43,7 @@ export default async function EditStoryPage({ params }: { params: Promise<{ id: 
         categories={categories}
         authors={authors}
         availableTags={availableTags}
+        siteUrl={process.env.SITE_URL}
         initialData={{
           id: story.id,
           title: story.title,

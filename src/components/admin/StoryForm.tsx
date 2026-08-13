@@ -37,6 +37,7 @@ interface StoryFormProps {
   categories: Category[];
   authors: Author[];
   availableTags: TagEntry[];
+  siteUrl?: string;
   initialData?: {
     id: string;
     title: string;
@@ -138,7 +139,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
   );
 }
 
-export function StoryForm({ categories, authors, availableTags, initialData }: StoryFormProps) {
+export function StoryForm({ categories, authors, availableTags, siteUrl, initialData }: StoryFormProps) {
   const router = useRouter();
   const isEditing = !!initialData;
 
@@ -483,20 +484,27 @@ export function StoryForm({ categories, authors, availableTags, initialData }: S
                 Meta Title
                 <span
                   className="text-xs font-normal"
-                  style={{ color: metaTitle.length > 60 ? "#c4426a" : "var(--muted-foreground)" }}
+                  style={{ color: metaTitle.length > 48 ? "#c4426a" : "var(--muted-foreground)" }}
                 >
-                  {metaTitle.length}/60
+                  {metaTitle.length}/48
                 </span>
-                <FieldInfo text="Custom title shown in browser tabs and search engine results. Defaults to the story title if left blank. Keep under 60 characters." />
+                <FieldInfo text='Custom title for browser tabs and search results. Defaults to story title if blank. " | LustPages" is appended automatically — keep your title under 48 characters so the total stays within 60.' />
               </label>
               <input
                 type="text"
                 value={metaTitle}
                 onChange={(e) => setMetaTitle(e.target.value)}
+                maxLength={48}
                 placeholder="Defaults to story title"
                 className="w-full px-4 py-2.5 rounded-xl text-sm"
                 style={inputStyle}
               />
+              {metaTitle && (
+                <p className="text-xs mt-1" style={{ color: "var(--muted-foreground)" }}>
+                  Final title: <span style={{ color: "var(--foreground)" }}>{metaTitle} | LustPages</span>
+                  {" "}({metaTitle.length + 12}/60 chars)
+                </p>
+              )}
             </div>
             <div>
               <label style={labelStyle}>
@@ -538,6 +546,55 @@ export function StoryForm({ categories, authors, availableTags, initialData }: S
               </div>
               <Toggle checked={noIndex} onChange={() => setNoIndex(!noIndex)} />
             </label>
+
+            {/* Google Search Preview */}
+            <div>
+              <label style={labelStyle}>
+                Google Search Preview
+                <FieldInfo text="Approximate preview of how this story will appear in Google search results." />
+              </label>
+              <div
+                className="rounded-xl p-4"
+                style={{ background: "#fff", border: "1px solid #dadce0", fontFamily: "Arial, sans-serif" }}
+              >
+                {/* Site identity row */}
+                <div className="flex items-center gap-2 mb-2">
+                  <div
+                    className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0"
+                    style={{ background: "#c4426a" }}
+                  >
+                    L
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium leading-none" style={{ color: "#202124" }}>LustPages</p>
+                    <p className="text-xs leading-none mt-0.5" style={{ color: "#4d5156" }}>
+                      {(siteUrl ?? "https://lustpages.com")}/stories/{slug || "story-slug"}
+                    </p>
+                  </div>
+                </div>
+                {/* Title */}
+                <p
+                  className="text-lg leading-tight mb-0.5 line-clamp-1"
+                  style={{ color: "#1a0dab", fontWeight: 400 }}
+                >
+                  {(() => {
+                    const base = metaTitle || title || "Story Title";
+                    const full = `${base} | LustPages`;
+                    return full.length > 60 ? full.slice(0, 57) + "…" : full;
+                  })()}
+                </p>
+                {/* Description */}
+                <p
+                  className="text-sm line-clamp-2"
+                  style={{ color: "#4d5156", lineHeight: "1.5" }}
+                >
+                  {(() => {
+                    const desc = metaDescription || excerpt || "Story description will appear here in Google search results.";
+                    return desc.length > 160 ? desc.slice(0, 157) + "…" : desc;
+                  })()}
+                </p>
+              </div>
+            </div>
           </Panel>
 
           {/* Admin Notes */}
