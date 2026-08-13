@@ -33,6 +33,16 @@ export async function PATCH(
       ? [...(tagIds as string[]), ...pendingTagIds]
       : pendingTagIds.length > 0 ? pendingTagIds : undefined;
 
+    if (data.slug) {
+      const slugConflict = await prisma.story.findFirst({
+        where: { slug: data.slug as string, NOT: { id } },
+        select: { id: true },
+      });
+      if (slugConflict) {
+        return NextResponse.json({ error: "That slug is already in use by another story." }, { status: 409 });
+      }
+    }
+
     const prev = await prisma.story.findUnique({ where: { id }, select: { published: true, status: true } });
 
     // Don't silently overwrite "pending" or "rejected" with "draft" when admin just edits content

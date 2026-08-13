@@ -24,7 +24,7 @@ const GENDER_PAIRINGS = ["M/F", "M/M", "F/F", "M/F/M", "F/M/F", "Multiple", "Oth
 const LANGUAGES = ["English", "Spanish", "French", "German", "Portuguese", "Italian", "Japanese", "Other"] as const;
 
 function slugify(text: string) {
-  return text.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim();
+  return text.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim();
 }
 
 function parseJsonArray(s: string): string[] {
@@ -123,6 +123,7 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
   const router = useRouter();
   const isEditing = !!initialData?.id;
   const isPending = initialData?.status === "pending";
+  const isApproved = initialData?.status === "approved";
   const isRejected = initialData?.status === "rejected";
   const isPriceLocked = !!(initialData?.hasUnlocks && initialData?.coinPrice != null);
 
@@ -138,12 +139,10 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
   const [readingTime, setReadingTime] = useState(initialData?.readingTime ?? 5);
   const [maturityRating, setMaturityRating] = useState(initialData?.maturityRating ?? "Explicit");
   const [coinPrice, setCoinPrice] = useState(
-    (initialData as { coinPrice?: number | null } | undefined)?.coinPrice != null
-      ? String((initialData as { coinPrice?: number | null }).coinPrice)
-      : ""
+    initialData?.coinPrice != null ? String(initialData.coinPrice) : ""
   );
   const [accessLevel, setAccessLevel] = useState(
-    (initialData as { coinPrice?: number | null } | undefined)?.coinPrice != null ? "Premium" : "Free"
+    initialData?.coinPrice != null ? "Premium" : "Free"
   );
   const [contentWarnings, setContentWarnings] = useState<string[]>(
     parseJsonArray(initialData?.contentWarnings ?? "[]")
@@ -209,7 +208,7 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
     if (!title.trim()) return "Title is required";
     if (!slug.trim()) return "Slug is required";
     if (!excerpt.trim()) return "Excerpt is required";
-    if (!content || content === "<p></p>") return "Content is required";
+    if (!content || content.replace(/<[^>]*>/g, "").trim() === "") return "Content is required";
     if (categoryIds.length === 0) return "Select at least one category";
     if (accessLevel === "Premium" && !seriesId) {
       const parsed = parseInt(coinPrice, 10);
@@ -275,6 +274,28 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
         </h2>
         <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
           This story has been submitted and is waiting for admin review. You cannot edit it while it&apos;s pending.
+        </p>
+      </div>
+    );
+  }
+
+  if (isApproved) {
+    return (
+      <div className="max-w-2xl mx-auto text-center py-16 px-4">
+        <div
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold mb-6"
+          style={{ background: "rgba(34,197,94,0.1)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.3)" }}
+        >
+          Published
+        </div>
+        <h2
+          className="text-2xl font-bold mb-3"
+          style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
+        >
+          {initialData?.title}
+        </h2>
+        <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
+          This story is live and cannot be edited. Contact an admin if you need changes made.
         </p>
       </div>
     );

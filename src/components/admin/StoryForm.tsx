@@ -277,6 +277,10 @@ export function StoryForm({ categories, authors, availableTags, siteUrl, initial
       setError("Please set a scheduled publish date.");
       return;
     }
+    if (accessLevel === "Premium" && !seriesId && !coinPrice) {
+      setError("Please set a coin price for this premium story.");
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -520,6 +524,7 @@ export function StoryForm({ categories, authors, availableTags, siteUrl, initial
               <textarea
                 value={metaDescription}
                 onChange={(e) => setMetaDescription(e.target.value)}
+                maxLength={160}
                 placeholder="Defaults to excerpt"
                 rows={2}
                 className="w-full px-4 py-2.5 rounded-xl text-sm resize-none"

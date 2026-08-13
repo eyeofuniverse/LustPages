@@ -22,6 +22,18 @@ export async function POST(req: Request) {
     if (data.content) data.content = sanitizeStoryContent(data.content);
     const pendingTagIds = await resolveNewTags(newTagNames ?? []);
     const allTagIds = [...(Array.isArray(tagIds) ? tagIds as string[] : []), ...pendingTagIds];
+    // Auto-deduplicate slug — append -2, -3, … rather than letting the DB throw
+    if (data.slug) {
+      const baseSlug = data.slug as string;
+      let finalSlug = baseSlug;
+      for (let i = 2; ; i++) {
+        const existing = await prisma.story.findUnique({ where: { slug: finalSlug }, select: { id: true } });
+        if (!existing) break;
+        finalSlug = `${baseSlug}-${i}`;
+      }
+      data.slug = finalSlug;
+    }
+
     const story = await prisma.story.create({
       data: {
         ...data,
