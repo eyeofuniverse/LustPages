@@ -631,11 +631,20 @@ export async function getOrCreateAuthorByUserId(userId: string, displayName: str
     slug = i < 10 ? `${base}-${i}` : `${base}-${Date.now().toString(36)}`;
   }
 
-  const [author] = await Promise.all([
-    prisma.author.create({ data: { userId, name: displayName, slug } }),
-    prisma.user.update({ where: { id: userId }, data: { role: "author" } }),
-  ]);
-  return author;
+  try {
+    const results = await prisma.$transaction([
+      prisma.author.create({ data: { userId, name: displayName, slug } }),
+      prisma.user.update({ where: { id: userId }, data: { role: "author" } }),
+    ]);
+    return results[0];
+  } catch (e) {
+    // Race condition: another concurrent request created the author first
+    if ((e as { code?: string }).code === "P2002") {
+      const found = await prisma.author.findUnique({ where: { userId } });
+      if (found) return found;
+    }
+    throw e;
+  }
 }
 
 export async function getAuthorStories(authorId: string) {

@@ -68,7 +68,10 @@ export async function POST(req: Request) {
     sendWelcomeEmail(user.email, user.name).catch(console.error);
 
     return NextResponse.json(user, { status: 201 });
-  } catch {
+  } catch (e) {
+    if ((e as { code?: string }).code === "P2002") {
+      return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
+    }
     return NextResponse.json({ error: "Internal server error." }, { status: 500 });
   }
 }

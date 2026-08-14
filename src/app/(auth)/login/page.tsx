@@ -219,7 +219,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 pt-6 space-y-2.5" style={{ borderTop: "1px solid var(--border)" }}>
+          <div className="mt-6 pt-6" style={{ borderTop: "1px solid var(--border)" }}>
             <p className="text-center text-sm" style={{ color: "var(--muted-foreground)" }}>
               Don&apos;t have an account?{" "}
               <Link
@@ -227,17 +227,7 @@ export default function LoginPage() {
                 className="font-semibold transition-opacity hover:opacity-75"
                 style={{ color: "#c4426a" }}
               >
-                Join free
-              </Link>
-            </p>
-            <p className="text-center text-sm" style={{ color: "var(--muted-foreground)" }}>
-              Want to write?{" "}
-              <Link
-                href="/author-signup"
-                className="font-semibold transition-opacity hover:opacity-75"
-                style={{ color: "#c4426a" }}
-              >
-                Become an author
+                Join free — read &amp; write
               </Link>
             </p>
           </div>
