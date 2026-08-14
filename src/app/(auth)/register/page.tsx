@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Eye,
@@ -26,6 +26,8 @@ const BENEFITS = [
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/";
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -58,7 +60,7 @@ export default function RegisterPage() {
 
       setSuccess(true);
       await signIn("credentials", { email, password, redirect: false });
-      router.push("/");
+      router.push(callbackUrl);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {

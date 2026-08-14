@@ -23,7 +23,7 @@ export const authConfig: NextAuthConfig = {
         return true;
       }
 
-      if (path.startsWith("/profile")) {
+      if (path.startsWith("/profile") || path.startsWith("/author-dashboard")) {
         return isLoggedIn;
       }
 
