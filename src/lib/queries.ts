@@ -128,6 +128,20 @@ export async function getAuthors() {
   }));
 }
 
+export async function getSpotlightAuthors(limit: number) {
+  return prisma.author.findMany({
+    where: { stories: { some: { published: true } } },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      _count: { select: { stories: { where: { published: true } } } },
+    },
+    orderBy: { stories: { _count: "desc" } },
+    take: limit,
+  });
+}
+
 export async function getAuthorBySlug(slug: string) {
   const author = await prisma.author.findUnique({
     where: { slug },

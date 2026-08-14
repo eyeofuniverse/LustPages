@@ -25,17 +25,72 @@ export function HomeBottomCTA() {
 
   if (session) {
     return (
+      <>
+        <h2
+          id="cta-heading"
+          className="text-3xl sm:text-4xl md:text-5xl font-bold mb-5 leading-tight"
+          style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
+        >
+          Your Story Awaits
+        </h2>
+        <p
+          className="text-base sm:text-lg mb-10 max-w-xl mx-auto"
+          style={{ color: "var(--muted-foreground)" }}
+        >
+          Dive into thousands of stories or head to your dashboard to write, publish, and track your own.
+        </p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <Link
+            href="/stories"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-bold text-white text-base transition-all hover:opacity-90 active:scale-[0.98]"
+            style={{ background: "#c4426a" }}
+          >
+            <BookOpen size={18} />
+            Browse Stories
+          </Link>
+          <Link
+            href="/author-dashboard"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-sm transition-all hover:opacity-75 active:scale-[0.98]"
+            style={{
+              color: "#c4426a",
+              border: "1px solid rgba(196,66,106,0.4)",
+              background: "rgba(196,66,106,0.05)",
+            }}
+          >
+            <PenSquare size={16} />
+            My Dashboard
+          </Link>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <h2
+        id="cta-heading"
+        className="text-3xl sm:text-4xl md:text-5xl font-bold mb-5 leading-tight"
+        style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
+      >
+        Join Thousands of Readers
+      </h2>
+      <p
+        className="text-base sm:text-lg mb-10 max-w-xl mx-auto"
+        style={{ color: "var(--muted-foreground)" }}
+      >
+        Create a free account to bookmark your favorites, leave comments, and get personalized recommendations — no credit card required.
+      </p>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
         <Link
-          href="/stories"
+          href="/register"
           className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-bold text-white text-base transition-all hover:opacity-90 active:scale-[0.98]"
           style={{ background: "#c4426a" }}
         >
-          <BookOpen size={18} />
-          Browse Stories
+          Get Started — It&apos;s Free
+          <ArrowRight size={18} />
         </Link>
         <Link
-          href="/author-dashboard"
+          href="/register"
           className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-sm transition-all hover:opacity-75 active:scale-[0.98]"
           style={{
             color: "#c4426a",
@@ -44,34 +99,9 @@ export function HomeBottomCTA() {
           }}
         >
           <PenSquare size={16} />
-          My Dashboard
+          Start Writing Free
         </Link>
       </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-      <Link
-        href="/register"
-        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-bold text-white text-base transition-all hover:opacity-90 active:scale-[0.98]"
-        style={{ background: "#c4426a" }}
-      >
-        Get Started — It&apos;s Free
-        <ArrowRight size={18} />
-      </Link>
-      <Link
-        href="/register"
-        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-sm transition-all hover:opacity-75 active:scale-[0.98]"
-        style={{
-          color: "#c4426a",
-          border: "1px solid rgba(196,66,106,0.4)",
-          background: "rgba(196,66,106,0.05)",
-        }}
-      >
-        <PenSquare size={16} />
-        Start Writing Free
-      </Link>
-    </div>
+    </>
   );
 }

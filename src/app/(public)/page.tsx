@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getLatestStories, getLatestSeries, getAuthors, getFeaturedPromotions, getPremiumStories, getTrendingStories } from "@/lib/queries";
+import { getLatestStories, getLatestSeries, getSpotlightAuthors, getFeaturedPromotions, getPremiumStories, getTrendingStories } from "@/lib/queries";
 import { getCachedPublicStats, getCachedCategoriesWithStories } from "@/lib/cached-queries";
 import { FeaturedCarousel } from "@/components/home/FeaturedCarousel";
 import { PremiumCarousel } from "@/components/home/PremiumCarousel";
@@ -69,46 +69,42 @@ export default async function HomePage() {
   const [premiumStories, categoriesWithStories, authors, trendingStories, publicStats] = await Promise.all([
     getPremiumStories(20).catch(() => []),
     getCachedCategoriesWithStories().catch(() => []),
-    getAuthors().catch(() => []),
+    getSpotlightAuthors(4).catch(() => []),
     getTrendingStories(10).catch(() => []),
     getCachedPublicStats().catch(() => ({ publishedStories: 0, totalUsers: 0 })),
   ]);
 
-  const spotlightAuthors = authors.slice(0, 4);
+  const spotlightAuthors = authors;
 
-  const jsonLd = [
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      name: "LustPages",
-      alternateName: "Lust Pages",
-      url: siteUrl,
-      description:
-        "Premium adult fiction and erotica stories across multiple genres.",
-      potentialAction: {
-        "@type": "SearchAction",
-        target: {
-          "@type": "EntryPoint",
-          urlTemplate: `${siteUrl}/stories?search={search_term_string}`,
-        },
-        "query-input": "required name=search_term_string",
+  const jsonLdWebSite = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "LustPages",
+    alternateName: "Lust Pages",
+    url: siteUrl,
+    description: "Premium adult fiction and erotica stories across multiple genres.",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: `${siteUrl}/stories?search={search_term_string}`,
       },
+      "query-input": "required name=search_term_string",
     },
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      name: "LustPages",
-      alternateName: "Lust Pages",
-      url: siteUrl,
-    },
-  ];
+  };
+
+  const jsonLdOrg = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "LustPages",
+    alternateName: "Lust Pages",
+    url: siteUrl,
+  };
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdWebSite) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdOrg) }} />
 
       {/* ── HERO ─────────────────────────────────────────────── */}
       <section
@@ -305,23 +301,16 @@ export default async function HomePage() {
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center divide-x divide-border"
-            style={{ "--divide-border-color": "var(--border)" } as React.CSSProperties}
-          >
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
             {[
               { value: publicStats.publishedStories >= 500 ? formatStatCount(publicStats.publishedStories) : "500+", label: "Stories Published", icon: <BookOpen size={14} /> },
-              { value: publicStats.totalUsers >= 1000 ? formatStatCount(publicStats.totalUsers) : "5K+", label: "Active Readers", icon: <Users size={14} /> },
+              { value: publicStats.totalUsers >= 1000 ? formatStatCount(publicStats.totalUsers) : "1K+", label: "Members", icon: <Users size={14} /> },
               { value: String(categoriesWithStories.length), label: "Genres", icon: <Flame size={14} /> },
               { value: "100%", label: "Free to Read", icon: <Eye size={14} /> },
             ].map((stat, i) => (
               <div
                 key={stat.label}
-                className="flex flex-col items-center gap-1 px-4"
-                style={
-                  i > 0
-                    ? { borderLeft: "1px solid var(--border)" }
-                    : undefined
-                }
+                className={`flex flex-col items-center gap-1 px-4${i === 0 ? "" : i % 2 === 0 ? " sm:border-l" : " border-l"}`}
               >
                 <div
                   className="text-2xl sm:text-3xl font-bold"
@@ -501,25 +490,6 @@ export default async function HomePage() {
             <Users size={11} />
             Free Forever
           </div>
-
-          <h2
-            id="cta-heading"
-            className="text-3xl sm:text-4xl md:text-5xl font-bold mb-5 leading-tight"
-            style={{
-              fontFamily: "var(--font-playfair), serif",
-              color: "var(--foreground)",
-            }}
-          >
-            Join Thousands of Readers
-          </h2>
-
-          <p
-            className="text-base sm:text-lg mb-10 max-w-xl mx-auto"
-            style={{ color: "var(--muted-foreground)" }}
-          >
-            Create a free account to bookmark your favorites, leave comments,
-            and get personalized recommendations — no credit card required.
-          </p>
 
           <HomeBottomCTA />
         </div>
