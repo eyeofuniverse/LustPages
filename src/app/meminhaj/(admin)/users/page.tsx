@@ -11,8 +11,9 @@ const PER_PAGE = 30;
 
 const ROLE_FILTERS = [
   { label: "All", value: "all" },
-  { label: "Readers", value: "user" },
+  { label: "Authors", value: "author" },
   { label: "Admins", value: "admin" },
+  { label: "Legacy readers", value: "user" },
 ];
 
 interface Props {
@@ -60,7 +61,7 @@ export default async function AdminUsersPage({ searchParams }: Props) {
           <p className="text-sm mt-0.5" style={{ color: "var(--muted-foreground)" }}>
             {total.toLocaleString()} {total === 1 ? "user" : "users"}
             {search && ` matching "${search}"`}
-            {role !== "all" && ` — ${role === "admin" ? "admins" : "readers"} only`}
+            {role !== "all" && ` — ${role === "admin" ? "admins" : role === "author" ? "authors" : "legacy readers"} only`}
           </p>
         </div>
       </div>
@@ -163,11 +164,21 @@ export default async function AdminUsersPage({ searchParams }: Props) {
                       <span
                         className="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold"
                         style={{
-                          background: user.role === "admin" ? "rgba(99,102,241,0.15)" : "rgba(196,66,106,0.1)",
-                          color: user.role === "admin" ? "#6366f1" : "#c4426a",
+                          background:
+                            user.role === "admin"
+                              ? "rgba(99,102,241,0.15)"
+                              : user.role === "author"
+                              ? "rgba(196,66,106,0.1)"
+                              : "rgba(128,128,128,0.12)",
+                          color:
+                            user.role === "admin"
+                              ? "#6366f1"
+                              : user.role === "author"
+                              ? "#c4426a"
+                              : "var(--muted-foreground)",
                         }}
                       >
-                        {user.role === "admin" ? "Admin" : "Reader"}
+                        {user.role === "admin" ? "Admin" : user.role === "author" ? "Author" : "Reader"}
                       </span>
                     </td>
 
