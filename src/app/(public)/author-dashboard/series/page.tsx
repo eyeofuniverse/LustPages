@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { getAuthorByUserId, getAuthorSeriesList, computeSeriesRating } from "@/lib/queries";
+import { getOrCreateAuthorByUserId, getAuthorSeriesList, computeSeriesRating } from "@/lib/queries";
 import { BookOpen, Lock, Settings, ArrowLeft, Plus, Users } from "lucide-react";
 import type { Metadata } from "next";
 
@@ -11,8 +11,7 @@ export default async function AuthorSeriesPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const author = await getAuthorByUserId(session.user.id);
-  if (!author) redirect("/author-signup");
+  const author = await getOrCreateAuthorByUserId(session.user.id, session.user.name ?? "Author");
 
   const seriesList = await getAuthorSeriesList(author.id);
 

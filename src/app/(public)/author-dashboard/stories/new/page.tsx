@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { getAuthorByUserId, getCategories, getAllStructuredTags } from "@/lib/queries";
+import { getOrCreateAuthorByUserId, getCategories, getAllStructuredTags } from "@/lib/queries";
 import { AuthorStoryForm } from "@/components/author/AuthorStoryForm";
 import type { Metadata } from "next";
 
@@ -10,8 +10,7 @@ export default async function AuthorNewStoryPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const author = await getAuthorByUserId(session.user.id);
-  if (!author) redirect("/author-signup");
+  const author = await getOrCreateAuthorByUserId(session.user.id, session.user.name ?? "Author");
 
   const [categories, availableTags] = await Promise.all([getCategories(), getAllStructuredTags()]);
 

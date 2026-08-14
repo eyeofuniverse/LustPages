@@ -132,8 +132,8 @@ export function Footer({ categories = [] }: FooterProps) {
                 </Link>
               </li>
               <li>
-                <Link href="/author-signup" className="text-sm transition-opacity hover:opacity-75" style={{ color: "var(--muted-foreground)" }}>
-                  Become an Author
+                <Link href="/register" className="text-sm transition-opacity hover:opacity-75" style={{ color: "var(--muted-foreground)" }}>
+                  Start Writing
                 </Link>
               </li>
             </ul>

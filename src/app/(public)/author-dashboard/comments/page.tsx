@@ -1,7 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { getAuthorComments } from "@/lib/queries";
+import { getOrCreateAuthorByUserId, getAuthorComments } from "@/lib/queries";
 import { AuthorCommentsClient } from "@/components/dashboard/AuthorCommentsClient";
 import { MessageCircle } from "lucide-react";
 import type { Metadata } from "next";
@@ -12,11 +11,7 @@ export default async function AuthorCommentsPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const author = await prisma.author.findUnique({
-    where: { userId: session.user.id },
-    select: { id: true },
-  });
-  if (!author) redirect("/author-signup");
+  const author = await getOrCreateAuthorByUserId(session.user.id, session.user.name ?? "Author");
 
   const comments = await getAuthorComments(author.id);
 

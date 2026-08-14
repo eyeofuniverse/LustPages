@@ -22,7 +22,6 @@ export function HeroJoinButton() {
 
 export function HomeBottomCTA() {
   const { data: session } = useSession();
-  const authorId = (session?.user as { authorId?: string | null })?.authorId;
 
   if (session) {
     return (
@@ -36,7 +35,7 @@ export function HomeBottomCTA() {
           Browse Stories
         </Link>
         <Link
-          href={authorId ? "/author-dashboard" : "/author-signup"}
+          href="/author-dashboard"
           className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-sm transition-all hover:opacity-75 active:scale-[0.98]"
           style={{
             color: "#c4426a",
@@ -45,7 +44,7 @@ export function HomeBottomCTA() {
           }}
         >
           <PenSquare size={16} />
-          {authorId ? "My Dashboard" : "Become an Author"}
+          My Dashboard
         </Link>
       </div>
     );
@@ -62,7 +61,7 @@ export function HomeBottomCTA() {
         <ArrowRight size={18} />
       </Link>
       <Link
-        href="/author-signup"
+        href="/register"
         className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-sm transition-all hover:opacity-75 active:scale-[0.98]"
         style={{
           color: "#c4426a",
@@ -71,7 +70,7 @@ export function HomeBottomCTA() {
         }}
       >
         <PenSquare size={16} />
-        Become an Author
+        Start Writing Free
       </Link>
     </div>
   );

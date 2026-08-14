@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { redirect, notFound } from "next/navigation";
-import { getAuthorByUserId } from "@/lib/queries";
+import { getOrCreateAuthorByUserId } from "@/lib/queries";
 import { prisma } from "@/lib/prisma";
 import { SeriesSettingsForm } from "@/components/author/SeriesSettingsForm";
 import { ArrowLeft } from "lucide-react";
@@ -18,8 +18,7 @@ export default async function SeriesEditPage({ params }: Props) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const author = await getAuthorByUserId(session.user.id);
-  if (!author) redirect("/author-signup");
+  const author = await getOrCreateAuthorByUserId(session.user.id, session.user.name ?? "Author");
 
   const series = await prisma.series.findFirst({
     where: { id, authorId: author.id },

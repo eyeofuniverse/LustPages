@@ -611,6 +611,33 @@ export async function getAuthorByUserId(userId: string) {
   return prisma.author.findUnique({ where: { userId } });
 }
 
+export async function getOrCreateAuthorByUserId(userId: string, displayName: string) {
+  const existing = await prisma.author.findUnique({ where: { userId } });
+  if (existing) return existing;
+
+  // Legacy reader account — auto-provision an author profile on first dashboard visit
+  const base =
+    displayName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .trim() || "author";
+
+  let slug = base;
+  for (let i = 1; i <= 10; i++) {
+    const taken = await prisma.author.findUnique({ where: { slug }, select: { id: true } });
+    if (!taken) break;
+    slug = i < 10 ? `${base}-${i}` : `${base}-${Date.now().toString(36)}`;
+  }
+
+  const [author] = await Promise.all([
+    prisma.author.create({ data: { userId, name: displayName, slug } }),
+    prisma.user.update({ where: { id: userId }, data: { role: "author" } }),
+  ]);
+  return author;
+}
+
 export async function getAuthorStories(authorId: string) {
   const stories = await prisma.story.findMany({
     where: { authorId },

@@ -51,7 +51,6 @@ export function Header({ categories }: HeaderProps) {
 
   const closeMobile = () => setMobileOpen(false);
   const navCategories = categories.filter((cat) => cat._count.stories >= 10);
-  const isAuthor = !!(session?.user as { authorId?: string | null } | undefined)?.authorId;
   const authorSlug = (session?.user as { authorSlug?: string } | undefined)?.authorSlug;
   const isAdmin = (session?.user as { role?: string } | undefined)?.role === "admin";
 
@@ -276,20 +275,12 @@ export function Header({ categories }: HeaderProps) {
                       <Link href="/profile" className="flex items-center gap-2.5 px-4 py-2.5 text-sm transition-opacity hover:opacity-75" style={{ color: "var(--foreground)" }} onClick={() => setUserMenuOpen(false)}>
                         <Library size={15} /> My Library
                       </Link>
-                      {isAuthor ? (
-                        <>
-                          <Link href="/author-dashboard" className="flex items-center gap-2.5 px-4 py-2.5 text-sm transition-opacity hover:opacity-75" style={{ color: "var(--foreground)" }} onClick={() => setUserMenuOpen(false)}>
-                            <PenSquare size={15} /> My Dashboard
-                          </Link>
-                          {authorSlug && (
-                            <Link href={`/authors/${authorSlug}`} className="flex items-center gap-2.5 px-4 py-2.5 text-sm transition-opacity hover:opacity-75" style={{ color: "var(--foreground)" }} onClick={() => setUserMenuOpen(false)}>
-                              <PenSquare size={15} /> Author Profile
-                            </Link>
-                          )}
-                        </>
-                      ) : (
-                        <Link href="/author-signup" className="flex items-center gap-2.5 px-4 py-2.5 text-sm transition-opacity hover:opacity-75" style={{ color: "#c4426a" }} onClick={() => setUserMenuOpen(false)}>
-                          <PenSquare size={15} /> Become an Author
+                      <Link href="/author-dashboard" className="flex items-center gap-2.5 px-4 py-2.5 text-sm transition-opacity hover:opacity-75" style={{ color: "var(--foreground)" }} onClick={() => setUserMenuOpen(false)}>
+                        <PenSquare size={15} /> My Dashboard
+                      </Link>
+                      {authorSlug && (
+                        <Link href={`/authors/${authorSlug}`} className="flex items-center gap-2.5 px-4 py-2.5 text-sm transition-opacity hover:opacity-75" style={{ color: "var(--foreground)" }} onClick={() => setUserMenuOpen(false)}>
+                          <PenSquare size={15} /> Author Profile
                         </Link>
                       )}
                       {isAdmin && (
@@ -313,7 +304,7 @@ export function Header({ categories }: HeaderProps) {
                   <Link href="/login" className="px-3 py-1.5 text-sm font-medium rounded-lg transition-opacity hover:opacity-75" style={{ color: "var(--muted-foreground)" }}>
                     Login
                   </Link>
-                  <Link href="/author-signup" className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-opacity hover:opacity-75" style={{ color: "#c4426a", border: "1px solid rgba(196,66,106,0.4)" }}>
+                  <Link href="/register" className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-opacity hover:opacity-75" style={{ color: "#c4426a", border: "1px solid rgba(196,66,106,0.4)" }}>
                     <PenSquare size={13} /> Write
                   </Link>
                   <Link href="/register" className="px-4 py-1.5 text-sm font-semibold rounded-lg text-white transition-opacity hover:opacity-90" style={{ background: "#c4426a" }}>
@@ -389,20 +380,12 @@ export function Header({ categories }: HeaderProps) {
               <Link href="/profile" onClick={closeMobile} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-75" style={{ color: "var(--foreground)" }}>
                 <Library size={15} /> My Library
               </Link>
-              {isAuthor ? (
-                <>
-                  <Link href="/author-dashboard" onClick={closeMobile} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-75" style={{ color: "var(--foreground)" }}>
-                    <PenSquare size={15} /> My Dashboard
-                  </Link>
-                  {authorSlug && (
-                    <Link href={`/authors/${authorSlug}`} onClick={closeMobile} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-75" style={{ color: "var(--foreground)" }}>
-                      <PenSquare size={15} /> Author Profile
-                    </Link>
-                  )}
-                </>
-              ) : (
-                <Link href="/author-signup" onClick={closeMobile} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-75" style={{ color: "#c4426a" }}>
-                  <PenSquare size={15} /> Become an Author
+              <Link href="/author-dashboard" onClick={closeMobile} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-75" style={{ color: "var(--foreground)" }}>
+                <PenSquare size={15} /> My Dashboard
+              </Link>
+              {authorSlug && (
+                <Link href={`/authors/${authorSlug}`} onClick={closeMobile} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-75" style={{ color: "var(--foreground)" }}>
+                  <PenSquare size={15} /> Author Profile
                 </Link>
               )}
               {isAdmin && (
@@ -471,7 +454,7 @@ export function Header({ categories }: HeaderProps) {
               <Link href="/login" onClick={closeMobile} className="flex items-center justify-center px-4 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-75" style={{ color: "var(--muted-foreground)", border: "1px solid var(--border)" }}>
                 Log In
               </Link>
-              <Link href="/author-signup" onClick={closeMobile} className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-75" style={{ color: "#c4426a" }}>
+              <Link href="/register" onClick={closeMobile} className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-75" style={{ color: "#c4426a" }}>
                 <PenSquare size={13} /> Start Writing
               </Link>
             </div>

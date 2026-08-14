@@ -11,15 +11,17 @@ import {
   CheckCircle,
   BookOpen,
   Heart,
-  Sparkles,
-  MessageCircle,
+  PenSquare,
+  Coins,
+  TrendingUp,
 } from "lucide-react";
 
 const BENEFITS = [
-  { icon: BookOpen, text: "Unlimited free access to all stories" },
+  { icon: BookOpen, text: "Read thousands of stories for free" },
   { icon: Heart, text: "Bookmark and like your favourite stories" },
-  { icon: MessageCircle, text: "Join conversations in the comments" },
-  { icon: Sparkles, text: "Get personalised reading recommendations" },
+  { icon: PenSquare, text: "Publish your own stories to thousands of readers" },
+  { icon: Coins, text: "Earn coins when readers tip or unlock your work" },
+  { icon: TrendingUp, text: "Track views, likes, and reader engagement" },
 ];
 
 export default function RegisterPage() {
@@ -94,8 +96,8 @@ export default function RegisterPage() {
               border: "1px solid rgba(196,66,106,0.25)",
             }}
           >
-            <Sparkles size={11} />
-            Free Forever
+            <PenSquare size={11} />
+            Read. Write. Earn.
           </div>
 
           <h2
@@ -105,10 +107,10 @@ export default function RegisterPage() {
               color: "var(--foreground)",
             }}
           >
-            Join thousands of readers today
+            One account for readers and authors
           </h2>
           <p className="text-sm mb-10 leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
-            Create your free account in seconds and dive into premium adult fiction.
+            Join LustPages and do it all — dive into thousands of stories or publish your own and start earning.
           </p>
 
           <ul className="space-y-4">
@@ -143,7 +145,19 @@ export default function RegisterPage() {
               Create your account
             </h1>
             <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-              It&apos;s free — no credit card required
+              Free forever — anyone can read and publish stories
+            </p>
+          </div>
+
+          {/* Writing pitch banner */}
+          <div
+            className="flex items-start gap-3 p-3.5 rounded-xl mb-5"
+            style={{ background: "rgba(196,66,106,0.06)", border: "1px solid rgba(196,66,106,0.2)" }}
+          >
+            <PenSquare size={15} className="shrink-0 mt-0.5" style={{ color: "#c4426a" }} />
+            <p className="text-xs leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+              <span className="font-semibold" style={{ color: "#c4426a" }}>Anyone can publish stories and earn.</span>{" "}
+              Your author dashboard is ready the moment you sign up — no separate application needed.
             </p>
           </div>
 
@@ -184,7 +198,7 @@ export default function RegisterPage() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Your name"
+                placeholder="Your name or pen name"
                 required
                 autoComplete="name"
                 suppressHydrationWarning
@@ -269,7 +283,7 @@ export default function RegisterPage() {
             </button>
           </form>
 
-          <div className="mt-6 pt-6 space-y-2.5" style={{ borderTop: "1px solid var(--border)" }}>
+          <div className="mt-6 pt-6" style={{ borderTop: "1px solid var(--border)" }}>
             <p className="text-center text-sm" style={{ color: "var(--muted-foreground)" }}>
               Already have an account?{" "}
               <Link
@@ -278,16 +292,6 @@ export default function RegisterPage() {
                 style={{ color: "#c4426a" }}
               >
                 Sign in
-              </Link>
-            </p>
-            <p className="text-center text-sm" style={{ color: "var(--muted-foreground)" }}>
-              Want to write stories?{" "}
-              <Link
-                href="/author-signup"
-                className="font-semibold transition-opacity hover:opacity-75"
-                style={{ color: "#c4426a" }}
-              >
-                Author sign-up
               </Link>
             </p>
           </div>

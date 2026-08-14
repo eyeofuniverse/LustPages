@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { PAYMENTS_ENABLED } from "@/lib/feature-flags";
 import Link from "next/link";
 import {
-  getAuthorByUserId,
+  getOrCreateAuthorByUserId,
   getAuthorStories,
   getAuthorSeriesList,
   getAuthorActivePromotions,
@@ -35,8 +35,7 @@ export default async function AuthorDashboardPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const author = await getAuthorByUserId(session.user.id);
-  if (!author) redirect("/author-signup");
+  const author = await getOrCreateAuthorByUserId(session.user.id, session.user.name ?? "Author");
 
   const [stories, seriesList, activePromotions, coinBalance, tipEarnings, unlockEarnings, seriesUnlockEarnings, authorBadges] = await Promise.all([
     getAuthorStories(author.id),
