@@ -363,7 +363,7 @@ export function LibraryClient({
             key={tab.id}
             type="button"
             onClick={() => setActiveTab(tab.id)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all flex-1 justify-center"
+            className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all flex-1 justify-center"
             style={
               activeTab === tab.id
                 ? { background: "rgba(196,66,106,0.12)", color: "#c4426a", border: "1px solid rgba(196,66,106,0.25)" }
@@ -371,7 +371,7 @@ export function LibraryClient({
             }
           >
             {tab.icon}
-            {tab.label}
+            <span className="hidden sm:inline">{tab.label}</span>
             {counts[tab.id] > 0 && (
               <span
                 className="text-xs font-bold px-1.5 py-0.5 rounded-full"

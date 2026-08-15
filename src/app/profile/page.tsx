@@ -64,7 +64,7 @@ export default async function ProfilePage({
     <div className="flex flex-col min-h-screen">
       <Header categories={categories} />
 
-      <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 py-10">
+      <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-10">
 
         {/* ── Profile hero ─────────────────────────────────────────── */}
         <div
@@ -113,23 +113,27 @@ export default async function ProfilePage({
 
             {/* Reading stats strip */}
             <div
-              className="grid grid-cols-4 rounded-xl overflow-hidden"
+              className="flex flex-wrap rounded-xl overflow-hidden"
               style={{ background: "var(--background)", border: "1px solid var(--border)" }}
             >
               {stats.map(({ icon: Icon, value, label }, i) => (
                 <div
                   key={label}
-                  className="flex flex-col items-center py-3 gap-0.5"
-                  style={i > 0 ? { borderLeft: "1px solid var(--border)" } : undefined}
+                  className={[
+                    "flex flex-col items-center py-3.5 gap-0.5 w-1/2 sm:w-1/4",
+                    i % 2 !== 0 ? "border-l" : "",
+                    i >= 2 ? "border-t sm:border-t-0" : "",
+                    i > 0 && i % 2 === 0 ? "sm:border-l" : "",
+                  ].filter(Boolean).join(" ")}
                 >
-                  <Icon size={13} style={{ color: "#c4426a" }} />
+                  <Icon size={14} style={{ color: "#c4426a" }} />
                   <span
-                    className="text-base font-bold leading-tight"
+                    className="text-lg font-bold leading-tight"
                     style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
                   >
                     {value}
                   </span>
-                  <span className="text-[10px] leading-none" style={{ color: "var(--muted-foreground)" }}>
+                  <span className="text-xs leading-none" style={{ color: "var(--muted-foreground)" }}>
                     {label}
                   </span>
                 </div>

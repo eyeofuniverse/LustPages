@@ -82,6 +82,10 @@ export default async function AuthorDashboardPage() {
     rejected: stories.filter((s) => s.status === "rejected").length,
   };
 
+  const publishedStories = stories.filter((s) => s.status === "approved" && s.published);
+  const totalViews = publishedStories.reduce((sum, s) => sum + (s.views ?? 0), 0);
+  const totalLikes = publishedStories.reduce((sum, s) => sum + (s._count.likes ?? 0), 0);
+
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
       {/* Header */}
@@ -97,43 +101,44 @@ export default async function AuthorDashboardPage() {
             {author.name}
           </h1>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center flex-wrap gap-2">
           {PAYMENTS_ENABLED && (
             <div
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold"
               style={{ background: "rgba(196,66,106,0.08)", border: "1px solid rgba(196,66,106,0.2)", color: "#c4426a" }}
             >
               <Coins size={14} />
-              {coinBalance} coins
+              <span className="hidden sm:inline">{coinBalance} coins</span>
+              <span className="sm:hidden">{coinBalance}</span>
             </div>
           )}
           <Link
             href="/author-dashboard/series"
-            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl text-sm font-semibold"
             style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted-foreground)" }}
           >
             <Layers size={14} />
-            Series
+            <span className="hidden sm:inline">Series</span>
           </Link>
           <Link
             href="/author-dashboard/analytics"
-            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl text-sm font-semibold"
             style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted-foreground)" }}
           >
             <BarChart2 size={14} />
-            Analytics
+            <span className="hidden sm:inline">Analytics</span>
           </Link>
           <Link
             href="/author-dashboard/comments"
-            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl text-sm font-semibold"
             style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted-foreground)" }}
           >
             <MessageCircle size={14} />
-            Comments
+            <span className="hidden sm:inline">Comments</span>
           </Link>
           <Link
             href="/author-dashboard/stories/new"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white shrink-0"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white"
             style={{ background: "#c4426a" }}
           >
             <Plus size={15} />
@@ -169,6 +174,28 @@ export default async function AuthorDashboardPage() {
           );
         })}
       </div>
+
+      {/* Engagement stats — only shown once there are published stories */}
+      {counts.approved > 0 && (
+        <div className="grid grid-cols-2 gap-3 mb-8 -mt-4">
+          <div className="p-4 rounded-2xl" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+            <p className="text-xs mb-1 flex items-center gap-1.5" style={{ color: "var(--muted-foreground)" }}>
+              <Eye size={11} /> Total Views
+            </p>
+            <p className="text-2xl font-bold" style={{ fontFamily: "var(--font-playfair), serif", color: "#6366f1" }}>
+              {totalViews.toLocaleString()}
+            </p>
+          </div>
+          <div className="p-4 rounded-2xl" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+            <p className="text-xs mb-1 flex items-center gap-1.5" style={{ color: "var(--muted-foreground)" }}>
+              <Heart size={11} /> Total Likes
+            </p>
+            <p className="text-2xl font-bold" style={{ fontFamily: "var(--font-playfair), serif", color: "#ef4444" }}>
+              {totalLikes.toLocaleString()}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Author Badges */}
       <div
@@ -329,7 +356,7 @@ export default async function AuthorDashboardPage() {
                         {story.title}
                       </h3>
 
-                      <p className="text-xs line-clamp-2 mb-2" style={{ color: "var(--muted-foreground)" }}>
+                      <p className="text-xs line-clamp-1 sm:line-clamp-2 mb-2 hidden sm:block" style={{ color: "var(--muted-foreground)" }}>
                         {story.excerpt}
                       </p>
 
@@ -370,7 +397,7 @@ export default async function AuthorDashboardPage() {
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                       {isPublished && (
                         <PromoteButton
                           type="story"
@@ -468,7 +495,7 @@ export default async function AuthorDashboardPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center flex-wrap gap-2">
                     {series.isPremium && (
                       <span
                         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
