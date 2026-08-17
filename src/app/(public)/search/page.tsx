@@ -76,14 +76,15 @@ export default async function SearchPage({ searchParams }: Props) {
   const query = q?.trim() ?? "";
 
   const hasQuery = query.length > 0;
+  const isValidSearch = query.length >= 2;
 
   const [stories, seriesResults, storyCount, categories, popularTags, trending] =
     await Promise.all([
-      hasQuery
+      isValidSearch
         ? getPublishedStories({ search: query, take: 20 })
         : Promise.resolve([]),
-      hasQuery ? searchSeries(query, 9) : Promise.resolve([]),
-      hasQuery
+      isValidSearch ? searchSeries(query, 9) : Promise.resolve([]),
+      isValidSearch
         ? getStoryCount({ published: true, search: query })
         : Promise.resolve(0),
       !hasQuery ? getCachedCategories() : Promise.resolve([]),
@@ -93,7 +94,7 @@ export default async function SearchPage({ searchParams }: Props) {
 
   const totalResults = storyCount + seriesResults.length;
 
-  if (hasQuery && query.length >= 2) {
+  if (isValidSearch) {
     prisma.searchQuery
       .create({ data: { query: query.toLowerCase(), results: totalResults } })
       .catch(() => {});

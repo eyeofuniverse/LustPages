@@ -78,7 +78,7 @@ function matchPhrase(phrase: string) {
       { title:   { contains: phrase, mode: "insensitive" as const } },
       { excerpt: { contains: phrase, mode: "insensitive" as const } },
       { content: { contains: phrase, mode: "insensitive" as const } },
-      { tags:    { contains: phrase.toLowerCase() } },
+      { tags:    { contains: phrase, mode: "insensitive" as const } },
     ],
   };
 }
@@ -114,7 +114,7 @@ export async function buildStorySearchWhere(query: string) {
         { title:   { contains: v, mode: "insensitive" as const } },
         { excerpt: { contains: v, mode: "insensitive" as const } },
         { content: { contains: v, mode: "insensitive" as const } },
-        { tags:    { contains: v.toLowerCase() } },
+        { tags:    { contains: v, mode: "insensitive" as const } },
       ]),
     };
   };
@@ -124,12 +124,15 @@ export async function buildStorySearchWhere(query: string) {
       ? matchToken(tokens[0])
       : { AND: tokens.map(matchToken) };
 
-  // Phrase-level DB synonyms: full query concept expansion
-  const phraseSyns = maps.phrase.get(compact(query)) ?? [];
-  if (phraseSyns.length === 0) return tokenClause;
+  // Phrase-level DB synonyms + compound variant expansion for the full query.
+  // The compound check handles e.g. "step sister" → compact = "stepsister" → known variants.
+  const phraseSyns  = maps.phrase.get(compact(query)) ?? [];
+  const compoundSyns = COMPOUND_VARIANTS[compact(query)] ?? [];
+  const allExpansions = [...new Set([...phraseSyns, ...compoundSyns])];
 
+  if (allExpansions.length === 0) return tokenClause;
   return {
-    OR: [tokenClause, ...phraseSyns.map(matchPhrase)],
+    OR: [tokenClause, ...allExpansions.map(matchPhrase)],
   };
 }
 
@@ -153,8 +156,28 @@ export async function buildSeriesSearchWhere(query: string) {
     };
   };
 
-  if (tokens.length === 1) return matchToken(tokens[0]);
-  return { AND: tokens.map(matchToken) };
+  const tokenClause =
+    tokens.length === 1
+      ? matchToken(tokens[0])
+      : { AND: tokens.map(matchToken) };
+
+  // Add phrase and compound-variant expansion, mirroring story search behaviour.
+  const phraseSyns   = maps.phrase.get(compact(query)) ?? [];
+  const compoundSyns = COMPOUND_VARIANTS[compact(query)] ?? [];
+  const allExpansions = [...new Set([...phraseSyns, ...compoundSyns])];
+
+  if (allExpansions.length === 0) return tokenClause;
+  return {
+    OR: [
+      tokenClause,
+      ...allExpansions.map((phrase) => ({
+        OR: [
+          { name:        { contains: phrase, mode: "insensitive" as const } },
+          { description: { contains: phrase, mode: "insensitive" as const } },
+        ],
+      })),
+    ],
+  };
 }
 
 // ─── DEFAULT SYNONYMS (used for seeding the DB) ───────────────────────────────
@@ -182,6 +205,17 @@ export const DEFAULT_TOKEN_SYNONYMS: Array<{ term: string; synonyms: string[] }>
   { term: "interracial",    synonyms: ["interracial", "inter-racial", "mixed", "bbc", "bwc"] },
   { term: "dominant",       synonyms: ["dominant", "domination", "master", "sir", "bdsm"] },
   { term: "submissive",     synonyms: ["submissive", "submission", "slave", "obedient", "bdsm"] },
+  // Family / relationship terms
+  { term: "family",         synonyms: ["family", "stepfamily", "step family", "taboo"] },
+  { term: "mom",            synonyms: ["mom", "mother", "mommy", "stepmom", "stepmother"] },
+  { term: "dad",            synonyms: ["dad", "father", "daddy", "stepdad", "stepfather"] },
+  { term: "mother",         synonyms: ["mother", "mom", "mommy", "stepmom", "stepmother"] },
+  { term: "father",         synonyms: ["father", "dad", "daddy", "stepdad", "stepfather"] },
+  { term: "son",            synonyms: ["son", "stepson", "step son"] },
+  { term: "daughter",       synonyms: ["daughter", "stepdaughter", "step daughter"] },
+  { term: "brother",        synonyms: ["brother", "stepbrother", "step brother"] },
+  { term: "sister",         synonyms: ["sister", "stepsister", "step sister"] },
+  { term: "taboo",          synonyms: ["taboo", "forbidden", "stepfamily", "step family"] },
 ];
 
 export const DEFAULT_PHRASE_SYNONYMS: Array<{ term: string; synonyms: string[] }> = [
@@ -210,4 +244,12 @@ export const DEFAULT_PHRASE_SYNONYMS: Array<{ term: string; synonyms: string[] }
   { term: "firsttime",          synonyms: ["virgin", "first experience", "first sexual", "inexperienced"] },
   { term: "taboo",              synonyms: ["forbidden", "stepfamily", "step family"] },
   { term: "officesex",          synonyms: ["workplace sex", "boss", "secretary", "coworker"] },
+  // Family concept expansion
+  { term: "family",             synonyms: ["stepfamily", "step family", "stepmom", "stepdad", "stepsister", "stepbrother", "taboo"] },
+  { term: "momson",             synonyms: ["mom son", "mother son", "stepmom stepson", "taboo"] },
+  { term: "motherson",          synonyms: ["mom son", "mommy son", "stepmom stepson", "taboo"] },
+  { term: "dadson",             synonyms: ["dad son", "father son", "stepdad stepson", "taboo"] },
+  { term: "fatherson",          synonyms: ["dad son", "daddy son", "stepdad stepson", "taboo"] },
+  { term: "mommy",              synonyms: ["mom", "mother", "stepmom", "milf", "mature"] },
+  { term: "daddy",              synonyms: ["dad", "father", "stepdad", "dominant", "older man"] },
 ];

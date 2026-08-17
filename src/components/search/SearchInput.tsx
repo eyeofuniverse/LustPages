@@ -21,6 +21,13 @@ export function SearchInput({ initialQuery, autoFocus }: Props) {
 
   function submit(q: string) {
     const trimmed = q.trim();
+    if (trimmed.length >= 2) {
+      fetch("/api/track/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: trimmed, results: 0 }),
+      }).catch(() => {});
+    }
     startTransition(() => {
       if (!trimmed) router.push("/search");
       else router.push(`/search?q=${encodeURIComponent(trimmed)}`);
