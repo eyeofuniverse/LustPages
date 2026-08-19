@@ -24,6 +24,9 @@ export async function getPublishedStories({
   featured,
   tag,
   sort,
+  minLength,
+  maxLength,
+  minRating,
 }: {
   take?: number;
   skip?: number;
@@ -32,7 +35,10 @@ export async function getPublishedStories({
   search?: string;
   featured?: boolean;
   tag?: string;
-  sort?: "latest" | "top-rated";
+  sort?: "latest" | "top-rated" | "most-read";
+  minLength?: number;
+  maxLength?: number;
+  minRating?: number;
 } = {}) {
   await publishScheduledStories();
   const [searchWhere, tagSlugs] = await Promise.all([
@@ -52,6 +58,13 @@ export async function getPublishedStories({
           ...tagSlugs.map((s) => ({ tags: { contains: `"${s}"` } })),
         ],
       }),
+      ...((minLength !== undefined || maxLength !== undefined) && {
+        readingTime: {
+          ...(minLength !== undefined && { gte: minLength }),
+          ...(maxLength !== undefined && { lte: maxLength }),
+        },
+      }),
+      ...(minRating !== undefined && { ratingAvg: { gte: minRating } }),
     },
     include: {
       categories: true,
@@ -60,7 +73,10 @@ export async function getPublishedStories({
       _count: { select: { likes: true, comments: true, bookmarks: true } },
       seriesInfo: { select: { coverImage: true } },
     },
-    orderBy: sort === "top-rated" ? [{ ratingAvg: "desc" }, { ratingCount: "desc" }] : { createdAt: "desc" },
+    orderBy:
+      sort === "top-rated" ? [{ ratingAvg: "desc" }, { ratingCount: "desc" }] :
+      sort === "most-read"  ? { views: "desc" } :
+      { createdAt: "desc" },
     take,
     skip,
   });
@@ -234,7 +250,18 @@ export async function getStoryCount({
   categorySlug,
   search,
   tag,
-}: { published?: boolean; categorySlug?: string; search?: string; tag?: string } = {}) {
+  minLength,
+  maxLength,
+  minRating,
+}: {
+  published?: boolean;
+  categorySlug?: string;
+  search?: string;
+  tag?: string;
+  minLength?: number;
+  maxLength?: number;
+  minRating?: number;
+} = {}) {
   const [searchWhere, tagSlugs] = await Promise.all([
     search ? buildStorySearchWhere(search) : Promise.resolve({}),
     tag    ? getTagAndChildrenSlugs(tag)   : Promise.resolve(null),
@@ -250,7 +277,42 @@ export async function getStoryCount({
           ...tagSlugs.map((s) => ({ tags: { contains: `"${s}"` } })),
         ],
       }),
+      ...((minLength !== undefined || maxLength !== undefined) && {
+        readingTime: {
+          ...(minLength !== undefined && { gte: minLength }),
+          ...(maxLength !== undefined && { lte: maxLength }),
+        },
+      }),
+      ...(minRating !== undefined && { ratingAvg: { gte: minRating } }),
     },
+  });
+}
+
+export async function getTrendingSearches(limit = 10) {
+  const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const rows = await prisma.searchQuery.groupBy({
+    by: ["query"],
+    _count: { query: true },
+    where: { createdAt: { gte: cutoff } },
+    orderBy: { _count: { query: "desc" } },
+    take: limit,
+  });
+  return rows.map((r) => ({ query: r.query, count: r._count.query }));
+}
+
+export async function getRelatedTags(query: string, limit = 5) {
+  if (!query || query.length < 2) return [];
+  return prisma.tag.findMany({
+    where: {
+      isApproved: true,
+      OR: [
+        { name: { contains: query, mode: "insensitive" } },
+        { aliases: { some: { alias: { contains: query, mode: "insensitive" } } } },
+      ],
+    },
+    select: { name: true, slug: true },
+    orderBy: [{ tier: "asc" }],
+    take: limit,
   });
 }
 

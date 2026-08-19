@@ -79,6 +79,7 @@ function matchPhrase(phrase: string) {
       { excerpt: { contains: phrase, mode: "insensitive" as const } },
       { content: { contains: phrase, mode: "insensitive" as const } },
       { tags:    { contains: phrase, mode: "insensitive" as const } },
+      { author:  { name: { contains: phrase, mode: "insensitive" as const } } },
     ],
   };
 }
@@ -115,6 +116,7 @@ export async function buildStorySearchWhere(query: string) {
         { excerpt: { contains: v, mode: "insensitive" as const } },
         { content: { contains: v, mode: "insensitive" as const } },
         { tags:    { contains: v, mode: "insensitive" as const } },
+        { author:  { name: { contains: v, mode: "insensitive" as const } } },
       ]),
     };
   };
@@ -152,6 +154,7 @@ export async function buildSeriesSearchWhere(query: string) {
       OR: allPhrases.flatMap((v) => [
         { name:        { contains: v, mode: "insensitive" as const } },
         { description: { contains: v, mode: "insensitive" as const } },
+        { author:      { name: { contains: v, mode: "insensitive" as const } } },
       ]),
     };
   };
@@ -174,6 +177,7 @@ export async function buildSeriesSearchWhere(query: string) {
         OR: [
           { name:        { contains: phrase, mode: "insensitive" as const } },
           { description: { contains: phrase, mode: "insensitive" as const } },
+          { author:      { name: { contains: phrase, mode: "insensitive" as const } } },
         ],
       })),
     ],

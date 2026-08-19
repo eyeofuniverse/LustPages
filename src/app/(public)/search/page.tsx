@@ -2,22 +2,42 @@ import {
   getPublishedStories,
   getStoryCount,
   getTrendingStories,
+  getTrendingSearches,
+  getRelatedTags,
   searchSeries,
 } from "@/lib/queries";
 import { getCachedCategories, getCachedPopularTags } from "@/lib/cached-queries";
 import { prisma } from "@/lib/prisma";
 import { SearchInput } from "@/components/search/SearchInput";
+import { SearchCategoryFilter } from "@/components/search/SearchCategoryFilter";
 import { StoryListItem } from "@/components/story/StoryListItem";
 import { AdSlot } from "@/components/ads/AdSlot";
 import Link from "next/link";
 import { SafeImage } from "@/components/ui/SafeImage";
-import { BookOpen, Layers, TrendingUp, Hash, Search } from "lucide-react";
+import {
+  BookOpen,
+  Layers,
+  TrendingUp,
+  Hash,
+  Search,
+  Flame,
+  Star,
+} from "lucide-react";
 import type { Metadata } from "next";
 
 export const revalidate = 180;
 
+type SortOption = "latest" | "most-read" | "top-rated";
+type LengthOption = "short" | "medium" | "long";
+
 interface Props {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    sort?: string;
+    cat?: string;
+    length?: string;
+    rating?: string;
+  }>;
 }
 
 const BASE = "https://lustpages.com";
@@ -71,26 +91,99 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   };
 }
 
-export default async function SearchPage({ searchParams }: Props) {
-  const { q } = await searchParams;
-  const query = q?.trim() ?? "";
+// Build a search URL preserving all current filter params, with one override.
+function buildFilterUrl(
+  q: string,
+  current: { sort: string; cat: string; length: string; rating: string },
+  override: Partial<{ sort: string; cat: string; length: string; rating: string }>,
+): string {
+  const merged = { ...current, ...override };
+  const p = new URLSearchParams({ q });
+  if (merged.sort && merged.sort !== "latest") p.set("sort", merged.sort);
+  if (merged.cat) p.set("cat", merged.cat);
+  if (merged.length) p.set("length", merged.length);
+  if (merged.rating) p.set("rating", merged.rating);
+  return `/search?${p.toString()}`;
+}
 
+export default async function SearchPage({ searchParams }: Props) {
+  const { q, sort: rawSort, cat: rawCat, length: rawLength, rating: rawRating } =
+    await searchParams;
+
+  const query = q?.trim() ?? "";
   const hasQuery = query.length > 0;
   const isValidSearch = query.length >= 2;
 
-  const [stories, seriesResults, storyCount, categories, popularTags, trending] =
-    await Promise.all([
-      isValidSearch
-        ? getPublishedStories({ search: query, take: 20 })
-        : Promise.resolve([]),
-      isValidSearch ? searchSeries(query, 9) : Promise.resolve([]),
-      isValidSearch
-        ? getStoryCount({ published: true, search: query })
-        : Promise.resolve(0),
-      !hasQuery ? getCachedCategories() : Promise.resolve([]),
-      !hasQuery ? getCachedPopularTags(30) : Promise.resolve([]),
-      !hasQuery ? getTrendingStories(6) : Promise.resolve([]),
-    ]);
+  // Parse and validate filter params
+  const sortParam: SortOption | undefined =
+    rawSort === "most-read" ? "most-read" :
+    rawSort === "top-rated" ? "top-rated" :
+    undefined;
+  const catFilter = rawCat?.trim() ?? "";
+  const lengthFilter: LengthOption | "" =
+    rawLength === "short" ? "short" :
+    rawLength === "medium" ? "medium" :
+    rawLength === "long" ? "long" :
+    "";
+  const rawRatingStr = rawRating ?? "";
+  const ratingNum = parseInt(rawRating ?? "");
+  const minRating = ratingNum >= 3 && ratingNum <= 5 ? ratingNum : undefined;
+
+  // Length → readingTime bounds (minutes)
+  const minLength =
+    lengthFilter === "medium" ? 10 :
+    lengthFilter === "long"   ? 30 :
+    undefined;
+  const maxLength =
+    lengthFilter === "short"  ? 10 :
+    lengthFilter === "medium" ? 30 :
+    undefined;
+
+  const currentFilters = {
+    sort: sortParam ?? "",
+    cat: catFilter,
+    length: lengthFilter,
+    rating: rawRatingStr,
+  };
+
+  const [
+    stories,
+    seriesResults,
+    storyCount,
+    categories,
+    relatedTags,
+    popularTags,
+    trending,
+    trendingSearches,
+  ] = await Promise.all([
+    isValidSearch
+      ? getPublishedStories({
+          search: query,
+          take: 20,
+          sort: sortParam,
+          ...(catFilter && { categorySlug: catFilter }),
+          ...(minLength !== undefined && { minLength }),
+          ...(maxLength !== undefined && { maxLength }),
+          ...(minRating !== undefined && { minRating }),
+        })
+      : Promise.resolve([]),
+    isValidSearch ? searchSeries(query, 9) : Promise.resolve([]),
+    isValidSearch
+      ? getStoryCount({
+          published: true,
+          search: query,
+          ...(catFilter && { categorySlug: catFilter }),
+          ...(minLength !== undefined && { minLength }),
+          ...(maxLength !== undefined && { maxLength }),
+          ...(minRating !== undefined && { minRating }),
+        })
+      : Promise.resolve(0),
+    getCachedCategories(),
+    isValidSearch ? getRelatedTags(query) : Promise.resolve([]),
+    !hasQuery ? getCachedPopularTags(30) : Promise.resolve([]),
+    !hasQuery ? getTrendingStories(6) : Promise.resolve([]),
+    !hasQuery ? getTrendingSearches(10) : Promise.resolve([]),
+  ]);
 
   const totalResults = storyCount + seriesResults.length;
 
@@ -99,6 +192,8 @@ export default async function SearchPage({ searchParams }: Props) {
       .create({ data: { query: query.toLowerCase(), results: totalResults } })
       .catch(() => {});
   }
+
+  const activeFiltersCount = [sortParam, catFilter, lengthFilter, minRating].filter(Boolean).length;
 
   const searchActionLd = {
     "@context": "https://schema.org",
@@ -118,22 +213,27 @@ export default async function SearchPage({ searchParams }: Props) {
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Home", item: BASE },
       { "@type": "ListItem", position: 2, name: "Search", item: `${BASE}/search` },
-      ...(hasQuery ? [{ "@type": "ListItem", position: 3, name: query, item: `${BASE}/search?q=${encodeURIComponent(query)}` }] : []),
+      ...(hasQuery
+        ? [{ "@type": "ListItem", position: 3, name: query, item: `${BASE}/search?q=${encodeURIComponent(query)}` }]
+        : []),
     ],
   };
 
-  const itemListLd = hasQuery && stories.length > 0 ? {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    name: `Search results for "${query}"`,
-    numberOfItems: totalResults,
-    itemListElement: stories.slice(0, 10).map((s, i) => ({
-      "@type": "ListItem",
-      position: i + 1,
-      name: s.title,
-      url: `${BASE}/stories/${s.slug}`,
-    })),
-  } : null;
+  const itemListLd =
+    hasQuery && stories.length > 0
+      ? {
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          name: `Search results for "${query}"`,
+          numberOfItems: totalResults,
+          itemListElement: stories.slice(0, 10).map((s, i) => ({
+            "@type": "ListItem",
+            position: i + 1,
+            name: s.title,
+            url: `${BASE}/stories/${s.slug}`,
+          })),
+        }
+      : null;
 
   return (
     <>
@@ -148,8 +248,7 @@ export default async function SearchPage({ searchParams }: Props) {
         <div
           className="py-12 sm:py-16"
           style={{
-            background:
-              "linear-gradient(180deg, rgba(196,66,106,0.06) 0%, transparent 100%)",
+            background: "linear-gradient(180deg, rgba(196,66,106,0.06) 0%, transparent 100%)",
             borderBottom: "1px solid var(--border)",
           }}
         >
@@ -164,10 +263,7 @@ export default async function SearchPage({ searchParams }: Props) {
                 </div>
                 <h1
                   className="text-3xl sm:text-4xl font-bold mb-2"
-                  style={{
-                    fontFamily: "var(--font-playfair), serif",
-                    color: "var(--foreground)",
-                  }}
+                  style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
                 >
                   Find Your Next Story
                 </h1>
@@ -181,29 +277,26 @@ export default async function SearchPage({ searchParams }: Props) {
               <div className="mb-6">
                 <h1
                   className="text-2xl sm:text-3xl font-bold mb-1"
-                  style={{
-                    fontFamily: "var(--font-playfair), serif",
-                    color: "var(--foreground)",
-                  }}
+                  style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
                 >
                   Search Results
                 </h1>
                 <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-                  {totalResults > 0
-                    ? `${totalResults} result${totalResults !== 1 ? "s" : ""} for "${query}"`
-                    : `No results found for "${query}"`}
+                  {isValidSearch
+                    ? totalResults > 0
+                      ? `${totalResults} result${totalResults !== 1 ? "s" : ""} for "${query}"`
+                      : `No results found for "${query}"`
+                    : `Enter at least 2 characters to search`}
                 </p>
               </div>
             )}
 
             <SearchInput initialQuery={query} autoFocus={!hasQuery} />
 
-            {/* Quick links below search bar */}
+            {/* Quick links — only when no query */}
             {!hasQuery && (
               <div className="flex flex-wrap items-center justify-center gap-2 mt-5">
-                <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                  Browse:
-                </span>
+                <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>Browse:</span>
                 {[
                   { href: "/stories", label: "All Stories" },
                   { href: "/series", label: "All Series" },
@@ -228,11 +321,164 @@ export default async function SearchPage({ searchParams }: Props) {
           </div>
         </div>
 
+        {/* ── Filter bar (only when searching) ── */}
+        {isValidSearch && (
+          <div
+            className="border-b"
+            style={{ background: "var(--background)", borderColor: "var(--border)" }}
+          >
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3">
+              <div className="overflow-x-auto">
+                <div className="flex items-center gap-2 min-w-max">
+                  {/* Sort */}
+                  <span className="text-xs font-medium shrink-0" style={{ color: "var(--muted-foreground)" }}>
+                    Sort:
+                  </span>
+                  {(
+                    [
+                      { label: "Latest", value: "" },
+                      { label: "Most Read", value: "most-read" },
+                      { label: "Top Rated", value: "top-rated" },
+                    ] as const
+                  ).map((opt) => {
+                    const isActive = (sortParam ?? "") === opt.value;
+                    return (
+                      <Link
+                        key={opt.value || "latest"}
+                        href={buildFilterUrl(query, currentFilters, { sort: opt.value })}
+                        className="px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap"
+                        style={
+                          isActive
+                            ? { background: "#c4426a", color: "#fff" }
+                            : { background: "var(--muted)", color: "var(--muted-foreground)" }
+                        }
+                      >
+                        {opt.label}
+                      </Link>
+                    );
+                  })}
+
+                  <div className="w-px h-4 shrink-0" style={{ background: "var(--border)" }} />
+
+                  {/* Length */}
+                  <span className="text-xs font-medium shrink-0" style={{ color: "var(--muted-foreground)" }}>
+                    Length:
+                  </span>
+                  {(
+                    [
+                      { label: "Any", value: "" },
+                      { label: "Short", value: "short" },
+                      { label: "Medium", value: "medium" },
+                      { label: "Long", value: "long" },
+                    ] as const
+                  ).map((opt) => {
+                    const isActive = lengthFilter === opt.value;
+                    return (
+                      <Link
+                        key={opt.value || "any-length"}
+                        href={buildFilterUrl(query, currentFilters, { length: opt.value })}
+                        className="px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap"
+                        style={
+                          isActive
+                            ? { background: "#c4426a", color: "#fff" }
+                            : { background: "var(--muted)", color: "var(--muted-foreground)" }
+                        }
+                      >
+                        {opt.label}
+                        {opt.value === "short" && (
+                          <span className="ml-1 opacity-70">&lt;10m</span>
+                        )}
+                        {opt.value === "medium" && (
+                          <span className="ml-1 opacity-70">10–30m</span>
+                        )}
+                        {opt.value === "long" && (
+                          <span className="ml-1 opacity-70">30m+</span>
+                        )}
+                      </Link>
+                    );
+                  })}
+
+                  <div className="w-px h-4 shrink-0" style={{ background: "var(--border)" }} />
+
+                  {/* Rating */}
+                  <span className="text-xs font-medium shrink-0" style={{ color: "var(--muted-foreground)" }}>
+                    Rating:
+                  </span>
+                  {(
+                    [
+                      { label: "Any", value: "" },
+                      { label: "3+", value: "3" },
+                      { label: "4+", value: "4" },
+                      { label: "5", value: "5" },
+                    ] as const
+                  ).map((opt) => {
+                    const isActive = rawRatingStr === opt.value;
+                    return (
+                      <Link
+                        key={opt.value || "any-rating"}
+                        href={buildFilterUrl(query, currentFilters, { rating: opt.value })}
+                        className="flex items-center gap-0.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap"
+                        style={
+                          isActive
+                            ? { background: "#c4426a", color: "#fff" }
+                            : { background: "var(--muted)", color: "var(--muted-foreground)" }
+                        }
+                      >
+                        {opt.label !== "Any" && <Star size={10} />}
+                        {opt.label}
+                      </Link>
+                    );
+                  })}
+
+                  <div className="w-px h-4 shrink-0" style={{ background: "var(--border)" }} />
+
+                  {/* Category */}
+                  <span className="text-xs font-medium shrink-0" style={{ color: "var(--muted-foreground)" }}>
+                    Genre:
+                  </span>
+                  <SearchCategoryFilter
+                    categories={categories}
+                    currentCat={catFilter}
+                    query={query}
+                    sortParam={sortParam ?? ""}
+                    lengthFilter={lengthFilter}
+                    rawRating={rawRatingStr}
+                  />
+
+                  {/* Clear all filters */}
+                  {activeFiltersCount > 0 && (
+                    <>
+                      <div className="w-px h-4 shrink-0" style={{ background: "var(--border)" }} />
+                      <Link
+                        href={`/search?q=${encodeURIComponent(query)}`}
+                        className="px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap"
+                        style={{ background: "rgba(196,66,106,0.1)", color: "#c4426a" }}
+                      >
+                        Clear filters ({activeFiltersCount})
+                      </Link>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── Results ── */}
         {hasQuery && (
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
-            {totalResults === 0 ? (
-              <NoResults query={query} />
+            {!isValidSearch ? (
+              <div
+                className="text-center py-16 rounded-2xl"
+                style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+              >
+                <Search size={32} className="mx-auto mb-3" style={{ color: "var(--muted-foreground)" }} />
+                <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
+                  Enter at least 2 characters to search
+                </p>
+              </div>
+            ) : totalResults === 0 ? (
+              <NoResults query={query} relatedTags={relatedTags} />
             ) : (
               <div className="space-y-12">
                 {/* Story results */}
@@ -243,19 +489,13 @@ export default async function SearchPage({ searchParams }: Props) {
                       <h2
                         id="story-results-heading"
                         className="text-lg font-bold"
-                        style={{
-                          fontFamily: "var(--font-playfair), serif",
-                          color: "var(--foreground)",
-                        }}
+                        style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
                       >
                         Stories
                       </h2>
                       <span
                         className="px-2 py-0.5 rounded-full text-xs font-semibold"
-                        style={{
-                          background: "rgba(196,66,106,0.1)",
-                          color: "#c4426a",
-                        }}
+                        style={{ background: "rgba(196,66,106,0.1)", color: "#c4426a" }}
                       >
                         {storyCount}
                       </span>
@@ -264,9 +504,7 @@ export default async function SearchPage({ searchParams }: Props) {
                       {stories.map((story) => (
                         <StoryListItem
                           key={story.id}
-                          story={
-                            story as Parameters<typeof StoryListItem>[0]["story"]
-                          }
+                          story={story as Parameters<typeof StoryListItem>[0]["story"]}
                         />
                       ))}
                     </div>
@@ -300,19 +538,13 @@ export default async function SearchPage({ searchParams }: Props) {
                       <h2
                         id="series-results-heading"
                         className="text-lg font-bold"
-                        style={{
-                          fontFamily: "var(--font-playfair), serif",
-                          color: "var(--foreground)",
-                        }}
+                        style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
                       >
                         Series
                       </h2>
                       <span
                         className="px-2 py-0.5 rounded-full text-xs font-semibold"
-                        style={{
-                          background: "rgba(196,66,106,0.1)",
-                          color: "#c4426a",
-                        }}
+                        style={{ background: "rgba(196,66,106,0.1)", color: "#c4426a" }}
                       >
                         {seriesResults.length}
                       </span>
@@ -330,11 +562,7 @@ export default async function SearchPage({ searchParams }: Props) {
                             key={series.id}
                             href={`/series/${series.slug}`}
                             className="group flex gap-3 p-3 rounded-2xl transition-all hover:opacity-80"
-                            style={{
-                              background: "var(--card)",
-                              border: "1px solid var(--border)",
-                              textDecoration: "none",
-                            }}
+                            style={{ background: "var(--card)", border: "1px solid var(--border)", textDecoration: "none" }}
                           >
                             <div
                               className="shrink-0 w-16 rounded-xl overflow-hidden"
@@ -357,8 +585,7 @@ export default async function SearchPage({ searchParams }: Props) {
                                     className="text-xl font-bold"
                                     style={{
                                       fontFamily: "var(--font-playfair), serif",
-                                      color:
-                                        primaryCategory?.color ?? "rgb(6,182,212)",
+                                      color: primaryCategory?.color ?? "rgb(6,182,212)",
                                       opacity: 0.75,
                                     }}
                                   >
@@ -371,43 +598,28 @@ export default async function SearchPage({ searchParams }: Props) {
                               <div className="flex items-start justify-between gap-2 mb-1">
                                 <h3
                                   className="text-sm font-bold line-clamp-2 leading-snug"
-                                  style={{
-                                    fontFamily: "var(--font-playfair), serif",
-                                    color: "var(--foreground)",
-                                  }}
+                                  style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
                                 >
                                   {series.name}
                                 </h3>
                                 <span
                                   className="shrink-0 w-5 h-5 rounded flex items-center justify-center text-[9px] font-extrabold"
-                                  style={{
-                                    background: "rgba(6,182,212,0.15)",
-                                    color: "rgb(6,182,212)",
-                                  }}
+                                  style={{ background: "rgba(6,182,212,0.15)", color: "rgb(6,182,212)" }}
                                 >
                                   S
                                 </span>
                               </div>
-                              <p
-                                className="text-xs mb-1.5 truncate"
-                                style={{ color: "var(--muted-foreground)" }}
-                              >
+                              <p className="text-xs mb-1.5 truncate" style={{ color: "var(--muted-foreground)" }}>
                                 by {series.author.name}
                               </p>
                               {series.description && (
-                                <p
-                                  className="text-xs line-clamp-2 mb-1.5"
-                                  style={{ color: "var(--muted-foreground)" }}
-                                >
+                                <p className="text-xs line-clamp-2 mb-1.5" style={{ color: "var(--muted-foreground)" }}>
                                   {series.description}
                                 </p>
                               )}
                               <span
                                 className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded"
-                                style={{
-                                  background: "rgba(6,182,212,0.12)",
-                                  color: "rgb(6,182,212)",
-                                }}
+                                style={{ background: "rgba(6,182,212,0.12)", color: "rgb(6,182,212)" }}
                               >
                                 <BookOpen size={8} />
                                 {series._count.stories}{" "}
@@ -428,6 +640,35 @@ export default async function SearchPage({ searchParams }: Props) {
         {/* ── Discovery (no query) ── */}
         {!hasQuery && (
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 space-y-12">
+            {/* Trending Searches */}
+            {trendingSearches.length > 0 && (
+              <section aria-labelledby="trending-searches-heading">
+                <div className="flex items-center gap-2 mb-4">
+                  <Flame size={16} style={{ color: "#c4426a" }} />
+                  <h2
+                    id="trending-searches-heading"
+                    className="text-base font-bold"
+                    style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
+                  >
+                    Trending Searches
+                  </h2>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {trendingSearches.map(({ query: tq }) => (
+                    <Link
+                      key={tq}
+                      href={`/search?q=${encodeURIComponent(tq)}`}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all hover:opacity-80"
+                      style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--foreground)" }}
+                    >
+                      <Search size={12} style={{ color: "#c4426a" }} />
+                      {tq}
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {/* Popular Tags */}
             {popularTags.length > 0 && (
               <section aria-labelledby="popular-tags-heading">
@@ -436,32 +677,22 @@ export default async function SearchPage({ searchParams }: Props) {
                   <h2
                     id="popular-tags-heading"
                     className="text-base font-bold"
-                    style={{
-                      fontFamily: "var(--font-playfair), serif",
-                      color: "var(--foreground)",
-                    }}
+                    style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
                   >
                     Popular Tags
                   </h2>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {popularTags.map(({ tag, count }) => (
+                  {popularTags.map(({ tag, name, count }) => (
                     <Link
                       key={tag}
                       href={`/tags/${encodeURIComponent(tag)}`}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all hover:opacity-80"
-                      style={{
-                        background: "var(--card)",
-                        border: "1px solid var(--border)",
-                        color: "var(--foreground)",
-                      }}
+                      style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--foreground)" }}
                     >
                       <span style={{ color: "var(--muted-foreground)" }}>#</span>
-                      {tag}
-                      <span
-                        className="text-xs ml-0.5"
-                        style={{ color: "var(--muted-foreground)" }}
-                      >
+                      {name}
+                      <span className="text-xs ml-0.5" style={{ color: "var(--muted-foreground)" }}>
                         {count}
                       </span>
                     </Link>
@@ -478,10 +709,7 @@ export default async function SearchPage({ searchParams }: Props) {
                   <h2
                     id="categories-heading"
                     className="text-base font-bold"
-                    style={{
-                      fontFamily: "var(--font-playfair), serif",
-                      color: "var(--foreground)",
-                    }}
+                    style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
                   >
                     Browse by Genre
                   </h2>
@@ -492,28 +720,15 @@ export default async function SearchPage({ searchParams }: Props) {
                       key={cat.id}
                       href={`/categories/${cat.slug}`}
                       className="group flex items-center gap-3 p-3.5 rounded-2xl transition-all hover:opacity-80"
-                      style={{
-                        background: cat.color + "12",
-                        border: `1px solid ${cat.color}30`,
-                      }}
+                      style={{ background: cat.color + "12", border: `1px solid ${cat.color}30` }}
                     >
-                      <span
-                        className="w-3 h-3 rounded-full shrink-0"
-                        style={{ background: cat.color }}
-                      />
+                      <span className="w-3 h-3 rounded-full shrink-0" style={{ background: cat.color }} />
                       <div className="flex-1 min-w-0">
-                        <p
-                          className="text-sm font-semibold truncate"
-                          style={{ color: "var(--foreground)" }}
-                        >
+                        <p className="text-sm font-semibold truncate" style={{ color: "var(--foreground)" }}>
                           {cat.name}
                         </p>
-                        <p
-                          className="text-xs"
-                          style={{ color: "var(--muted-foreground)" }}
-                        >
-                          {cat._count.stories}{" "}
-                          {cat._count.stories === 1 ? "story" : "stories"}
+                        <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+                          {cat._count.stories} {cat._count.stories === 1 ? "story" : "stories"}
                         </p>
                       </div>
                     </Link>
@@ -531,19 +746,12 @@ export default async function SearchPage({ searchParams }: Props) {
                     <h2
                       id="trending-heading"
                       className="text-base font-bold"
-                      style={{
-                        fontFamily: "var(--font-playfair), serif",
-                        color: "var(--foreground)",
-                      }}
+                      style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
                     >
                       Trending Now
                     </h2>
                   </div>
-                  <Link
-                    href="/stories"
-                    className="text-xs font-semibold transition-opacity hover:opacity-70"
-                    style={{ color: "#c4426a" }}
-                  >
+                  <Link href="/stories" className="text-xs font-semibold transition-opacity hover:opacity-70" style={{ color: "#c4426a" }}>
                     View All →
                   </Link>
                 </div>
@@ -556,43 +764,27 @@ export default async function SearchPage({ searchParams }: Props) {
                         key={story.id}
                         href={`/stories/${story.slug}`}
                         className="group flex gap-3 p-3.5 rounded-2xl transition-all hover:opacity-80"
-                        style={{
-                          background: "var(--card)",
-                          border: "1px solid var(--border)",
-                          textDecoration: "none",
-                        }}
+                        style={{ background: "var(--card)", border: "1px solid var(--border)", textDecoration: "none" }}
                       >
                         <span
                           className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
-                          style={{
-                            background: primaryColor + "20",
-                            color: primaryColor,
-                          }}
+                          style={{ background: primaryColor + "20", color: primaryColor }}
                         >
                           {i + 1}
                         </span>
                         <div className="flex-1 min-w-0">
                           <p
                             className="text-sm font-bold line-clamp-2 leading-snug mb-0.5 group-hover:opacity-80 transition-opacity"
-                            style={{
-                              fontFamily: "var(--font-playfair), serif",
-                              color: "var(--foreground)",
-                            }}
+                            style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
                           >
                             {story.title}
                           </p>
-                          <p
-                            className="text-xs truncate"
-                            style={{ color: "var(--muted-foreground)" }}
-                          >
+                          <p className="text-xs truncate" style={{ color: "var(--muted-foreground)" }}>
                             by {story.author.name}
                             {primaryCategory && (
                               <span
                                 className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-semibold"
-                                style={{
-                                  background: primaryColor + "20",
-                                  color: primaryColor,
-                                }}
+                                style={{ background: primaryColor + "20", color: primaryColor }}
                               >
                                 {primaryCategory.name}
                               </span>
@@ -612,7 +804,13 @@ export default async function SearchPage({ searchParams }: Props) {
   );
 }
 
-function NoResults({ query }: { query: string }) {
+function NoResults({
+  query,
+  relatedTags,
+}: {
+  query: string;
+  relatedTags: { name: string; slug: string }[];
+}) {
   return (
     <div className="py-10">
       <div
@@ -627,16 +825,38 @@ function NoResults({ query }: { query: string }) {
         </div>
         <p
           className="text-xl font-bold mb-1"
-          style={{
-            fontFamily: "var(--font-playfair), serif",
-            color: "var(--foreground)",
-          }}
+          style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
         >
           No results for &ldquo;{query}&rdquo;
         </p>
         <p className="text-sm mb-5" style={{ color: "var(--muted-foreground)" }}>
           Try different keywords or explore by genre
         </p>
+
+        {relatedTags.length > 0 && (
+          <div className="mb-6">
+            <p className="text-xs font-semibold mb-2" style={{ color: "var(--muted-foreground)" }}>
+              Related tags you might like:
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {relatedTags.map((tag) => (
+                <Link
+                  key={tag.slug}
+                  href={`/tags/${encodeURIComponent(tag.slug)}`}
+                  className="text-sm px-3 py-1.5 rounded-full font-medium transition-opacity hover:opacity-80"
+                  style={{
+                    background: "rgba(196,66,106,0.1)",
+                    color: "#c4426a",
+                    border: "1px solid rgba(196,66,106,0.2)",
+                  }}
+                >
+                  #{tag.name}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-wrap justify-center gap-2">
           <Link
             href="/stories"
@@ -648,10 +868,7 @@ function NoResults({ query }: { query: string }) {
           <Link
             href="/series"
             className="px-4 py-2 rounded-xl text-sm font-semibold transition-opacity hover:opacity-80"
-            style={{
-              background: "var(--muted)",
-              color: "var(--foreground)",
-            }}
+            style={{ background: "var(--muted)", color: "var(--foreground)" }}
           >
             Browse Series
           </Link>
