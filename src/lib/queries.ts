@@ -66,8 +66,12 @@ export async function getPublishedStories({
       }),
       ...(minRating !== undefined && { ratingAvg: { gte: minRating } }),
     },
-    include: {
-      categories: true,
+    select: {
+      id: true, title: true, slug: true, excerpt: true,
+      coverImage: true, readingTime: true, views: true,
+      series: true, createdAt: true, ratingAvg: true, ratingCount: true,
+      coinPrice: true, featured: true,
+      categories: { select: { id: true, name: true, slug: true, color: true } },
       author: { select: { name: true, slug: true, image: true } },
       storyTags: { select: { name: true, slug: true } },
       _count: { select: { likes: true, comments: true, bookmarks: true } },
@@ -599,7 +603,9 @@ async function getTagBasedRecs(
         ...(categoryIds.length > 0 ? [{ categories: { some: { id: { in: categoryIds } } } }] : []),
       ],
     },
-    include: {
+    select: {
+      id: true, title: true, slug: true, coverImage: true,
+      readingTime: true, ratingAvg: true, ratingCount: true, coinPrice: true,
       storyTags: { select: { name: true, slug: true } },
       categories: { select: { id: true, name: true, slug: true, color: true } },
       author: { select: { name: true, slug: true } },
@@ -650,7 +656,9 @@ async function getCollaborativeRecs(storyId: string, take: number) {
       id: { in: qualified.slice(0, take).map((r) => r.storyId) },
       published: true,
     },
-    include: {
+    select: {
+      id: true, title: true, slug: true, coverImage: true,
+      readingTime: true, ratingAvg: true, ratingCount: true, coinPrice: true,
       categories: { select: { id: true, name: true, slug: true, color: true } },
       author: { select: { name: true, slug: true } },
       _count: { select: { likes: true, comments: true } },
@@ -726,10 +734,16 @@ export async function getOrCreateAuthorByUserId(userId: string, displayName: str
 export async function getAuthorStories(authorId: string) {
   const stories = await prisma.story.findMany({
     where: { authorId },
-    include: {
-      categories: true,
-      seriesInfo: { select: { coverImage: true } },
+    select: {
+      id: true, title: true, slug: true, excerpt: true,
+      coverImage: true, readingTime: true, views: true,
+      series: true, createdAt: true, updatedAt: true,
+      ratingAvg: true, ratingCount: true, coinPrice: true,
+      status: true, published: true, featured: true,
+      rejectionReason: true, chapterNumber: true, seriesId: true,
+      categories: { select: { id: true, name: true, slug: true, color: true } },
       _count: { select: { likes: true, comments: true } },
+      seriesInfo: { select: { coverImage: true, name: true, slug: true } },
     },
     orderBy: { updatedAt: "desc" },
   });

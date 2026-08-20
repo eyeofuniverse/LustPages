@@ -4,7 +4,7 @@ import { AuthorsClient } from "@/components/author/AuthorsClient";
 import { PenSquare } from "lucide-react";
 import type { Metadata } from "next";
 
-export const revalidate = 600;
+export const revalidate = 3600;
 
 const BASE = "https://lustpages.com";
 

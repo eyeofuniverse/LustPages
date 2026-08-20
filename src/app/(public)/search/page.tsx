@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 
-export const revalidate = 180;
+export const revalidate = 900;
 
 type SortOption = "latest" | "most-read" | "top-rated";
 type LengthOption = "short" | "medium" | "long";

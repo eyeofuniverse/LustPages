@@ -6,7 +6,7 @@ import { SafeImage } from "@/components/ui/SafeImage";
 import { ChevronLeft, ChevronRight, Coins, Lock, BookOpen } from "lucide-react";
 import type { Metadata } from "next";
 
-export const revalidate = 300;
+export const revalidate = 1800;
 
 const PER_PAGE = 15;
 

@@ -16,7 +16,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, BookOpen, Star } from "lucide-react";
 import type { Metadata } from "next";
 
-export const revalidate = 300;
+export const revalidate = 1800;
 
 const PER_PAGE = 15;
 

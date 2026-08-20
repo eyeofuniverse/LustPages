@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 
-export const revalidate = 600;
+export const revalidate = 1800;
 
 const siteUrl = process.env.NEXTAUTH_URL ?? "https://lustpages.com";
 

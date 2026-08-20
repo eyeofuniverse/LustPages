@@ -21,33 +21,33 @@ export const getCachedStoryBySlug = unstable_cache(
   { revalidate: 86400, tags: ["stories"] }
 );
 
-// Recommendations are based on stable tag/category data — cache 2 hours.
+// Recommendations are based on stable tag/category data — cache 4 hours.
 export const getCachedStoryRecommendations = unstable_cache(
   async (storyId: string, tagNames: string[], categoryIds: string[]) =>
     getStoryRecommendations(storyId, tagNames, categoryIds, 6),
   ["story-recs"],
-  { revalidate: 7200 }
+  { revalidate: 14400 }
 );
 
-// Author profile data — cache 2 hours.
+// Author profile data — cache 4 hours.
 export const getCachedAuthorBySlug = unstable_cache(
   async (slug: string) => getAuthorBySlug(slug),
   ["author-by-slug"],
-  { revalidate: 7200, tags: ["authors"] }
+  { revalidate: 14400, tags: ["authors"] }
 );
 
-// Author's published story list — cache 2 hours.
+// Author's published story list — cache 4 hours.
 export const getCachedAuthorStories = unstable_cache(
   async (authorSlug: string) => getPublishedStories({ authorSlug, take: 24 }),
   ["author-stories"],
-  { revalidate: 7200 }
+  { revalidate: 14400 }
 );
 
-// Similar authors — slow-changing signal, cache 4 hours.
+// Similar authors — slow-changing signal, cache 6 hours.
 export const getCachedSimilarAuthors = unstable_cache(
   async (authorId: string) => getSimilarAuthors(authorId, 4),
   ["similar-authors"],
-  { revalidate: 14400 }
+  { revalidate: 21600 }
 );
 
 // Series content rarely changes after publication — cache 24 hours.
@@ -57,37 +57,37 @@ export const getCachedSeriesBySlug = unstable_cache(
   { revalidate: 86400, tags: ["series"] }
 );
 
-// Ad slots change infrequently — cache 5 minutes so uncached renders are rare.
+// Ad slots — cache 30 minutes; ads don't flip faster than that in practice.
 export const getCachedAdForSlot = unstable_cache(
   async (slot: string) => getActiveAdForSlot(slot),
   ["ad-slot"],
-  { revalidate: 300 }
+  { revalidate: 1800 }
 );
 
-// Categories list — very stable, cache 10 minutes.
+// Categories list — very stable, cache 2 hours.
 export const getCachedCategories = unstable_cache(
   async () => getCategories(),
   ["categories"],
-  { revalidate: 600 }
+  { revalidate: 7200 }
 );
 
-// Popular tags — sort order shifts slowly, cache 10 minutes.
+// Popular tags — sort order shifts slowly, cache 2 hours.
 export const getCachedPopularTags = unstable_cache(
   async (take: number) => getPopularTags(take),
   ["popular-tags"],
-  { revalidate: 600 }
+  { revalidate: 7200 }
 );
 
-// Public stats (story count, user count) — cache 1 hour.
+// Public stats (story count, user count) — cache 2 hours.
 export const getCachedPublicStats = unstable_cache(
   async () => getPublicStats(),
   ["public-stats"],
-  { revalidate: 3600 }
+  { revalidate: 7200 }
 );
 
-// Homepage category grid — expensive join, cache 10 minutes.
+// Homepage category grid — expensive join, cache 2 hours.
 export const getCachedCategoriesWithStories = unstable_cache(
   async () => getCategoriesWithStories(),
   ["categories-with-stories"],
-  { revalidate: 600 }
+  { revalidate: 7200 }
 );

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://lustpages.com/tags" },
 };
 
-export const revalidate = 300;
+export const revalidate = 1800;
 
 export default async function TagsIndexPage() {
   const rawTags = await getAllTags();
