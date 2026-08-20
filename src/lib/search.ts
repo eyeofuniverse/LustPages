@@ -75,11 +75,12 @@ function getCompoundVariants(token: string): string[] {
 function matchPhrase(phrase: string) {
   return {
     OR: [
-      { title:   { contains: phrase, mode: "insensitive" as const } },
-      { excerpt: { contains: phrase, mode: "insensitive" as const } },
-      { content: { contains: phrase, mode: "insensitive" as const } },
-      { tags:    { contains: phrase, mode: "insensitive" as const } },
-      { author:  { name: { contains: phrase, mode: "insensitive" as const } } },
+      { title:     { contains: phrase, mode: "insensitive" as const } },
+      { excerpt:   { contains: phrase, mode: "insensitive" as const } },
+      { storyTags: { some: { name:  { contains: phrase, mode: "insensitive" as const } } } },
+      { storyTags: { some: { slug:  { contains: phrase, mode: "insensitive" as const } } } },
+      { storyTags: { some: { aliases: { some: { alias: { contains: phrase, mode: "insensitive" as const } } } } } },
+      { author:    { name: { contains: phrase, mode: "insensitive" as const } } },
     ],
   };
 }
@@ -112,11 +113,12 @@ export async function buildStorySearchWhere(query: string) {
 
     return {
       OR: allPhrases.flatMap((v) => [
-        { title:   { contains: v, mode: "insensitive" as const } },
-        { excerpt: { contains: v, mode: "insensitive" as const } },
-        { content: { contains: v, mode: "insensitive" as const } },
-        { tags:    { contains: v, mode: "insensitive" as const } },
-        { author:  { name: { contains: v, mode: "insensitive" as const } } },
+        { title:     { contains: v, mode: "insensitive" as const } },
+        { excerpt:   { contains: v, mode: "insensitive" as const } },
+        { storyTags: { some: { name:  { contains: v, mode: "insensitive" as const } } } },
+        { storyTags: { some: { slug:  { contains: v, mode: "insensitive" as const } } } },
+        { storyTags: { some: { aliases: { some: { alias: { contains: v, mode: "insensitive" as const } } } } } },
+        { author:    { name: { contains: v, mode: "insensitive" as const } } },
       ]),
     };
   };
@@ -155,6 +157,8 @@ export async function buildSeriesSearchWhere(query: string) {
         { name:        { contains: v, mode: "insensitive" as const } },
         { description: { contains: v, mode: "insensitive" as const } },
         { author:      { name: { contains: v, mode: "insensitive" as const } } },
+        // Also surface series whose published stories carry matching tags
+        { stories: { some: { published: true, storyTags: { some: { name: { contains: v, mode: "insensitive" as const } } } } } },
       ]),
     };
   };
@@ -220,6 +224,10 @@ export const DEFAULT_TOKEN_SYNONYMS: Array<{ term: string; synonyms: string[] }>
   { term: "brother",        synonyms: ["brother", "stepbrother", "step brother"] },
   { term: "sister",         synonyms: ["sister", "stepsister", "step sister"] },
   { term: "taboo",          synonyms: ["taboo", "forbidden", "stepfamily", "step family"] },
+  // Trans / gender-diverse
+  { term: "trans",          synonyms: ["trans", "transgender", "transsexual", "trans woman", "trans man", "transwoman", "transman", "nonbinary", "non-binary"] },
+  { term: "transgender",    synonyms: ["transgender", "trans", "transsexual", "trans woman", "trans man", "gender diverse", "mtf", "ftm"] },
+  { term: "nonbinary",      synonyms: ["nonbinary", "non-binary", "enby", "genderfluid", "genderqueer", "agender"] },
 ];
 
 export const DEFAULT_PHRASE_SYNONYMS: Array<{ term: string; synonyms: string[] }> = [
@@ -256,4 +264,8 @@ export const DEFAULT_PHRASE_SYNONYMS: Array<{ term: string; synonyms: string[] }
   { term: "fatherson",          synonyms: ["dad son", "daddy son", "stepdad stepson", "taboo"] },
   { term: "mommy",              synonyms: ["mom", "mother", "stepmom", "milf", "mature"] },
   { term: "daddy",              synonyms: ["dad", "father", "stepdad", "dominant", "older man"] },
+  { term: "transwoman",         synonyms: ["trans woman", "transgender woman", "mtf", "male to female"] },
+  { term: "transman",           synonyms: ["trans man", "transgender man", "ftm", "female to male"] },
+  { term: "nonbinary",          synonyms: ["nonbinary", "non-binary", "enby", "genderfluid", "genderqueer"] },
+  { term: "trans",              synonyms: ["trans", "transgender", "transsexual", "trans woman", "trans man", "transwoman", "transman"] },
 ];
