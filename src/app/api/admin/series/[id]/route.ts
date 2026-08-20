@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { revalidateSeries } from "@/lib/revalidate";
 
 async function requireAdmin() {
   const session = await auth();
@@ -12,7 +13,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!(await requireAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
-  const series = await prisma.series.findUnique({ where: { id }, select: { id: true } });
+  const series = await prisma.series.findUnique({ where: { id }, select: { id: true, slug: true } });
   if (!series) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await req.json();
@@ -34,5 +35,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const updated = await prisma.series.update({ where: { id }, data });
+  revalidateSeries(series.slug);
   return NextResponse.json(updated);
 }

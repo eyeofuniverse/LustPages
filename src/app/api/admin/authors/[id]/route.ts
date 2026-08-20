@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { revalidateAuthor } from "@/lib/revalidate";
 
 async function requireAdmin() {
   const session = await auth();
@@ -29,6 +30,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         user: { select: { email: true } },
       },
     });
+    revalidateAuthor(author.slug);
     return NextResponse.json(author);
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Error";

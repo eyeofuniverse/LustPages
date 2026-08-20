@@ -1,3 +1,6 @@
+// Author pages are permanently cached; revalidatePath("/authors/[slug]") busts on profile update.
+export const revalidate = false;
+
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { SafeImage } from "@/components/ui/SafeImage";

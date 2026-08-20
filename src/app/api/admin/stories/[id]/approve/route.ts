@@ -6,6 +6,7 @@ import { sendPushToUsers } from "@/lib/push";
 import { pushToAll } from "@/lib/onesignal";
 import { submitToIndexNow, storyUrl, seriesUrl } from "@/lib/indexnow";
 import { awardBadgesAsync } from "@/lib/badge-checker";
+import { revalidateStory } from "@/lib/revalidate";
 
 export async function POST(
   _req: Request,
@@ -85,6 +86,9 @@ export async function POST(
     }).catch(console.error);
 
     awardBadgesAsync({ type: "STORY_PUBLISH", authorId: story.authorId });
+
+    // Bust cached pages immediately — story is now live
+    revalidateStory(story.slug, story.author.slug, story.seriesInfo?.slug ?? undefined);
 
     return NextResponse.json(story);
   } catch (e: unknown) {

@@ -5,6 +5,7 @@ import { sanitizeStoryContent } from "@/lib/sanitize";
 import { resolveNewTags } from "@/lib/tags-db";
 import { submitToIndexNow, storyUrl } from "@/lib/indexnow";
 import { pushToAll } from "@/lib/onesignal";
+import { revalidateStory } from "@/lib/revalidate";
 
 async function requireAdmin() {
   const session = await auth();
@@ -63,7 +64,7 @@ export async function PATCH(
           storyTags: { set: (allTagIds as string[]).map((tid) => ({ id: tid })) },
         }),
       },
-      include: { author: { select: { name: true } } },
+      include: { author: { select: { name: true, slug: true } } },
     });
     if (story.published) submitToIndexNow([storyUrl(story.slug)]);
     // Only notify on unpublished → published transition
@@ -74,6 +75,8 @@ export async function PATCH(
         url: `/stories/${story.slug}`,
       }).catch(console.error);
     }
+    // Bust caches for any published story that was touched
+    if (story.published) revalidateStory(story.slug, story.author.slug);
     return NextResponse.json(story);
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Error";
@@ -91,7 +94,12 @@ export async function DELETE(
 
   const { id } = await params;
   try {
+    const deleted = await prisma.story.findUnique({
+      where: { id },
+      select: { slug: true, published: true, author: { select: { slug: true } } },
+    });
     await prisma.story.delete({ where: { id } });
+    if (deleted?.published) revalidateStory(deleted.slug, deleted.author.slug);
     return NextResponse.json({ success: true });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Error";

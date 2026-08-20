@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { revalidateSeries } from "@/lib/revalidate";
 
 async function requireSeriesOwner(seriesId: string) {
   const session = await auth();
@@ -82,5 +83,6 @@ export async function PATCH(
     },
   });
 
+  revalidateSeries(updated.slug);
   return NextResponse.json(updated);
 }

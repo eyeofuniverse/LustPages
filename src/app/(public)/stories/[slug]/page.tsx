@@ -1,3 +1,7 @@
+// Story pages are permanently cached after first render.
+// revalidatePath("/stories/[slug]") is called by mutation routes on update/publish.
+export const revalidate = false;
+
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getStoryUnlock, getSeriesUnlock, getUserCoinBalance, getStoryComments } from "@/lib/queries";

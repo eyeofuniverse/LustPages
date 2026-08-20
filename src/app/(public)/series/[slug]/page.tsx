@@ -1,3 +1,6 @@
+// Series pages are permanently cached; revalidatePath("/series/[slug]") busts on mutation.
+export const revalidate = false;
+
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { SafeImage } from "@/components/ui/SafeImage";
