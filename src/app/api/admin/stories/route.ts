@@ -18,10 +18,11 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { categoryIds, tagIds, newTagNames, ...data } = await req.json();
+    const { categoryIds, tagIds, newTagNames, authorKeywords, ...data } = await req.json();
     if (data.content) data.content = sanitizeStoryContent(data.content);
     const pendingTagIds = await resolveNewTags(newTagNames ?? []);
-    const allTagIds = [...(Array.isArray(tagIds) ? tagIds as string[] : []), ...pendingTagIds];
+    const keywordTagIds = await resolveNewTags(authorKeywords ?? [], true);
+    const allTagIds = [...(Array.isArray(tagIds) ? tagIds as string[] : []), ...pendingTagIds, ...keywordTagIds];
     // Auto-deduplicate slug — append -2, -3, … rather than letting the DB throw
     if (data.slug) {
       const baseSlug = data.slug as string;

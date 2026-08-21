@@ -392,6 +392,7 @@ model Tag {
   tier        Int
   description String?
   isApproved  Boolean      @default(true)
+  isKeyword   Boolean      @default(false)
   createdAt   DateTime     @default(now())
   stories         Story[]
   aliases         TagAlias[]

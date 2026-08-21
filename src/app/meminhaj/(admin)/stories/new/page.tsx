@@ -5,7 +5,8 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "New Story" };
 
 export default async function NewStoryPage() {
-  const [categories, authors, availableTags] = await Promise.all([getCategories(), getAuthors(), getAllStructuredTags()]);
+  const [categories, authors, allStructuredTags] = await Promise.all([getCategories(), getAuthors(), getAllStructuredTags()]);
+  const availableTags = allStructuredTags.filter((t) => !t.isKeyword);
 
   return (
     <div>

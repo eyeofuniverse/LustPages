@@ -37,7 +37,7 @@ export async function PATCH(
 
   try {
     const body = await req.json();
-    const { categoryIds, tagIds, newTagNames, action, coinPrice: incomingCoinPrice } = body;
+    const { categoryIds, tagIds, authorKeywords, action, coinPrice: incomingCoinPrice } = body;
 
     const ALLOWED_FIELDS = new Set([
       "title", "slug", "excerpt", "content", "coverImage", "language", "pov",
@@ -84,8 +84,8 @@ export async function PATCH(
       }
     }
 
-    const pendingTagIds = await resolveNewTags(newTagNames ?? []);
-    const allTagIds = [...(tagIds as string[] ?? []), ...pendingTagIds];
+    const keywordTagIds = await resolveNewTags(authorKeywords ?? [], true);
+    const allTagIds = [...(tagIds as string[] ?? []), ...keywordTagIds];
     const newStatus = action === "submit" ? "pending" : "draft";
     const story = await prisma.story.update({
       where: { id },

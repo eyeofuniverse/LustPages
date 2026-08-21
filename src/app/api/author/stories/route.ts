@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { categoryIds, tagIds, newTagNames, action, coinPrice: incomingCoinPrice, ...rawData } = await req.json();
+    const { categoryIds, tagIds, authorKeywords, action, coinPrice: incomingCoinPrice, ...rawData } = await req.json();
     const ALLOWED_CREATE_FIELDS = new Set([
       "title", "slug", "excerpt", "content", "coverImage", "language", "pov",
       "genderPairing", "contentWarnings", "maturityRating", "accessLevel",
@@ -49,8 +49,8 @@ export async function POST(req: Request) {
     }
     data.slug = finalSlug;
 
-    const pendingTagIds = await resolveNewTags(newTagNames ?? []);
-    const allTagIds = [...(tagIds ?? []), ...pendingTagIds];
+    const keywordTagIds = await resolveNewTags(authorKeywords ?? [], true);
+    const allTagIds = [...(tagIds ?? []), ...keywordTagIds];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const story = await prisma.story.create({
       data: {

@@ -12,7 +12,7 @@ async function requireAdmin() {
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await requireAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const { id } = await params;
-  const { name, tier, description, isApproved, addAlias, removeAliasId, action, targetTagId } = await req.json();
+  const { name, tier, description, isApproved, isKeyword, addAlias, removeAliasId, action, targetTagId } = await req.json();
 
   // Merge a tag into another — source becomes an alias, all stories re-assigned, source deleted
   if (action === "mergeInto" && targetTagId) {
@@ -91,6 +91,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
   if (description !== undefined) updates.description = description;
   if (isApproved !== undefined) updates.isApproved = isApproved;
+  if (isKeyword !== undefined) updates.isKeyword = !!isKeyword;
 
   try {
     const tag = await prisma.tag.update({
@@ -106,8 +107,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       },
       include: { aliases: { select: { id: true, alias: true } } },
     });
-    // When a tag is approved, auto-assign keyword-rule parents
-    if (isApproved === true) await applyKeywordRulesToTag(tag.id, tag.name);
+    // When a display tag is approved, auto-assign keyword-rule parents
+    if (isApproved === true && !tag.isKeyword) await applyKeywordRulesToTag(tag.id, tag.name);
     return NextResponse.json(tag);
   } catch (e: unknown) {
     const code = (e as { code?: string })?.code;

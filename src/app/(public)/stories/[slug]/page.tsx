@@ -47,7 +47,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: metaTitle,
     description: metaDesc,
     keywords: [
-      ...story.storyTags.map((t) => t.name),
+      ...story.storyTags.filter((t) => t.isKeyword).map((t) => t.name),
+      ...story.storyTags.filter((t) => !t.isKeyword).map((t) => t.name),
       ...story.categories.map((c) => c.name),
       "erotica",
       "adult fiction",
@@ -62,7 +63,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       publishedTime: new Date(story.createdAt).toISOString(),
       modifiedTime: new Date(story.updatedAt).toISOString(),
       authors: [story.author.name],
-      tags: story.storyTags.map((t) => t.name),
+      tags: story.storyTags.filter((t) => !t.isKeyword).map((t) => t.name),
       url: `${siteUrl}/stories/${slug}`,
       ...(ogCover && {
         images: [{ url: ogCover, width: 1200, height: 630 }],
@@ -87,8 +88,11 @@ export default async function StoryPage({ params }: Props) {
   if (!storyData) notFound();
 
   const userId = session?.user?.id;
-  const tags = storyData.storyTags;
-  const tagNames = tags.map((t) => t.name);
+  const tags = storyData.storyTags.filter((t) => !t.isKeyword);
+  const tagNames = [
+    ...storyData.storyTags.filter((t) => t.isKeyword).map((t) => t.name),
+    ...storyData.storyTags.filter((t) => !t.isKeyword).map((t) => t.name),
+  ];
   const categoryIds = storyData.categories.map((c) => c.id);
 
   // Series-aware access logic

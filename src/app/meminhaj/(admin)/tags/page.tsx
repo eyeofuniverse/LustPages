@@ -26,7 +26,7 @@ export default async function TagsPage() {
           Tag Library
         </h1>
         <p className="text-sm mt-0.5" style={{ color: "var(--muted-foreground)" }}>
-          {approvedTags.length} approved tags · Tier 1: Subgenre · Tier 2: Tropes · Tier 3: Content
+          {approvedTags.filter((t) => !t.isKeyword).length} display tags · {approvedTags.filter((t) => t.isKeyword).length} SEO keywords · Tier 1: Subgenre · Tier 2: Tropes · Tier 3: Content
           {unapprovedCount > 0 && (
             <> · <a href="/meminhaj/tag-requests" style={{ color: "#f59e0b", textDecoration: "underline" }}>{unapprovedCount} pending review</a></>
           )}

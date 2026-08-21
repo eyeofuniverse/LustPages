@@ -49,6 +49,7 @@ interface StoryFormProps {
     featured: boolean;
     tagIds?: string[];
     customTags?: CustomTag[];
+    keywordTagNames?: string[];
     categoryIds: string[];
     authorId: string;
     readingTime: number;
@@ -151,6 +152,8 @@ export function StoryForm({ categories, authors, availableTags, siteUrl, initial
   const [featured, setFeatured] = useState(initialData?.featured ?? false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(initialData?.tagIds ?? []);
   const [customTags, setCustomTags] = useState<CustomTag[]>(initialData?.customTags ?? []);
+  const [adminKeywords, setAdminKeywords] = useState<string[]>(initialData?.keywordTagNames ?? []);
+  const [keywordInput, setKeywordInput] = useState("");
   const [autoTagLoading, setAutoTagLoading] = useState(false);
   const [autoTagCount, setAutoTagCount] = useState<number | null>(null);
 
@@ -297,6 +300,7 @@ export function StoryForm({ categories, authors, availableTags, siteUrl, initial
       commentsEnabled,
       tagIds: selectedTagIds,
       newTagNames: customTags,
+      authorKeywords: adminKeywords.map((kw) => ({ name: kw, tier: 3 })),
       categoryIds,
       authorId,
       readingTime: calculateReadingTime(content),
@@ -831,6 +835,66 @@ export function StoryForm({ categories, authors, availableTags, siteUrl, initial
                   setCustomTags((prev) => prev.filter((t) => t.name !== name))
                 }
               />
+            </div>
+
+            {/* SEO Keywords */}
+            <div>
+              <label style={{ ...labelStyle, marginBottom: "0.25rem" }}>
+                SEO Keywords <FieldInfo text="Keyword phrases for search engines (not shown to readers). E.g. 'stepdad fucks daughter hard'. Max 10 keywords, 80 chars each." />
+              </label>
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {adminKeywords.map((kw) => (
+                  <span
+                    key={kw}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs"
+                    style={{ background: "rgba(99,102,241,0.1)", color: "#6366f1", border: "1px solid rgba(99,102,241,0.25)" }}
+                  >
+                    {kw}
+                    <button
+                      type="button"
+                      onClick={() => setAdminKeywords((prev) => prev.filter((k) => k !== kw))}
+                      className="opacity-60 hover:opacity-100"
+                    >
+                      <X size={11} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+              {adminKeywords.length < 10 && (
+                <div className="flex gap-2">
+                  <input
+                    value={keywordInput}
+                    onChange={(e) => setKeywordInput(e.target.value.slice(0, 80))}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const kw = keywordInput.trim();
+                        if (kw && !adminKeywords.includes(kw)) setAdminKeywords((prev) => [...prev, kw]);
+                        setKeywordInput("");
+                      }
+                    }}
+                    placeholder="Type a keyword phrase and press Enter…"
+                    className="flex-1 px-3 py-2 rounded-xl text-xs"
+                    style={{ background: "var(--muted)", border: "1px solid var(--border)", color: "var(--foreground)", outline: "none" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const kw = keywordInput.trim();
+                      if (kw && !adminKeywords.includes(kw)) setAdminKeywords((prev) => [...prev, kw]);
+                      setKeywordInput("");
+                    }}
+                    disabled={!keywordInput.trim()}
+                    className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold disabled:opacity-40"
+                    style={{ background: "rgba(99,102,241,0.12)", color: "#6366f1", border: "1px solid rgba(99,102,241,0.3)" }}
+                  >
+                    <Plus size={11} /> Add
+                  </button>
+                </div>
+              )}
+              <p className="text-xs mt-1.5" style={{ color: "var(--muted-foreground)" }}>
+                {adminKeywords.length}/10 keywords
+              </p>
             </div>
             <SeriesCombobox
               selectedSeries={seriesId && series ? { id: seriesId, name: series } : null}

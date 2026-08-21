@@ -8,12 +8,13 @@ export const metadata: Metadata = { title: "Edit Story" };
 
 export default async function EditStoryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [story, categories, authors, availableTags] = await Promise.all([
+  const [story, categories, authors, allStructuredTags] = await Promise.all([
     getAdminStoryById(id),
     getCategories(),
     getAuthors(),
     getAllStructuredTags(),
   ]);
+  const availableTags = allStructuredTags.filter((t) => !t.isKeyword);
 
   if (!story) notFound();
 
@@ -53,10 +54,11 @@ export default async function EditStoryPage({ params }: { params: Promise<{ id: 
           coverImage: story.coverImage,
           published: story.published,
           featured: story.featured,
-          tagIds: story.storyTags.filter((t) => t.isApproved).map((t) => t.id),
+          tagIds: story.storyTags.filter((t) => t.isApproved && !t.isKeyword).map((t) => t.id),
           customTags: story.storyTags
-            .filter((t) => !t.isApproved)
+            .filter((t) => !t.isApproved && !t.isKeyword)
             .map((t) => ({ name: t.name, tier: t.tier })),
+          keywordTagNames: story.storyTags.filter((t) => t.isApproved && t.isKeyword).map((t) => t.name),
           categoryIds: story.categories.map((c) => c.id),
           authorId: story.authorId,
           readingTime: story.readingTime,

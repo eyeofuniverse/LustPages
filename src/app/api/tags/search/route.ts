@@ -9,6 +9,7 @@ export async function GET(req: Request) {
   const tags = await prisma.tag.findMany({
     where: {
       isApproved: true,
+      isKeyword: false,
       ...(tier && { tier: parseInt(tier) }),
       ...(q && {
         OR: [

@@ -12,7 +12,7 @@ interface StoryListItemData {
   coverImage: string | null;
   readingTime: number;
   views: number;
-  storyTags?: { name: string; slug: string }[];
+  storyTags?: { name: string; slug: string; isKeyword: boolean }[];
   series: string | null;
   createdAt: Date;
   categories: { id: string; name: string; slug: string; color: string }[];
@@ -23,7 +23,7 @@ interface StoryListItemData {
 }
 
 export function StoryListItem({ story }: { story: StoryListItemData }) {
-  const tags = story.storyTags ?? [];
+  const tags = (story.storyTags ?? []).filter((t) => !t.isKeyword);
   const primaryCategory = story.categories[0];
   const primaryColor = primaryCategory?.color ?? "#c4426a";
   const authorInitial = story.author.name.charAt(0).toUpperCase();

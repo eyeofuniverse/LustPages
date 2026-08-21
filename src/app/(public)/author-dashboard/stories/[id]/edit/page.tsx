@@ -17,11 +17,12 @@ export default async function AuthorEditStoryPage({ params }: Props) {
 
   const author = await getOrCreateAuthorByUserId(session.user.id, session.user.name ?? "Author");
 
-  const [story, categories, availableTags] = await Promise.all([
+  const [story, categories, allStructuredTags] = await Promise.all([
     getAuthorStoryById(id, author.id),
     getCategories(),
     getAllStructuredTags(),
   ]);
+  const availableTags = allStructuredTags.filter((t) => !t.isKeyword);
 
   if (!story) notFound();
 
@@ -51,10 +52,8 @@ export default async function AuthorEditStoryPage({ params }: Props) {
           excerpt: story.excerpt,
           content: story.content,
           coverImage: story.coverImage,
-          tagIds: story.storyTags.filter((t) => t.isApproved).map((t) => t.id),
-          customTags: story.storyTags
-            .filter((t) => !t.isApproved)
-            .map((t) => ({ name: t.name, tier: t.tier })),
+          tagIds: story.storyTags.filter((t) => t.isApproved && !t.isKeyword).map((t) => t.id),
+          keywordTagNames: story.storyTags.filter((t) => t.isApproved && t.isKeyword).map((t) => t.name),
           categoryIds: story.categories.map((c) => c.id),
           readingTime: story.readingTime,
           series: story.seriesInfo?.name ?? story.series,

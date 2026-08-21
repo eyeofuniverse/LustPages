@@ -45,8 +45,14 @@ export async function applyKeywordRulesToTag(tagId: string, tagName: string) {
 /**
  * Resolves an array of new tag inputs into existing or freshly-created tag IDs.
  * Handles alias lookups, keyword-rule auto-approval, and concurrent-create races.
+ *
+ * @param isKeyword - when true, created tags are marked as SEO keywords (not display tags).
+ *   Author-submitted keyword phrases pass true; admin-created display tags pass false.
  */
-export async function resolveNewTags(newTagNames: { name: string; tier: number }[]): Promise<string[]> {
+export async function resolveNewTags(
+  newTagNames: { name: string; tier: number }[],
+  isKeyword = false,
+): Promise<string[]> {
   if (newTagNames.length === 0) return [];
 
   const rules = await prisma.tagKeywordRule.findMany({ select: { keyword: true } });
@@ -72,13 +78,15 @@ export async function resolveNewTags(newTagNames: { name: string; tier: number }
       continue;
     }
 
-    const autoApprove = matchesAnyRule(trimmed);
+    // Keywords are always auto-approved (they're not display tags, no review needed).
+    // Display tags auto-approve only when a keyword rule matches.
+    const autoApprove = isKeyword || matchesAnyRule(trimmed);
 
     try {
       const created = await prisma.tag.create({
-        data: { name: trimmed, slug, tier, isApproved: autoApprove },
+        data: { name: trimmed, slug, tier, isApproved: autoApprove, isKeyword },
       });
-      if (autoApprove) await applyKeywordRulesToTag(created.id, created.name);
+      if (autoApprove && !isKeyword) await applyKeywordRulesToTag(created.id, created.name);
       ids.push(created.id);
     } catch (e) {
       if ((e as { code?: string }).code !== "P2002") throw e;

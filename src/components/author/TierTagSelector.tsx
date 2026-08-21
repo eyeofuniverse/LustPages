@@ -91,7 +91,7 @@ function FlatTagSearch({
               if (noResults) handleAdd();
             }
           }}
-          placeholder="Search tags or type a new one…"
+          placeholder={allowFreeForm ? "Search tags or type a new one…" : "Search tags…"}
           className="w-full pl-9 pr-3 py-2 rounded-lg text-sm"
           style={{
             background: "var(--muted)",

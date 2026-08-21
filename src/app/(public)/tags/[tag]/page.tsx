@@ -5,6 +5,7 @@ import {
   getTagBySlug,
   getTagCanonicalSlug,
 } from "@/lib/queries";
+import { notFound } from "next/navigation";
 import { getCachedCategories, getCachedPopularTags } from "@/lib/cached-queries";
 import { permanentRedirect } from "next/navigation";
 import { FilterBar } from "@/components/story/FilterBar";
@@ -54,6 +55,8 @@ export default async function TagPage({ params, searchParams }: Props) {
   const { tag } = await params;
   const tagSlug = decodeURIComponent(tag);
   const tagRecord = await getTagBySlug(tagSlug);
+
+  if (tagRecord?.isKeyword) notFound();
 
   if (!tagRecord) {
     const canonicalSlug = await getTagCanonicalSlug(tagSlug);

@@ -17,6 +17,7 @@ interface AdminTag {
   tier: number;
   description: string | null;
   isApproved: boolean;
+  isKeyword: boolean;
   _count: { stories: number };
   aliases: TagAlias[];
   parentRelations: ParentRelation[];
@@ -60,10 +61,13 @@ export function AdminTagsClient({ initialTags, allTags, initialRules }: Props) {
   const [saving, setSaving] = useState<string | null>(null);
   const [mergeTargetId, setMergeTargetId] = useState<Record<string, string>>({});
 
+  const [keywordFilter, setKeywordFilter] = useState<boolean | null>(null);
+
   const [showAdd, setShowAdd] = useState(false);
   const [addName, setAddName] = useState("");
   const [addTier, setAddTier] = useState(2);
   const [addDesc, setAddDesc] = useState("");
+  const [addIsKeyword, setAddIsKeyword] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
 
   const [showBulkMerge, setShowBulkMerge] = useState(false);
@@ -76,8 +80,9 @@ export function AdminTagsClient({ initialTags, allTags, initialRules }: Props) {
   const filtered = useMemo(() => tags.filter((t) => {
     const matchSearch = !search.trim() || t.name.toLowerCase().includes(search.toLowerCase()) || t.slug.includes(search.toLowerCase());
     const matchTier = tierFilter === null || t.tier === tierFilter;
-    return matchSearch && matchTier;
-  }), [tags, search, tierFilter]);
+    const matchKeyword = keywordFilter === null || t.isKeyword === keywordFilter;
+    return matchSearch && matchTier && matchKeyword;
+  }), [tags, search, tierFilter, keywordFilter]);
 
   const bulkMatches = useMemo(() => {
     if (!bulkKeyword.trim()) return [];
@@ -131,12 +136,12 @@ export function AdminTagsClient({ initialTags, allTags, initialRules }: Props) {
       const res = await fetch("/api/admin/tags", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: addName.trim(), tier: addTier, description: addDesc || null }),
+        body: JSON.stringify({ name: addName.trim(), tier: addTier, description: addDesc || null, isKeyword: addIsKeyword }),
       });
       const data = await res.json();
       if (res.ok) {
         setTags((prev) => [...prev, { ...data, _count: { stories: 0 }, aliases: [], parentRelations: [], childRelations: [] }]);
-        setAddName(""); setAddTier(2); setAddDesc(""); setShowAdd(false);
+        setAddName(""); setAddTier(2); setAddDesc(""); setAddIsKeyword(false); setShowAdd(false);
         toast.success(`Tag "${data.name}" created.`);
       } else {
         toast.error(data.error ?? "Error creating tag");
@@ -190,6 +195,18 @@ export function AdminTagsClient({ initialTags, allTags, initialRules }: Props) {
     });
     if (res.ok) {
       setTags((prev) => prev.map((t) => t.id === tag.id ? { ...t, isApproved: !t.isApproved } : t));
+    }
+  }
+
+  async function handleToggleKeyword(tag: AdminTag) {
+    const res = await fetch(`/api/admin/tags/${tag.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isKeyword: !tag.isKeyword }),
+    });
+    if (res.ok) {
+      setTags((prev) => prev.map((t) => t.id === tag.id ? { ...t, isKeyword: !t.isKeyword } : t));
+      toast.success(tag.isKeyword ? `"${tag.name}" is now a display tag.` : `"${tag.name}" is now an SEO keyword.`);
     }
   }
 
@@ -343,6 +360,21 @@ export function AdminTagsClient({ initialTags, allTags, initialRules }: Props) {
             </button>
           ))}
         </div>
+        <div className="flex rounded-xl overflow-hidden shrink-0" style={{ border: "1px solid var(--border)" }}>
+          {([null, false, true] as const).map((kw) => (
+            <button
+              key={String(kw)}
+              onClick={() => setKeywordFilter(kw)}
+              className="px-3 py-2 text-xs font-semibold transition-all"
+              style={{
+                background: keywordFilter === kw ? "#6366f1" : "var(--card)",
+                color: keywordFilter === kw ? "white" : "var(--muted-foreground)",
+              }}
+            >
+              {kw === null ? "All" : kw === false ? "Display" : "SEO Keys"}
+            </button>
+          ))}
+        </div>
         <button
           onClick={() => setShowAdd(!showAdd)}
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white shrink-0"
@@ -401,6 +433,15 @@ export function AdminTagsClient({ initialTags, allTags, initialRules }: Props) {
               placeholder="Description (optional)…"
               style={{ ...inputStyle, flex: 1 }}
             />
+            <label className="flex items-center gap-2 text-xs shrink-0 cursor-pointer" style={{ color: "var(--muted-foreground)" }}>
+              <input
+                type="checkbox"
+                checked={addIsKeyword}
+                onChange={(e) => setAddIsKeyword(e.target.checked)}
+                className="rounded"
+              />
+              SEO keyword
+            </label>
             <button
               onClick={handleAdd}
               disabled={addLoading || !addName.trim()}
@@ -507,6 +548,7 @@ export function AdminTagsClient({ initialTags, allTags, initialRules }: Props) {
       {/* Stats */}
       <p className="text-xs mb-4" style={{ color: "var(--muted-foreground)" }}>
         {filtered.length} of {tags.length} tags
+        {tags.length > 0 && ` · ${tags.filter((t) => !t.isKeyword).length} display · ${tags.filter((t) => t.isKeyword).length} SEO keywords`}
         {tags.length === 0 && ' — click "Seed Library" to load the initial tag set'}
       </p>
 
@@ -586,6 +628,11 @@ export function AdminTagsClient({ initialTags, allTags, initialRules }: Props) {
                                 hidden
                               </span>
                             )}
+                            {tag.isKeyword && (
+                              <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full" style={{ background: "rgba(99,102,241,0.1)", color: "#6366f1", border: "1px solid rgba(99,102,241,0.25)" }}>
+                                SEO
+                              </span>
+                            )}
                             {tag.aliases.length > 0 && (
                               <span className="ml-2 text-xs" style={{ color: "var(--muted-foreground)" }}>
                                 +{tag.aliases.length} alias{tag.aliases.length > 1 ? "es" : ""}
@@ -617,6 +664,13 @@ export function AdminTagsClient({ initialTags, allTags, initialRules }: Props) {
                             {tag.isApproved
                               ? <Check size={14} className="text-green-500" />
                               : <X size={14} className="text-red-400" />}
+                          </button>
+                          <button
+                            onClick={() => handleToggleKeyword(tag)}
+                            title={tag.isKeyword ? "Make display tag" : "Make SEO keyword"}
+                            className="opacity-50 hover:opacity-100 transition-opacity"
+                          >
+                            <KeyRound size={14} style={{ color: tag.isKeyword ? "#6366f1" : "var(--muted-foreground)" }} />
                           </button>
                           <button
                             onClick={() => handleDelete(tag.id, tag.name)}

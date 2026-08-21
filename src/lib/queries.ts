@@ -73,7 +73,7 @@ export async function getPublishedStories({
       coinPrice: true, featured: true,
       categories: { select: { id: true, name: true, slug: true, color: true } },
       author: { select: { name: true, slug: true, image: true } },
-      storyTags: { select: { name: true, slug: true } },
+      storyTags: { select: { name: true, slug: true, isKeyword: true } },
       _count: { select: { likes: true, comments: true, bookmarks: true } },
       seriesInfo: { select: { coverImage: true } },
     },
@@ -94,7 +94,7 @@ export async function getStoryBySlug(slug: string) {
     include: {
       categories: true,
       author: { select: { id: true, name: true, slug: true, bio: true, image: true, website: true, userId: true } },
-      storyTags: { select: { name: true, slug: true } },
+      storyTags: { select: { name: true, slug: true, isKeyword: true } },
       _count: { select: { likes: true, comments: true, bookmarks: true } },
       seriesInfo: {
         select: {
@@ -407,7 +407,7 @@ export async function getTrendingStories(take = 10): Promise<TrendingStoryEntry[
 export async function getAllTags() {
   const [tags, relationships] = await Promise.all([
     prisma.tag.findMany({
-      where: { isApproved: true },
+      where: { isApproved: true, isKeyword: false },
       include: {
         _count: { select: { stories: { where: { published: true } } } },
         parentRelations: { select: { parentId: true } },
@@ -438,7 +438,7 @@ export async function getAllTags() {
 
 export async function getPopularTags(take = 24) {
   const tags = await prisma.tag.findMany({
-    where: { isApproved: true },
+    where: { isApproved: true, isKeyword: false },
     include: { _count: { select: { stories: { where: { published: true } } } } },
     orderBy: { name: "asc" },
   });
@@ -448,11 +448,21 @@ export async function getPopularTags(take = 24) {
     .map((t) => ({ tag: t.slug, count: t._count.stories, name: t.name, tier: t.tier, id: t.id }));
 }
 
+/** Returns approved display tags only (isKeyword=false) — for author story form tag selector. */
+export async function getDisplayTags() {
+  return prisma.tag.findMany({
+    where: { isApproved: true, isKeyword: false },
+    orderBy: [{ tier: "asc" }, { name: "asc" }],
+    select: { id: true, name: true, slug: true, tier: true, description: true, aliases: { select: { alias: true } } },
+  });
+}
+
+/** Returns all approved tags with isKeyword flag — for admin story form. */
 export async function getAllStructuredTags() {
   return prisma.tag.findMany({
     where: { isApproved: true },
     orderBy: [{ tier: "asc" }, { name: "asc" }],
-    select: { id: true, name: true, slug: true, tier: true, description: true, aliases: { select: { alias: true } } },
+    select: { id: true, name: true, slug: true, tier: true, description: true, isKeyword: true, aliases: { select: { alias: true } } },
   });
 }
 
@@ -473,7 +483,7 @@ export async function getTagCanonicalSlug(alias: string) {
 
 export async function getAdminTags() {
   return prisma.tag.findMany({
-    orderBy: [{ tier: "asc" }, { name: "asc" }],
+    orderBy: [{ isKeyword: "asc" }, { tier: "asc" }, { name: "asc" }],
     include: {
       _count: { select: { stories: true } },
       aliases: { select: { id: true, alias: true } },
@@ -606,7 +616,7 @@ async function getTagBasedRecs(
     select: {
       id: true, title: true, slug: true, coverImage: true,
       readingTime: true, ratingAvg: true, ratingCount: true, coinPrice: true,
-      storyTags: { select: { name: true, slug: true } },
+      storyTags: { select: { name: true, slug: true, isKeyword: true } },
       categories: { select: { id: true, name: true, slug: true, color: true } },
       author: { select: { name: true, slug: true } },
       _count: { select: { likes: true, comments: true } },
@@ -756,7 +766,7 @@ export async function getAuthorStoryById(id: string, authorId: string) {
     include: {
       categories: true,
       seriesInfo: { select: { id: true, name: true, slug: true } },
-      storyTags: { select: { id: true, name: true, slug: true, tier: true, isApproved: true } },
+      storyTags: { select: { id: true, name: true, slug: true, tier: true, isApproved: true, isKeyword: true } },
       _count: { select: { unlocks: true } },
     },
   });
@@ -845,7 +855,7 @@ export async function getAdminStoryById(id: string) {
       author: true,
       _count: { select: { likes: true, comments: true, bookmarks: true } },
       seriesInfo: { select: { id: true, name: true, slug: true } },
-      storyTags: { select: { id: true, name: true, tier: true, isApproved: true } },
+      storyTags: { select: { id: true, name: true, slug: true, tier: true, isApproved: true, isKeyword: true } },
     },
   });
 }
@@ -1714,7 +1724,7 @@ export async function getPremiumStoriesPaginated({ take = 15, skip = 0 }: { take
     include: {
       categories: true,
       author: true,
-      storyTags: { select: { name: true, slug: true } },
+      storyTags: { select: { name: true, slug: true, isKeyword: true } },
       _count: { select: { likes: true, comments: true, bookmarks: true } },
     },
   });

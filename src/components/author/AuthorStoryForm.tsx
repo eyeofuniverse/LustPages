@@ -4,10 +4,10 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { StoryEditor } from "@/components/admin/StoryEditor";
 import { CoverImageUpload } from "@/components/admin/CoverImageUpload";
-import { TierTagSelector, type TagEntry, type CustomTag } from "@/components/author/TierTagSelector";
+import { TierTagSelector, type TagEntry } from "@/components/author/TierTagSelector";
 import {
   Save, Send, AlertTriangle, ChevronDown, ChevronUp,
-  BookOpen, Tag, Info,
+  BookOpen, Tag, Info, X,
 } from "lucide-react";
 import { FieldInfo } from "@/components/ui/FieldInfo";
 import { calculateReadingTime } from "@/lib/utils";
@@ -45,7 +45,7 @@ interface AuthorStoryFormProps {
     content: string;
     coverImage: string | null;
     tagIds: string[];
-    customTags?: CustomTag[];
+    keywordTagNames?: string[];
     categoryIds: string[];
     readingTime: number;
     series: string | null;
@@ -134,7 +134,8 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
   const [content, setContent] = useState(initialData?.content ?? "");
   const [coverImage, setCoverImage] = useState<string | null>(initialData?.coverImage ?? null);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(initialData?.tagIds ?? []);
-  const [customTags, setCustomTags] = useState<CustomTag[]>(initialData?.customTags ?? []);
+  const [authorKeywords, setAuthorKeywords] = useState<string[]>(initialData?.keywordTagNames ?? []);
+  const [keywordInput, setKeywordInput] = useState("");
   const [categoryIds, setCategoryIds] = useState<string[]>(initialData?.categoryIds ?? []);
   const [readingTime, setReadingTime] = useState(initialData?.readingTime ?? 5);
   const [maturityRating, setMaturityRating] = useState(initialData?.maturityRating ?? "Explicit");
@@ -186,7 +187,7 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
       content,
       coverImage,
       tagIds: selectedTagIds,
-      newTagNames: customTags,
+      authorKeywords: authorKeywords.map((kw) => ({ name: kw, tier: 3 })),
       categoryIds,
       readingTime,
       maturityRating,
@@ -523,25 +524,76 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
         >
           <label style={{ ...labelStyle, marginBottom: "10px" }}>
             <Tag size={11} className="inline mr-1" />
-            Tags
-            <FieldInfo text="Search the tag library, or type a new tag name and press Enter to add it." />
+            Story Tags
+            <FieldInfo text="Select genre tags for your story. These are shown to readers for browsing and discovery." />
           </label>
           <TierTagSelector
             availableTags={availableTags}
             value={selectedTagIds}
             onChange={setSelectedTagIds}
-            allowFreeForm
             showTierSections={false}
-            customTags={customTags}
-            onAddCustomTag={(name, tier) => {
-              if (!customTags.some((t) => t.name.toLowerCase() === name.toLowerCase())) {
-                setCustomTags((prev) => [...prev, { name, tier }]);
-              }
-            }}
-            onRemoveCustomTag={(name) =>
-              setCustomTags((prev) => prev.filter((t) => t.name !== name))
-            }
           />
+
+          {/* SEO Keywords — author-only free-form, not shown to readers */}
+          <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
+            <label style={{ ...labelStyle, marginBottom: "6px" }}>
+              SEO Keywords
+              <FieldInfo text="Keyword phrases for search engines — not shown to readers. E.g. 'stepdad fucks daughter hard'. Max 10 keywords, 60 chars each." />
+            </label>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {authorKeywords.map((kw) => (
+                <span
+                  key={kw}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs"
+                  style={{ background: "rgba(99,102,241,0.08)", color: "#6366f1", border: "1px solid rgba(99,102,241,0.2)" }}
+                >
+                  {kw}
+                  <button
+                    type="button"
+                    onClick={() => setAuthorKeywords((prev) => prev.filter((k) => k !== kw))}
+                    className="opacity-60 hover:opacity-100"
+                  >
+                    <X size={10} />
+                  </button>
+                </span>
+              ))}
+            </div>
+            {authorKeywords.length < 10 && (
+              <div className="flex gap-2">
+                <input
+                  value={keywordInput}
+                  onChange={(e) => setKeywordInput(e.target.value.slice(0, 60))}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const kw = keywordInput.trim();
+                      if (kw && !authorKeywords.includes(kw)) setAuthorKeywords((prev) => [...prev, kw]);
+                      setKeywordInput("");
+                    }
+                  }}
+                  placeholder="Type a keyword and press Enter…"
+                  className="flex-1 px-3 py-2 rounded-xl text-xs"
+                  style={{ background: "var(--muted)", border: "1px solid var(--border)", color: "var(--foreground)", outline: "none" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const kw = keywordInput.trim();
+                    if (kw && !authorKeywords.includes(kw)) setAuthorKeywords((prev) => [...prev, kw]);
+                    setKeywordInput("");
+                  }}
+                  disabled={!keywordInput.trim()}
+                  className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold disabled:opacity-40"
+                  style={{ background: "rgba(99,102,241,0.1)", color: "#6366f1", border: "1px solid rgba(99,102,241,0.25)" }}
+                >
+                  Add
+                </button>
+              </div>
+            )}
+            <p className="text-xs mt-1" style={{ color: "var(--muted-foreground)" }}>
+              {authorKeywords.length}/10 keywords added
+            </p>
+          </div>
         </div>
 
         {/* Content details */}

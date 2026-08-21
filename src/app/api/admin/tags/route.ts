@@ -20,7 +20,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   if (!(await requireAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const { name, tier, description, isApproved = true } = await req.json();
+  const { name, tier, description, isApproved = true, isKeyword = false } = await req.json();
   if (!name?.trim() || !tier) return NextResponse.json({ error: "name and tier required" }, { status: 400 });
   const slug = slugifyTag(name);
   const aliasConflict = await prisma.tagAlias.findUnique({ where: { alias: slug }, select: { tag: { select: { name: true } } } });
@@ -28,8 +28,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `"${slug}" is already an alias of "${aliasConflict.tag.name}" — choose a different name or merge instead` }, { status: 409 });
   }
   try {
-    const tag = await prisma.tag.create({ data: { name: name.trim(), slug, tier: Number(tier), description, isApproved } });
-    if (isApproved) await applyKeywordRulesToTag(tag.id, tag.name);
+    const tag = await prisma.tag.create({ data: { name: name.trim(), slug, tier: Number(tier), description, isApproved, isKeyword: !!isKeyword } });
+    if (isApproved && !isKeyword) await applyKeywordRulesToTag(tag.id, tag.name);
     return NextResponse.json(tag, { status: 201 });
   } catch (e: unknown) {
     const code = (e as { code?: string })?.code;

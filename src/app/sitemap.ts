@@ -25,9 +25,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     prisma.author.findMany({ select: { slug: true } }),
     prisma.series.findMany({ select: { slug: true, updatedAt: true } }),
     prisma.tag.findMany({
-      where: { isApproved: true, stories: { some: { published: true } } },
+      where: { isApproved: true, isKeyword: false, stories: { some: { published: true } } },
       select: { slug: true },
-      take: 30, // top tags only — keeps sitemap focused
+      take: 30, // top display tags only — keeps sitemap focused
       orderBy: { stories: { _count: "desc" } },
     }),
     prisma.collection.findMany({ where: { published: true }, select: { slug: true, updatedAt: true } }),

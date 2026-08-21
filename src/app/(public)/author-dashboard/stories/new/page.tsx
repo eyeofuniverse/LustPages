@@ -12,7 +12,8 @@ export default async function AuthorNewStoryPage() {
 
   const author = await getOrCreateAuthorByUserId(session.user.id, session.user.name ?? "Author");
 
-  const [categories, availableTags] = await Promise.all([getCategories(), getAllStructuredTags()]);
+  const [categories, allStructuredTags] = await Promise.all([getCategories(), getAllStructuredTags()]);
+  const availableTags = allStructuredTags.filter((t) => !t.isKeyword);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
