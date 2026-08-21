@@ -65,6 +65,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // Block admin accounts from the normal password path — must use OTP
         if (user.role === "admin") return null;
 
+        // Block suspended users
+        if (user.suspended) return null;
+
         const valid = await bcrypt.compare(
           credentials.password as string,
           user.password

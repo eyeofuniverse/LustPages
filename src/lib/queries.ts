@@ -2601,6 +2601,7 @@ export async function getAdminUsers({
         name: true,
         email: true,
         role: true,
+        suspended: true,
         coinBalance: true,
         createdAt: true,
         author: { select: { id: true, slug: true, name: true } },

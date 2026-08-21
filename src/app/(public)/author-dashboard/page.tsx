@@ -137,6 +137,14 @@ export default async function AuthorDashboardPage() {
             <span className="hidden sm:inline">Comments</span>
           </Link>
           <Link
+            href="/author-dashboard/profile"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl text-sm font-semibold"
+            style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted-foreground)" }}
+          >
+            <Settings size={14} />
+            <span className="hidden sm:inline">Profile</span>
+          </Link>
+          <Link
             href="/author-dashboard/stories/new"
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white"
             style={{ background: "#c4426a" }}
@@ -318,8 +326,9 @@ export default async function AuthorDashboardPage() {
             {stories.map((story) => {
               const cfg = STATUS_CONFIG[story.status] ?? STATUS_CONFIG.draft;
               const StatusIcon = cfg.icon;
-              const canEdit = story.status === "draft" || story.status === "rejected";
+              const canEdit = story.status === "draft" || story.status === "rejected" || story.status === "approved";
               const isPublished = story.status === "approved" && story.published;
+              const isDraft = story.status === "draft";
               const promo = storyPromoMap.get(story.id);
 
               return (
@@ -415,6 +424,16 @@ export default async function AuthorDashboardPage() {
                         >
                           <PenSquare size={12} />
                           {story.status === "rejected" ? "Revise" : "Edit"}
+                        </Link>
+                      )}
+                      {isDraft && (
+                        <Link
+                          href={`/author-dashboard/stories/${story.id}/preview`}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-80"
+                          style={{ background: "var(--muted)", color: "var(--muted-foreground)" }}
+                        >
+                          <Eye size={12} />
+                          Preview
                         </Link>
                       )}
                       {isPublished && (

@@ -23,7 +23,21 @@ export async function PATCH(
 
   const { id } = await params;
   try {
-    const { categoryIds, tagIds, newTagNames, authorKeywords, ...data } = await req.json();
+    const ALLOWED_ADMIN_FIELDS = new Set([
+      "title", "slug", "excerpt", "content", "coverImage", "language", "pov",
+      "genderPairing", "contentWarnings", "maturityRating", "accessLevel",
+      "scheduledAt", "visibility", "commentsEnabled", "metaTitle", "metaDescription",
+      "canonicalUrl", "noIndex", "seriesId", "chapterNumber", "authorNote", "readingTime",
+      "published", "featured", "status", "authorId", "views", "coinPrice",
+      "adminNotes", "rejectionReason", "series",
+    ]);
+    const raw = await req.json();
+    const { categoryIds, tagIds, newTagNames, authorKeywords } = raw;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data: Record<string, any> = {};
+    for (const [key, value] of Object.entries(raw)) {
+      if (ALLOWED_ADMIN_FIELDS.has(key)) data[key] = value;
+    }
     if (data.content) data.content = sanitizeStoryContent(data.content);
     const statusUpdate =
       "published" in data || "scheduledAt" in data

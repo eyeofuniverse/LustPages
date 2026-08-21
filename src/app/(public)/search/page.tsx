@@ -76,6 +76,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     description,
     keywords: [query, `${query} erotica`, `${query} adult fiction`, `${query} stories`, "lustpages", "free erotica"],
     alternates: { canonical },
+    // Search result pages are noindex — unlimited thin-content URLs otherwise
+    robots: { index: false, follow: true },
     openGraph: {
       title: `${query} Erotica — LustPages`,
       description,

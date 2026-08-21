@@ -18,7 +18,21 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { categoryIds, tagIds, newTagNames, authorKeywords, ...data } = await req.json();
+    const ALLOWED_ADMIN_FIELDS = new Set([
+      "title", "slug", "excerpt", "content", "coverImage", "language", "pov",
+      "genderPairing", "contentWarnings", "maturityRating", "accessLevel",
+      "scheduledAt", "visibility", "commentsEnabled", "metaTitle", "metaDescription",
+      "canonicalUrl", "noIndex", "seriesId", "chapterNumber", "authorNote", "readingTime",
+      "published", "featured", "status", "authorId", "views", "coinPrice",
+      "adminNotes", "rejectionReason", "series",
+    ]);
+    const raw = await req.json();
+    const { categoryIds, tagIds, newTagNames, authorKeywords } = raw;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data: Record<string, any> = {};
+    for (const [key, value] of Object.entries(raw)) {
+      if (ALLOWED_ADMIN_FIELDS.has(key)) data[key] = value;
+    }
     if (data.content) data.content = sanitizeStoryContent(data.content);
     const pendingTagIds = await resolveNewTags(newTagNames ?? []);
     const keywordTagIds = await resolveNewTags(authorKeywords ?? [], true);
@@ -36,6 +50,7 @@ export async function POST(req: Request) {
     }
 
     const story = await prisma.story.create({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       data: {
         ...data,
         status: data.published || data.scheduledAt ? "approved" : "draft",
@@ -45,9 +60,9 @@ export async function POST(req: Request) {
         ...(allTagIds.length > 0 && {
           storyTags: { connect: allTagIds.map((id) => ({ id })) },
         }),
-      },
+      } as any,
       include: { author: { select: { name: true } } },
-    });
+    }) as { id: string; title: string; slug: string; published: boolean; seriesId: string | null; author: { name: string } };
     if (story.published) {
       submitToIndexNow([storyUrl(story.slug)]);
       pushToAll({

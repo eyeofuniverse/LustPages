@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 
 const BOT_PATTERN = /bot|crawl|spider|slurp|archiv|wget|curl|python|httpclient/i;
 
@@ -20,6 +21,12 @@ function cleanReferrer(ref: string | null): string | null {
 }
 
 export async function POST(req: NextRequest) {
+  // 120 page views per IP per minute — well above any real browser cadence
+  const forwarded = req.headers.get("x-forwarded-for");
+  const ip = forwarded ? forwarded.split(",")[0].trim() : (req.headers.get("x-real-ip") ?? "unknown");
+  const { allowed } = rateLimit(`track:${ip}`, 120, 60 * 1000);
+  if (!allowed) return NextResponse.json({ ok: true });
+
   try {
     let path = "/";
     try {

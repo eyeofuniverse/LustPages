@@ -27,7 +27,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     prisma.tag.findMany({
       where: { isApproved: true, isKeyword: false, stories: { some: { published: true } } },
       select: { slug: true },
-      take: 30, // top display tags only — keeps sitemap focused
+      take: 100, // top display tags only — keeps sitemap focused
       orderBy: { stories: { _count: "desc" } },
     }),
     prisma.collection.findMany({ where: { published: true }, select: { slug: true, updatedAt: true } }),
@@ -46,6 +46,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/terms`, lastModified: new Date("2026-05-26"), changeFrequency: "monthly", priority: 0.3 },
     { url: `${BASE}/privacy`, lastModified: new Date("2026-05-26"), changeFrequency: "monthly", priority: 0.3 },
     { url: `${BASE}/content-warning`, lastModified: new Date("2026-05-26"), changeFrequency: "monthly", priority: 0.3 },
+    { url: `${BASE}/dmca`, lastModified: new Date("2026-08-21"), changeFrequency: "monthly", priority: 0.3 },
+    { url: `${BASE}/about`, lastModified: new Date("2026-08-21"), changeFrequency: "monthly", priority: 0.4 },
+    { url: `${BASE}/contact`, lastModified: new Date("2026-08-21"), changeFrequency: "monthly", priority: 0.4 },
+    { url: `${BASE}/faq`, lastModified: new Date("2026-08-21"), changeFrequency: "monthly", priority: 0.5 },
     { url: `${BASE}/alternatives`, lastModified: new Date("2026-07-26"), changeFrequency: "monthly", priority: 0.7 },
     ...allAlternativeSlugs.map((slug) => ({
       url: `${BASE}/alternatives/${slug}`,

@@ -25,29 +25,35 @@ interface Props {
   searchParams: Promise<{ page?: string }>;
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { slug } = await params;
+  const { page: pageParam } = await searchParams;
   const category = await getCategoryBySlug(slug);
   if (!category) return { title: "Category Not Found" };
   const name = category.name;
+  const page = Math.max(1, parseInt(pageParam ?? "1", 10));
   const metaDesc =
     category.description ??
     `Explore ${name} erotica and adult fiction on LustPages — slow-burn romance to explicit scenes, all free to read and updated regularly.`;
+  const canonical = page > 1 ? `${BASE}/categories/${slug}?page=${page}` : `${BASE}/categories/${slug}`;
   return {
-    title: `${name} Erotica Stories — LustPages`,
+    title: page > 1 ? `${name} Erotica Stories — Page ${page} — LustPages` : `${name} Erotica Stories — LustPages`,
     description: metaDesc,
-    alternates: { canonical: `${BASE}/categories/${slug}` },
+    alternates: { canonical },
+    ...(page > 1 && { robots: { index: false, follow: true } }),
     openGraph: {
       title: `${name} Erotica Stories — LustPages`,
       description: metaDesc,
       type: "website",
-      url: `${BASE}/categories/${slug}`,
+      url: canonical,
       siteName: "LustPages",
+      images: [{ url: `${BASE}/og-default.jpg`, width: 1200, height: 630, alt: `${name} Erotica on LustPages` }],
     },
     twitter: {
       card: "summary_large_image",
       title: `${name} Erotica Stories — LustPages`,
       description: metaDesc,
+      images: [`${BASE}/og-default.jpg`],
     },
     keywords: [`${name} erotica`, `${name} adult fiction`, `${name} stories`, "lustpages", "free erotica", "online adult fiction"],
   };

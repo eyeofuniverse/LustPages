@@ -28,9 +28,9 @@ export async function PATCH(
   }
 
   const { status: currentStatus } = ownership.story;
-  if (currentStatus === "pending" || currentStatus === "approved") {
+  if (currentStatus === "pending") {
     return NextResponse.json(
-      { error: "Cannot edit a story that is pending review or published" },
+      { error: "Cannot edit a story that is pending review" },
       { status: 400 }
     );
   }
@@ -53,8 +53,6 @@ export async function PATCH(
     if (rest.content) rest.content = sanitizeStoryContent(rest.content as string);
 
     // Series stories cannot have individual coin prices — premium is series-level.
-    // Derive where the story will actually live after this update; fall back to the
-    // current DB value when seriesId wasn't included in the request body at all.
     const targetSeriesId = (
       "seriesId" in rest ? rest.seriesId : ownership.story.seriesId
     ) as string | null;
@@ -65,10 +63,9 @@ export async function PATCH(
       if (rawPrice !== null && (!Number.isInteger(rawPrice) || rawPrice < 1)) {
         return NextResponse.json({ error: "Coin price must be a whole number of at least 1" }, { status: 400 });
       }
-      // Standalone story: apply price lock logic
       const unlockCount = await prisma.storyUnlock.count({ where: { storyId: id } });
       if (unlockCount > 0 && rawPrice !== ownership.story.coinPrice) {
-        coinPrice = ownership.story.coinPrice; // silently preserve original price
+        coinPrice = ownership.story.coinPrice;
       } else {
         coinPrice = rawPrice;
       }
@@ -86,13 +83,18 @@ export async function PATCH(
 
     const keywordTagIds = await resolveNewTags(authorKeywords ?? [], true);
     const allTagIds = [...(tagIds as string[] ?? []), ...keywordTagIds];
-    const newStatus = action === "submit" ? "pending" : "draft";
+
+    // For published (approved) stories: keep published/status intact — only update content fields.
+    // For drafts/rejected: apply the normal submit/save flow.
+    const isPublished = currentStatus === "approved";
+    const newStatus = isPublished ? "approved" : (action === "submit" ? "pending" : "draft");
+
     const story = await prisma.story.update({
       where: { id },
       data: {
         ...rest,
         coinPrice,
-        published: false,
+        ...(isPublished ? {} : { published: false }),
         status: newStatus,
         rejectionReason: newStatus === "pending" ? null : ownership.story.rejectionReason,
         submittedAt: newStatus === "pending" ? new Date() : ownership.story.submittedAt,

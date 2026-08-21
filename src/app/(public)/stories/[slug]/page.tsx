@@ -12,6 +12,7 @@ import { sanitizeStoryContent } from "@/lib/sanitize";
 import { RecsCarousel } from "@/components/story/RecsCarousel";
 import { StoryActions } from "@/components/story/StoryActions";
 import { StoryRating } from "@/components/story/StoryRating";
+import { FontSizeControl } from "@/components/story/FontSizeControl";
 import { ReportButton } from "@/components/story/ReportButton";
 import { CommentSection } from "@/components/story/CommentSection";
 import { AdSlot } from "@/components/ads/AdSlot";
@@ -179,11 +180,27 @@ export default async function StoryPage({ params }: Props) {
 
   return (
     <>
-      <ReadingProgressTracker slug={slug} storyId={story.id} userId={userId} />
+      <ReadingProgressTracker slug={slug} storyId={story.id} userId={userId} contentId="story-body" />
       <ViewTracker storyId={story.id} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Stories", item: `${siteUrl}/stories` },
+              ...(story.categories[0]
+                ? [{ "@type": "ListItem", position: 2, name: story.categories[0].name, item: `${siteUrl}/categories/${story.categories[0].slug}` }]
+                : []),
+              { "@type": "ListItem", position: story.categories[0] ? 3 : 2, name: story.title, item: `${siteUrl}/stories/${story.slug}` },
+            ],
+          }),
+        }}
       />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
@@ -308,20 +325,23 @@ export default async function StoryPage({ params }: Props) {
           </div>
         </div>
 
-        {/* Story Actions (like, bookmark) + Star Rating */}
-        <div className="flex flex-wrap items-center gap-3 mb-2">
-          <StoryActions
-            storyId={story.id}
-            likeCount={story._count.likes}
-            bookmarkCount={story._count.bookmarks}
-            userId={session?.user?.id}
-          />
-          <StoryRating
-            storyId={story.id}
-            avgRating={story.ratingAvg}
-            ratingCount={story.ratingCount}
-            userId={session?.user?.id}
-          />
+        {/* Story Actions (like, bookmark) + Star Rating + Font Size */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+          <div className="flex flex-wrap items-center gap-3">
+            <StoryActions
+              storyId={story.id}
+              likeCount={story._count.likes}
+              bookmarkCount={story._count.bookmarks}
+              userId={session?.user?.id}
+            />
+            <StoryRating
+              storyId={story.id}
+              avgRating={story.ratingAvg}
+              ratingCount={story.ratingCount}
+              userId={session?.user?.id}
+            />
+          </div>
+          <FontSizeControl />
         </div>
 
         {/* Series navigation */}
@@ -342,6 +362,7 @@ export default async function StoryPage({ params }: Props) {
           const [first, second] = splitHtmlAtParagraph(sanitized, 0.65, 400);
           return (
             <div
+              id="story-body"
               className="my-8 rounded-2xl px-5 sm:px-8 py-8"
               style={{ background: "var(--card)", border: "1px solid var(--border)" }}
             >

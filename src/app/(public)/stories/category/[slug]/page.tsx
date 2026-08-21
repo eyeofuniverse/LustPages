@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { permanentRedirect } from "next/navigation";
 
 export default async function OldCategoryRedirect({
   params,
@@ -10,5 +10,5 @@ export default async function OldCategoryRedirect({
   const { slug } = await params;
   const sp = await searchParams;
   const query = sp.page ? `?page=${sp.page}` : "";
-  redirect(`/categories/${slug}${query}`);
+  permanentRedirect(`/categories/${slug}${query}`);
 }

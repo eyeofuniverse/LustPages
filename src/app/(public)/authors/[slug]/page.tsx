@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: desc,
       type: "profile",
       url: `${siteUrl}/authors/${slug}`,
-      ...(author.image && { images: [{ url: author.image }] }),
+      ...(author.image && { images: [{ url: author.image, width: 400, height: 400 }] }),
     },
     twitter: {
       card: "summary_large_image",

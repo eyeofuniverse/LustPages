@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, ExternalLink, Coins } from "lucide-react";
 import { formatDateShort } from "@/lib/utils";
 import { UserDeleteButton } from "@/components/admin/UserDeleteButton";
+import { UserSuspendButton } from "@/components/admin/UserSuspendButton";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Manage Users" };
@@ -204,9 +205,17 @@ export default async function AdminUsersPage({ searchParams }: Props) {
                       {formatDateShort(new Date(user.createdAt))}
                     </td>
 
-                    {/* Delete */}
+                    {/* Actions */}
                     <td className="px-4 py-3 text-right">
-                      <UserDeleteButton id={user.id} name={user.name} />
+                      <div className="flex items-center justify-end gap-1">
+                        {user.suspended && (
+                          <span className="mr-1 px-1.5 py-0.5 rounded text-[10px] font-semibold" style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444" }}>
+                            Suspended
+                          </span>
+                        )}
+                        <UserSuspendButton id={user.id} name={user.name} suspended={user.suspended} />
+                        <UserDeleteButton id={user.id} name={user.name} />
+                      </div>
                     </td>
                   </tr>
                 ))}

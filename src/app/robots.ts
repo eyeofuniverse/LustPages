@@ -17,6 +17,8 @@ export default function robots(): MetadataRoute.Robots {
           "/search",
           "/premium/",
           "/store",
+          "/collections/",
+          "/alternatives/",
         ],
         disallow: [
           "/api/",

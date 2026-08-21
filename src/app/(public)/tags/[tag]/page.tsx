@@ -26,26 +26,32 @@ interface Props {
   searchParams: Promise<{ page?: string }>;
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { tag } = await params;
+  const { page: pageParam } = await searchParams;
   const tagSlug = decodeURIComponent(tag);
   const tagRecord = await getTagBySlug(tagSlug);
   const displayName = tagRecord?.name ?? tagSlug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
   const desc = `Explore the best ${displayName} erotica and adult fiction stories on LustPages. Browse free and premium ${displayName} stories written by talented independent authors.`;
+  const page = Math.max(1, parseInt(pageParam ?? "1", 10));
+  const canonical = page > 1 ? `${BASE}/tags/${tag}?page=${page}` : `${BASE}/tags/${tag}`;
   return {
-    title: `${displayName} Stories — LustPages`,
+    title: page > 1 ? `${displayName} Stories — Page ${page} — LustPages` : `${displayName} Stories — LustPages`,
     description: desc,
-    alternates: { canonical: `${BASE}/tags/${tag}` },
+    alternates: { canonical },
+    ...(page > 1 && { robots: { index: false, follow: true } }),
     openGraph: {
       title: `${displayName} Stories — LustPages`,
       description: desc,
       type: "website",
-      url: `${BASE}/tags/${tag}`,
+      url: canonical,
+      images: [{ url: `${BASE}/og-default.jpg`, width: 1200, height: 630, alt: `${displayName} Stories on LustPages` }],
     },
     twitter: {
       card: "summary_large_image",
       title: `${displayName} Stories — LustPages`,
       description: desc,
+      images: [`${BASE}/og-default.jpg`],
     },
   };
 }

@@ -33,6 +33,24 @@ export async function POST(req: Request) {
       if (ALLOWED_CREATE_FIELDS.has(key)) data[key] = value;
     }
     if (data.content) data.content = sanitizeStoryContent(data.content as string);
+
+    // Field-length guards
+    if (data.title && (data.title as string).length > 200) {
+      return NextResponse.json({ error: "Title must be 200 characters or fewer." }, { status: 400 });
+    }
+    if (data.excerpt && (data.excerpt as string).length > 500) {
+      return NextResponse.json({ error: "Excerpt must be 500 characters or fewer." }, { status: 400 });
+    }
+    if (data.metaTitle && (data.metaTitle as string).length > 120) {
+      return NextResponse.json({ error: "Meta title must be 120 characters or fewer." }, { status: 400 });
+    }
+    if (data.metaDescription && (data.metaDescription as string).length > 320) {
+      return NextResponse.json({ error: "Meta description must be 320 characters or fewer." }, { status: 400 });
+    }
+    if (data.authorNote && (data.authorNote as string).length > 2000) {
+      return NextResponse.json({ error: "Author note must be 2000 characters or fewer." }, { status: 400 });
+    }
+
     const status = action === "submit" ? "pending" : "draft";
     const rawPrice = incomingCoinPrice != null ? Number(incomingCoinPrice) : null;
     if (rawPrice !== null && (!Number.isInteger(rawPrice) || rawPrice < 1)) {

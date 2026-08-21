@@ -36,10 +36,12 @@ export function ReadingProgressTracker({
   slug,
   storyId,
   userId,
+  contentId,
 }: {
   slug: string;
   storyId?: string;
   userId?: string;
+  contentId?: string;
 }) {
   const [progress, setProgress] = useState(0);
   const [resumePct, setResumePct] = useState<number | null>(null);
@@ -49,11 +51,26 @@ export function ReadingProgressTracker({
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const completedSyncedRef = useRef(false);
 
+  // Measure progress relative to the story content element if provided,
+  // otherwise fall back to the full document height. This prevents comments,
+  // recommendations, and ad slots below the story from deflating the percentage.
   const calcPct = useCallback(() => {
+    if (contentId) {
+      const el = document.getElementById(contentId);
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        const contentBottom = rect.bottom + window.scrollY;
+        const contentTop = rect.top + window.scrollY;
+        const scrollable = contentBottom - contentTop - window.innerHeight;
+        if (scrollable <= 0) return 100;
+        const scrolled = Math.max(0, window.scrollY - contentTop);
+        return Math.min(100, Math.round((scrolled / scrollable) * 100));
+      }
+    }
     const docHeight = document.documentElement.scrollHeight - window.innerHeight;
     if (docHeight <= 0) return 0;
     return Math.min(100, Math.round((window.scrollY / docHeight) * 100));
-  }, []);
+  }, [contentId]);
 
   const syncToServer = useCallback(
     (pct: number, completed = false) => {
@@ -121,6 +138,18 @@ export function ReadingProgressTracker({
 
   const jumpToSaved = () => {
     if (resumePct === null) return;
+    if (contentId) {
+      const el = document.getElementById(contentId);
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        const contentTop = rect.top + window.scrollY;
+        const contentBottom = rect.bottom + window.scrollY;
+        const scrollable = contentBottom - contentTop - window.innerHeight;
+        window.scrollTo({ top: contentTop + (resumePct / 100) * Math.max(0, scrollable), behavior: "smooth" });
+        setBannerVisible(false);
+        return;
+      }
+    }
     const docHeight = document.documentElement.scrollHeight - window.innerHeight;
     window.scrollTo({ top: (resumePct / 100) * docHeight, behavior: "smooth" });
     setBannerVisible(false);

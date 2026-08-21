@@ -2,10 +2,18 @@ import { NextResponse } from "next/server";
 import { randomBytes, createHash } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 const SITE = process.env.NEXTAUTH_URL ?? "https://lustpages.com";
 
 export async function POST(req: Request) {
+  // 5 attempts per IP per 15 minutes
+  const ip = getClientIp(req);
+  const { allowed } = rateLimit(`forgot-pw:${ip}`, 5, 15 * 60 * 1000);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many requests. Please wait before trying again." }, { status: 429 });
+  }
+
   try {
     const { email } = await req.json();
     if (!email?.trim()) {

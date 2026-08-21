@@ -4,8 +4,16 @@ import slugify from "slug";
 import { prisma } from "@/lib/prisma";
 import { sendWelcomeEmail } from "@/lib/email";
 import { WELCOME_COINS, WELCOME_COINS_DAYS } from "@/lib/subscription-tiers";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
+  // 10 registrations per IP per hour
+  const ip = getClientIp(req);
+  const { allowed } = rateLimit(`register:${ip}`, 10, 60 * 60 * 1000);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many registration attempts. Please try again later." }, { status: 429 });
+  }
+
   try {
     const { name, email, password } = await req.json();
 
@@ -13,8 +21,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "All fields are required." }, { status: 400 });
     }
 
+    // Basic field-length limits
+    if (typeof name !== "string" || name.trim().length > 80) {
+      return NextResponse.json({ error: "Name must be 80 characters or fewer." }, { status: 400 });
+    }
+    if (typeof email !== "string" || email.length > 254) {
+      return NextResponse.json({ error: "Email must be 254 characters or fewer." }, { status: 400 });
+    }
+
+    // Email format validation
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!EMAIL_RE.test(email)) {
+      return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
+    }
+
     if (password.length < 8) {
       return NextResponse.json({ error: "Password must be at least 8 characters." }, { status: 400 });
+    }
+    if (password.length > 128) {
+      return NextResponse.json({ error: "Password must be 128 characters or fewer." }, { status: 400 });
     }
 
     const normalised = email.toLowerCase().trim();
