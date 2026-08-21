@@ -5,9 +5,8 @@ import {
   getTagBySlug,
   getTagCanonicalSlug,
 } from "@/lib/queries";
-import { notFound } from "next/navigation";
-import { getCachedCategories, getCachedPopularTags } from "@/lib/cached-queries";
 import { permanentRedirect } from "next/navigation";
+import { getCachedCategories, getCachedPopularTags } from "@/lib/cached-queries";
 import { FilterBar } from "@/components/story/FilterBar";
 import { StoriesSearchBar } from "@/components/story/StoriesSearchBar";
 import { TrendingCarousel } from "@/components/story/TrendingCarousel";
@@ -56,7 +55,10 @@ export default async function TagPage({ params, searchParams }: Props) {
   const tagSlug = decodeURIComponent(tag);
   const tagRecord = await getTagBySlug(tagSlug);
 
-  if (tagRecord?.isKeyword) notFound();
+  // Keyword tags aren't public browse pages — redirect to search so the URL isn't a dead end
+  if (tagRecord?.isKeyword) {
+    permanentRedirect(`/search?q=${encodeURIComponent(tagSlug.replace(/-/g, " "))}`);
+  }
 
   if (!tagRecord) {
     const canonicalSlug = await getTagCanonicalSlug(tagSlug);

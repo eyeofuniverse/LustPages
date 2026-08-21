@@ -35,7 +35,7 @@ export default async function EditStoryPage({ params }: { params: Promise<{ id: 
             storyUrl={`${process.env.SITE_URL}/stories/${story.slug}`}
             coverImage={story.coverImage}
             storyTags={story.storyTags
-              .filter((t) => t.isApproved)
+              .filter((t) => t.isApproved && !t.isKeyword)
               .map((t) => t.name)}
           />
         )}

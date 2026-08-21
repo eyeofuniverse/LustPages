@@ -476,9 +476,11 @@ export async function getTagBySlug(slug: string) {
 export async function getTagCanonicalSlug(alias: string) {
   const record = await prisma.tagAlias.findUnique({
     where: { alias },
-    select: { tag: { select: { slug: true } } },
+    select: { tag: { select: { slug: true, isKeyword: true } } },
   });
-  return record?.tag.slug ?? null;
+  // Don't resolve aliases that point to keyword-only tags — those aren't browse pages
+  if (!record || record.tag.isKeyword) return null;
+  return record.tag.slug;
 }
 
 export async function getAdminTags() {
