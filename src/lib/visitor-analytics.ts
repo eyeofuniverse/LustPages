@@ -16,13 +16,18 @@ export type TrafficData = {
   days: number;
 };
 
-const SITE_HOST = "lustpages.com";
+// Primary production host + current Vercel deployment URL (staging)
+const SITE_HOSTS: string[] = ["lustpages.com"];
+if (process.env.VERCEL_URL) SITE_HOSTS.push(process.env.VERCEL_URL);
+if (process.env.NEXT_PUBLIC_SITE_URL) {
+  SITE_HOSTS.push(process.env.NEXT_PUBLIC_SITE_URL.replace(/^https?:\/\//, "").split("/")[0]);
+}
 
 function classifyReferrer(referrer: string | null): { source: string; category: string } {
   if (!referrer) return { source: "Direct", category: "direct" };
   try {
     const host = new URL(referrer).hostname.replace(/^www\./i, "").toLowerCase();
-    if (host === SITE_HOST || host.endsWith(`.${SITE_HOST}`)) return { source: "Internal", category: "internal" };
+    if (SITE_HOSTS.some((h) => host === h || host.endsWith(`.${h}`))) return { source: "Internal", category: "internal" };
     if (/google\./i.test(host))     return { source: "Google", category: "search" };
     if (/bing\.com/i.test(host))    return { source: "Bing", category: "search" };
     if (/yandex\./i.test(host))     return { source: "Yandex", category: "search" };
