@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import {
   getStoryBySlug,
   getStoryRecommendations,
+  getMoreFromAuthor,
   getAuthorBySlug,
   getPublishedStories,
   getSimilarAuthors,
@@ -21,11 +22,18 @@ export const getCachedStoryBySlug = unstable_cache(
   { revalidate: 2592000, tags: ["stories"] }
 );
 
-// Recs are based on tag/category co-occurrence — stable signal. Cache 24 hours.
+// Recs are based on tag/category co-occurrence + collaborative filtering. Cache 24 hours.
 export const getCachedStoryRecommendations = unstable_cache(
-  async (storyId: string, tagNames: string[], categoryIds: string[]) =>
-    getStoryRecommendations(storyId, tagNames, categoryIds, 6),
+  async (storyId: string, tagNames: string[], categoryIds: string[], authorId: string) =>
+    getStoryRecommendations(storyId, tagNames, categoryIds, authorId, 6),
   ["story-recs"],
+  { revalidate: 86400, tags: ["stories"] }
+);
+
+// More from this author — ordered by views. Cache 24 hours, bust via "stories".
+export const getCachedMoreFromAuthor = unstable_cache(
+  async (authorId: string, excludeStoryId: string) => getMoreFromAuthor(authorId, excludeStoryId, 5),
+  ["more-from-author"],
   { revalidate: 86400, tags: ["stories"] }
 );
 

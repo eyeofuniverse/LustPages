@@ -5,7 +5,7 @@ export const revalidate = false;
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getStoryUnlock, getSeriesUnlock, getUserCoinBalance, getStoryComments } from "@/lib/queries";
-import { getCachedStoryBySlug, getCachedStoryRecommendations } from "@/lib/cached-queries";
+import { getCachedStoryBySlug, getCachedStoryRecommendations, getCachedMoreFromAuthor } from "@/lib/cached-queries";
 import { auth } from "@/auth";
 import { formatDate, getTextPreview, countWords, splitHtmlAtParagraph } from "@/lib/utils";
 import { sanitizeStoryContent } from "@/lib/sanitize";
@@ -110,15 +110,16 @@ export default async function StoryPage({ params }: Props) {
   const isPremium = inSeries ? (seriesPremium && !isFreeChapter) : !!storyData.coinPrice;
 
   // Fresh comments fetched on every request; everything else served from cache.
-  const [freshComments, recommendations, unlock, userBalance] = await Promise.all([
+  const [freshComments, recommendations, unlock, userBalance, moreFromAuthor] = await Promise.all([
     getStoryComments(storyData.id),
-    getCachedStoryRecommendations(storyData.id, tagNames, categoryIds),
+    getCachedStoryRecommendations(storyData.id, tagNames, categoryIds, storyData.author.id),
     isPremium && userId
       ? (seriesPremium
           ? getSeriesUnlock(userId, seriesInfo!.id)
           : getStoryUnlock(userId, storyData.id))
       : Promise.resolve(null),
     userId ? getUserCoinBalance(userId) : Promise.resolve(0),
+    getCachedMoreFromAuthor(storyData.author.id, storyData.id),
   ]);
 
   // Merge cached story data with live comments
@@ -488,7 +489,7 @@ export default async function StoryPage({ params }: Props) {
         <AdSlot identifier="story_detail_after_content" />
 
         {/* Recommendations */}
-        {(recommendations.collaborative || recommendations.tagBased.length > 0) && (
+        {(recommendations.collaborative || recommendations.tagBased.length > 0 || recommendations.fallback) && (
           <div className="mt-12 pt-10" style={{ borderTop: "1px solid var(--border)" }}>
             {recommendations.collaborative && (
               <div className="mb-10">
@@ -496,7 +497,14 @@ export default async function StoryPage({ params }: Props) {
               </div>
             )}
             {recommendations.tagBased.length > 0 && (
-              <RecsCarousel title="More like this" stories={recommendations.tagBased} />
+              <div className={recommendations.collaborative ? "" : ""}>
+                <RecsCarousel title="More like this" stories={recommendations.tagBased} />
+              </div>
+            )}
+            {recommendations.fallback && (
+              <div className={(recommendations.collaborative || recommendations.tagBased.length > 0) ? "mt-10" : ""}>
+                <RecsCarousel title="Popular on LustPages" stories={recommendations.fallback} />
+              </div>
             )}
           </div>
         )}
@@ -568,7 +576,7 @@ export default async function StoryPage({ params }: Props) {
                   {story.author.bio}
                 </p>
               )}
-              <div className="mt-3">
+              <div className="mt-3 flex flex-wrap items-center gap-3">
                 <TipModal
                   authorId={story.author.id}
                   authorName={story.author.name}
@@ -576,10 +584,24 @@ export default async function StoryPage({ params }: Props) {
                   userBalance={userBalance}
                   isLoggedIn={!!userId}
                 />
+                <Link
+                  href={`/authors/${story.author.slug}`}
+                  className="inline-flex items-center gap-1 text-sm transition-opacity hover:opacity-75"
+                  style={{ color: "#c4426a" }}
+                >
+                  See all their stories →
+                </Link>
               </div>
             </div>
           </div>
         </div>
+
+        {/* More from this author */}
+        {moreFromAuthor.length > 0 && (
+          <div className="mt-6 pt-8" style={{ borderTop: "1px solid var(--border)" }}>
+            <RecsCarousel title={`More from ${story.author.name}`} stories={moreFromAuthor} />
+          </div>
+        )}
 
         {/* Ad: before comment section */}
         <AdSlot identifier="story_detail_pre_comments" />

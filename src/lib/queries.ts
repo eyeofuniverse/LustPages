@@ -602,6 +602,7 @@ async function getTagBasedRecs(
   storyId: string,
   tagNames: string[],
   categoryIds: string[],
+  authorId: string,
   take: number,
 ) {
   if (tagNames.length === 0 && categoryIds.length === 0) return [];
@@ -618,6 +619,7 @@ async function getTagBasedRecs(
     select: {
       id: true, title: true, slug: true, coverImage: true,
       readingTime: true, ratingAvg: true, ratingCount: true, coinPrice: true,
+      views: true, authorId: true,
       storyTags: { select: { name: true, slug: true, isKeyword: true } },
       categories: { select: { id: true, name: true, slug: true, color: true } },
       author: { select: { name: true, slug: true } },
@@ -634,7 +636,11 @@ async function getTagBasedRecs(
     const sharedTags = s.storyTags.filter((t) => tagSet.has(t.name)).length;
     const sameCategory = s.categories.some((c) => catSet.has(c.id)) ? 1 : 0;
     const engagement = Math.log1p(s._count.likes);
-    return { story: s, score: sharedTags * 3 + sameCategory * 2 + engagement };
+    const viewBoost = Math.log1p(s.views) * 0.3;
+    const ratingBoost = (s.ratingCount >= 3 ? s.ratingAvg : 0) * 0.4;
+    const authorBoost = s.authorId === authorId ? 2 : 0;
+    const score = sharedTags * 3 + sameCategory * 2 + engagement + viewBoost + ratingBoost + authorBoost;
+    return { story: s, score };
   });
 
   scored.sort((a, b) => b.score - a.score);
@@ -686,21 +692,58 @@ async function getCollaborativeRecs(storyId: string, take: number) {
     .map(resolveStoryCover);
 }
 
+export async function getMoreFromAuthor(authorId: string, excludeStoryId: string, take = 5) {
+  const stories = await prisma.story.findMany({
+    where: { published: true, authorId, id: { not: excludeStoryId } },
+    orderBy: { views: "desc" },
+    take,
+    select: {
+      id: true, title: true, slug: true, coverImage: true,
+      readingTime: true, ratingAvg: true, ratingCount: true, coinPrice: true,
+      categories: { select: { id: true, name: true, slug: true, color: true } },
+      author: { select: { name: true, slug: true } },
+      _count: { select: { likes: true, comments: true } },
+      seriesInfo: { select: { coverImage: true } },
+    },
+  });
+  return stories.map(resolveStoryCover);
+}
+
 export async function getStoryRecommendations(
   storyId: string,
   tagNames: string[],
   categoryIds: string[],
+  authorId: string,
   take = 6,
 ) {
   const [tagBased, collaborative] = await Promise.all([
-    getTagBasedRecs(storyId, tagNames, categoryIds, take),
+    getTagBasedRecs(storyId, tagNames, categoryIds, authorId, take),
     getCollaborativeRecs(storyId, take),
   ]);
 
   const collabIds = new Set((collaborative ?? []).map((s) => s.id));
   const filteredTagBased = tagBased.filter((s) => !collabIds.has(s.id)).slice(0, take);
 
-  return { tagBased: filteredTagBased, collaborative };
+  // Fallback: when both engines are empty (new story, no tags, or insufficient likes)
+  // surface the platform's most-viewed stories so the section is never blank.
+  const popularSelect = {
+    id: true, title: true, slug: true, coverImage: true,
+    readingTime: true, ratingAvg: true, ratingCount: true, coinPrice: true,
+    categories: { select: { id: true, name: true, slug: true, color: true } },
+    author: { select: { name: true, slug: true } },
+    _count: { select: { likes: true, comments: true } },
+    seriesInfo: { select: { coverImage: true } },
+  } as const;
+  const fallback = (filteredTagBased.length === 0 && collaborative === null)
+    ? await prisma.story.findMany({
+        where: { published: true, id: { not: storyId } },
+        orderBy: { views: "desc" },
+        take,
+        select: popularSelect,
+      }).then((stories) => stories.length > 0 ? stories.map(resolveStoryCover) : null)
+    : null;
+
+  return { tagBased: filteredTagBased, collaborative, fallback };
 }
 
 export async function getAuthorByUserId(userId: string) {
