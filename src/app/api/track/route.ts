@@ -23,7 +23,9 @@ function cleanReferrer(ref: string | null): string | null {
 export async function POST(req: NextRequest) {
   // 120 page views per IP per minute — well above any real browser cadence
   const forwarded = req.headers.get("x-forwarded-for");
-  const ip = forwarded ? forwarded.split(",")[0].trim() : (req.headers.get("x-real-ip") ?? "unknown");
+  const ip = forwarded
+    ? forwarded.split(",")[0].trim()
+    : (req.headers.get("x-real-ip") ?? req.headers.get("cf-connecting-ip") ?? "unknown");
   const { allowed } = rateLimit(`track:${ip}`, 120, 60 * 1000);
   if (!allowed) return NextResponse.json({ ok: true });
 
@@ -39,11 +41,6 @@ export async function POST(req: NextRequest) {
     if (path.startsWith("/meminhaj") || path.startsWith("/api")) {
       return NextResponse.json({ ok: true });
     }
-
-    const forwarded = req.headers.get("x-forwarded-for");
-    const ip = forwarded
-      ? forwarded.split(",")[0].trim()
-      : (req.headers.get("x-real-ip") ?? req.headers.get("cf-connecting-ip") ?? "unknown");
 
     const ua = req.headers.get("user-agent") ?? "";
     if (BOT_PATTERN.test(ua)) return NextResponse.json({ ok: true });

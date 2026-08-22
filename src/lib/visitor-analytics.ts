@@ -233,18 +233,20 @@ export async function getVisitorData(days = 7): Promise<VisitorData> {
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
 
-  const [visits, cachedGeo] = await Promise.all([
-    prisma.pageVisit.findMany({
-      where: { visitedAt: { gte: since } },
-      orderBy: { visitedAt: "desc" },
-      take: 10000,
-      select: { id: true, ip: true, path: true, visitedAt: true },
-    }),
-    prisma.ipGeoCache.findMany(),
-  ]);
+  const visits = await prisma.pageVisit.findMany({
+    where: { visitedAt: { gte: since } },
+    orderBy: { visitedAt: "desc" },
+    take: 10000,
+    select: { id: true, ip: true, path: true, visitedAt: true },
+  });
+
+  const uniqueIps = [...new Set(visits.map((v) => v.ip))].filter((ip) => ip !== "unknown");
+
+  const cachedGeo = uniqueIps.length > 0
+    ? await prisma.ipGeoCache.findMany({ where: { ip: { in: uniqueIps } } })
+    : [];
 
   const geoMap = new Map(cachedGeo.map((g) => [g.ip, g]));
-  const uniqueIps = [...new Set(visits.map((v) => v.ip))].filter((ip) => ip !== "unknown");
   const uncachedIps = uniqueIps.filter((ip) => !geoMap.has(ip));
   if (uncachedIps.length > 0) {
     const resolved = await resolveGeo(uncachedIps);

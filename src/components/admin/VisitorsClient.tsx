@@ -356,7 +356,7 @@ export function VisitorsClient({ data: initialData }: { data: VisitorData }) {
           <div className="p-1">
             {tab === "visitors" && <VisitorTable visitors={data.visitors} now={now} />}
             {tab === "activity" && <ActivityTable visits={data.recentVisits} now={now} />}
-            {tab === "countries" && <CountriesTable countries={data.topCountries} total={data.topCountries.reduce((s, c) => s + c.count, 0)} />}
+            {tab === "countries" && <CountriesTable countries={data.topCountries} total={data.uniqueVisitors} />}
           </div>
         </div>
 
