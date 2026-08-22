@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export const revalidate = 1800;
 
 export default async function TagsIndexPage() {
-  const rawTags = await getAllTags();
+  const rawTags = await getAllTags().catch(() => []);
   const tags = rawTags.map((t) => ({
     tag: t.tag,
     count: t.count,

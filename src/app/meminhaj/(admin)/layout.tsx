@@ -13,6 +13,8 @@ import { Toaster } from "sonner";
 import type { Metadata } from "next";
 import type { AdminPermissionKey } from "@/lib/admin-permissions";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };

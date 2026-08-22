@@ -210,7 +210,7 @@ export default async function CollectionDetailPage({ params }: Props) {
     badgeIcon = ICON_MAP[auto.icon] ?? <Zap size={15} />;
     accentColor = "#c4426a";
     sectionLabel = SECTION_META[auto.section].label;
-    stories = (await getAutoCollectionStories(slug, 30)) as StoryItem[];
+    stories = (await getAutoCollectionStories(slug, 30).catch(() => [])) as StoryItem[];
     editorialEntries = stories.map((s, i) => ({ id: s.id, position: i, editorialNote: null, story: s }));
 
   // ── Category collection ────────────────────────────────────────────

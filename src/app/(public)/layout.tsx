@@ -10,7 +10,7 @@ export default async function PublicLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const categories = await getCategories();
+  const categories = await getCategories().catch(() => []);
   return (
     <div className="flex flex-col min-h-screen">
       <Header categories={categories} />
