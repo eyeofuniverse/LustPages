@@ -137,17 +137,19 @@ export function StoryCard({ story, variant = "default", priority = false }: Stor
         >
           <div className="mb-2 flex flex-wrap gap-1.5">
             {story.categories.map((cat) => (
-              <span
+              <Link
                 key={cat.id}
-                className="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                href={`/categories/${cat.slug}`}
+                className="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold transition-opacity hover:opacity-80"
                 style={{
                   background: cat.color + "33",
                   color: cat.color,
                   border: `1px solid ${cat.color}55`,
                 }}
+                onClick={(e) => e.stopPropagation()}
               >
                 {cat.name}
-              </span>
+              </Link>
             ))}
           </div>
           <h2

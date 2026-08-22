@@ -114,11 +114,11 @@ export default async function SeriesPage({ params }: Props) {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
       {/* Back */}
       <Link
-        href="/stories"
+        href="/series"
         className="inline-flex items-center gap-2 text-sm mb-8 transition-opacity hover:opacity-75"
         style={{ color: "var(--muted-foreground)" }}
       >
-        <ArrowLeft size={15} /> Back to Stories
+        <ArrowLeft size={15} /> Back to Series
       </Link>
 
       {/* Series header */}

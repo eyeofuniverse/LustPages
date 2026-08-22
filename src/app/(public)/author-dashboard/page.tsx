@@ -462,6 +462,9 @@ export default async function AuthorDashboardPage() {
             <Layers size={18} style={{ color: "#c4426a" }} />
             Your Series
           </h2>
+          <Link href="/author-dashboard/series" className="text-sm transition-opacity hover:opacity-75" style={{ color: "#c4426a" }}>
+            View all →
+          </Link>
         </div>
 
         {seriesList.length === 0 ? (

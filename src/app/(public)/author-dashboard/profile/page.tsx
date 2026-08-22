@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { AuthorProfileForm } from "@/components/author/AuthorProfileForm";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Edit Profile — LustPages" };
@@ -28,12 +28,22 @@ export default async function AuthorProfilePage() {
         <ArrowLeft size={14} /> Dashboard
       </Link>
 
-      <h1
-        className="text-2xl font-bold mb-6"
-        style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
-      >
-        Edit Profile
-      </h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1
+          className="text-2xl font-bold"
+          style={{ fontFamily: "var(--font-playfair), serif", color: "var(--foreground)" }}
+        >
+          Edit Profile
+        </h1>
+        <Link
+          href={`/authors/${author.slug}`}
+          target="_blank"
+          className="inline-flex items-center gap-1.5 text-sm transition-opacity hover:opacity-75"
+          style={{ color: "#c4426a" }}
+        >
+          Public profile <ExternalLink size={13} />
+        </Link>
+      </div>
 
       <AuthorProfileForm
         initialData={{

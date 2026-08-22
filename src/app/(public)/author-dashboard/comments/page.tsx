@@ -2,7 +2,8 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { getOrCreateAuthorByUserId, getAuthorComments } from "@/lib/queries";
 import { AuthorCommentsClient } from "@/components/dashboard/AuthorCommentsClient";
-import { MessageCircle } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, MessageCircle } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Comments — Author Dashboard" };
@@ -17,6 +18,13 @@ export default async function AuthorCommentsPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
+      <Link
+        href="/author-dashboard"
+        className="inline-flex items-center gap-2 text-sm mb-6 transition-opacity hover:opacity-75"
+        style={{ color: "var(--muted-foreground)" }}
+      >
+        <ArrowLeft size={14} /> Dashboard
+      </Link>
       <div className="flex items-center gap-3 mb-8">
         <div
           className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"

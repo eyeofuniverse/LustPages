@@ -114,6 +114,8 @@ export default async function CategoryPage({ params, searchParams }: Props) {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-xs mb-5" style={{ color: "var(--muted-foreground)" }} aria-label="Breadcrumb">
+          <Link href="/" className="hover:opacity-75 transition-opacity">Home</Link>
+          <span>›</span>
           <Link href="/stories" className="hover:opacity-75 transition-opacity">Stories</Link>
           <span>›</span>
           <span style={{ color: category.color, fontWeight: 600 }}>{category.name}</span>

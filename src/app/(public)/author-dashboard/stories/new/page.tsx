@@ -2,6 +2,8 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { getOrCreateAuthorByUserId, getCategories, getAllStructuredTags } from "@/lib/queries";
 import { AuthorStoryForm } from "@/components/author/AuthorStoryForm";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "New Story — Author Dashboard" };
@@ -17,6 +19,13 @@ export default async function AuthorNewStoryPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+      <Link
+        href="/author-dashboard"
+        className="inline-flex items-center gap-2 text-sm mb-6 transition-opacity hover:opacity-75"
+        style={{ color: "var(--muted-foreground)" }}
+      >
+        <ArrowLeft size={14} /> Dashboard
+      </Link>
       <div className="mb-8">
         <h1
           className="text-2xl font-bold"

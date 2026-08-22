@@ -15,12 +15,18 @@ interface FooterProps {
 const explore = [
   { label: "Browse All Stories", href: "/stories" },
   { label: "Series", href: "/series" },
+  { label: "Collections", href: "/collections" },
   { label: "Trending", href: "/trending" },
+  { label: "Tags", href: "/tags" },
   { label: "Authors", href: "/authors" },
   { label: "Search", href: "/search" },
 ];
 
 const legal = [
+  { label: "About", href: "/about" },
+  { label: "Contact", href: "/contact" },
+  { label: "FAQ", href: "/faq" },
+  { label: "DMCA", href: "/dmca" },
   { label: "Terms of Service", href: "/terms" },
   { label: "Privacy Policy", href: "/privacy" },
   { label: "Content Warning", href: "/content-warning" },
@@ -128,7 +134,12 @@ export function Footer({ categories = [] }: FooterProps) {
               </li>
               <li>
                 <Link href="/profile" className="text-sm transition-opacity hover:opacity-75" style={{ color: "var(--muted-foreground)" }}>
-                  My Profile
+                  My Library
+                </Link>
+              </li>
+              <li>
+                <Link href="/account/settings" className="text-sm transition-opacity hover:opacity-75" style={{ color: "var(--muted-foreground)" }}>
+                  Account Settings
                 </Link>
               </li>
               <li>

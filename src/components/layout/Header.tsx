@@ -6,7 +6,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useState, useRef, useEffect } from "react";
 import {
   BookOpen, Search, Menu, X, User, LogOut, Heart, Library,
-  LayoutDashboard, ChevronDown, PenSquare, Coins, Lock, Layers, Tag, TrendingUp,
+  LayoutDashboard, ChevronDown, PenSquare, Coins, Lock, Layers, Tag, TrendingUp, Settings,
 } from "lucide-react";
 import { CoinBadge } from "@/components/coins/CoinBadge";
 
@@ -288,6 +288,9 @@ export function Header({ categories }: HeaderProps) {
                           <LayoutDashboard size={15} /> Admin Panel
                         </Link>
                       )}
+                      <Link href="/account/settings" className="flex items-center gap-2.5 px-4 py-2.5 text-sm transition-opacity hover:opacity-75" style={{ color: "var(--foreground)" }} onClick={() => setUserMenuOpen(false)}>
+                        <Settings size={15} /> Account Settings
+                      </Link>
                       <div className="border-t" style={{ borderColor: "var(--border)" }} />
                       <button
                         onClick={() => { signOut(); setUserMenuOpen(false); }}
@@ -388,6 +391,9 @@ export function Header({ categories }: HeaderProps) {
                   <PenSquare size={15} /> Author Profile
                 </Link>
               )}
+              <Link href="/account/settings" onClick={closeMobile} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-75" style={{ color: "var(--foreground)" }}>
+                <Settings size={15} /> Account Settings
+              </Link>
               {isAdmin && (
                 <Link href="/meminhaj" onClick={closeMobile} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-75" style={{ color: "#c4426a" }}>
                   <LayoutDashboard size={15} /> Admin Panel
@@ -406,6 +412,7 @@ export function Header({ categories }: HeaderProps) {
           {/* Main nav links */}
           <NavItem href="/stories" label="Stories" icon={<BookOpen size={16} />} onClick={closeMobile} active={pathname === "/stories"} />
           <NavItem href="/series" label="Series" icon={<Layers size={16} />} onClick={closeMobile} active={pathname === "/series"} />
+          <NavItem href="/collections" label="Collections" icon={<Library size={16} />} onClick={closeMobile} active={pathname === "/collections"} />
           <NavItem href="/trending" label="Trending" icon={<TrendingUp size={16} />} onClick={closeMobile} active={pathname === "/trending"} />
           <NavItem href="/tags" label="Tags" icon={<Tag size={16} />} onClick={closeMobile} active={pathname === "/tags"} />
           <NavItem href="/premium/stories" label="Premium" icon={<Lock size={16} />} onClick={closeMobile} active={pathname.startsWith("/premium")} />

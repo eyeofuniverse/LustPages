@@ -123,12 +123,13 @@ export default async function TrendingPage() {
                     by {story.author.name}
                   </p>
                   {primaryCategory && (
-                    <span
-                      className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded mb-2"
+                    <Link
+                      href={`/categories/${primaryCategory.slug}`}
+                      className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded mb-2 transition-opacity hover:opacity-80"
                       style={{ background: primaryCategory.color + "20", color: primaryCategory.color }}
                     >
                       {primaryCategory.name}
-                    </span>
+                    </Link>
                   )}
                   {/* Stats */}
                   <div className="flex items-center gap-3 flex-wrap">

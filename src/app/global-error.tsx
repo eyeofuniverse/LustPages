@@ -34,7 +34,8 @@ export default function GlobalError({
           }
           h1 { font-size: 1.75rem; font-weight: 700; margin: 0 0 0.5rem; color: #fff; }
           p { font-size: 0.875rem; color: #888; margin: 0 0 1.5rem; }
-          button {
+          button, .home-link {
+            display: inline-block;
             padding: 0.625rem 1.5rem;
             border-radius: 0.75rem;
             border: none;
@@ -44,15 +45,21 @@ export default function GlobalError({
             font-weight: 600;
             cursor: pointer;
             transition: opacity 0.15s;
+            text-decoration: none;
           }
-          button:hover { opacity: 0.85; }
+          button:hover, .home-link:hover { opacity: 0.85; }
+          .btn-row { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+          .home-link { background: #2a2a2a; border: 1px solid #3a3a3a; color: #aaa; }
         `}</style>
       </head>
       <body>
         <div className="card">
           <h1>Something went wrong</h1>
           <p>An unexpected error occurred. Please try again.</p>
-          <button onClick={reset}>Try again</button>
+          <div className="btn-row">
+            <button onClick={reset}>Try again</button>
+            <a href="/" className="home-link">Go home</a>
+          </div>
         </div>
       </body>
     </html>

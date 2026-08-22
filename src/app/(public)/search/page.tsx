@@ -513,7 +513,7 @@ export default async function SearchPage({ searchParams }: Props) {
                     {storyCount > 20 && (
                       <div className="mt-6 text-center">
                         <Link
-                          href={`/stories?search=${encodeURIComponent(query)}`}
+                          href={`/search?q=${encodeURIComponent(query)}&type=stories`}
                           className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-semibold transition-opacity hover:opacity-80"
                           style={{
                             background: "rgba(196,66,106,0.08)",
