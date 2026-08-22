@@ -794,7 +794,7 @@ export async function getAuthorStories(authorId: string) {
       coverImage: true, readingTime: true, views: true,
       series: true, createdAt: true, updatedAt: true,
       ratingAvg: true, ratingCount: true, coinPrice: true,
-      status: true, published: true, featured: true,
+      status: true, published: true, featured: true, scheduledAt: true,
       rejectionReason: true, chapterNumber: true, seriesId: true,
       categories: { select: { id: true, name: true, slug: true, color: true } },
       _count: { select: { likes: true, comments: true } },

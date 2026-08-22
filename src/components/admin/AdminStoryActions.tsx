@@ -25,11 +25,11 @@ function deriveStatus(story: StoryProps): StatusValue {
 }
 
 const STATUS_STYLES: Record<StatusValue, { bg: string; color: string; label: string }> = {
-  published: { bg: "rgba(34,197,94,0.12)", color: "#22c55e", label: "Published" },
-  scheduled: { bg: "rgba(99,102,241,0.12)", color: "#6366f1", label: "Scheduled" },
-  draft:     { bg: "rgba(234,179,8,0.12)",  color: "#eab308", label: "Draft" },
-  pending:   { bg: "rgba(99,102,241,0.12)", color: "#6366f1", label: "Pending" },
-  rejected:  { bg: "rgba(239,68,68,0.12)",  color: "#ef4444", label: "Rejected" },
+  published: { bg: "rgba(34,197,94,0.12)",   color: "#22c55e", label: "Published" },
+  scheduled: { bg: "rgba(249,115,22,0.12)",  color: "#f97316", label: "Scheduled" },
+  draft:     { bg: "rgba(234,179,8,0.12)",   color: "#eab308", label: "Draft" },
+  pending:   { bg: "rgba(99,102,241,0.12)",  color: "#6366f1", label: "Pending" },
+  rejected:  { bg: "rgba(239,68,68,0.12)",   color: "#ef4444", label: "Rejected" },
 };
 
 export function AdminStoryActions({ story }: { story: StoryProps }) {
@@ -112,8 +112,18 @@ export function AdminStoryActions({ story }: { story: StoryProps }) {
 
   const cfg = STATUS_STYLES[currentStatus];
 
+  const scheduledDisplay = currentStatus === "scheduled" && story.scheduledAt
+    ? new Date(story.scheduledAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+    : null;
+
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex flex-col gap-1">
+      {scheduledDisplay && (
+        <span className="text-[10px] font-medium" style={{ color: "#f97316" }}>
+          {scheduledDisplay}
+        </span>
+      )}
+      <div className="flex items-center gap-1">
       {/* Status select */}
       <div className="relative">
         <select
@@ -146,6 +156,7 @@ export function AdminStoryActions({ story }: { story: StoryProps }) {
             <input
               type="datetime-local"
               value={scheduledDate}
+              min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
               onChange={(e) => setScheduledDate(e.target.value)}
               className="text-xs rounded-lg px-2 py-1 outline-none border-0"
               style={{ background: "var(--muted)", color: "var(--foreground)" }}
@@ -203,6 +214,7 @@ export function AdminStoryActions({ story }: { story: StoryProps }) {
 
       {/* Delete */}
       <DeleteButton storyId={story.id} />
+      </div>
     </div>
   );
 }

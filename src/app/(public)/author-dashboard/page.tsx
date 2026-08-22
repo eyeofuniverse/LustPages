@@ -16,7 +16,7 @@ import { prisma } from "@/lib/prisma";
 import {
   PenSquare, BookOpen, Eye, Heart, Clock,
   CheckCircle, XCircle, AlertCircle, FileText,
-  ArrowRight, Plus, Layers, Coins, MessageCircle, BarChart2, Star, Settings, Lock, Award,
+  ArrowRight, Plus, Layers, Coins, MessageCircle, BarChart2, Star, Settings, Lock, Award, CalendarClock,
 } from "lucide-react";
 import { UserBadges } from "@/components/badges/UserBadges";
 import { computeSeriesRating } from "@/lib/queries";
@@ -25,10 +25,11 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Author Dashboard — LustPages" };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ElementType }> = {
-  draft: { label: "Draft", color: "#eab308", bg: "rgba(234,179,8,0.1)", icon: FileText },
-  pending: { label: "Pending Review", color: "#6366f1", bg: "rgba(99,102,241,0.1)", icon: AlertCircle },
-  approved: { label: "Published", color: "#22c55e", bg: "rgba(34,197,94,0.1)", icon: CheckCircle },
-  rejected: { label: "Rejected", color: "#ef4444", bg: "rgba(239,68,68,0.1)", icon: XCircle },
+  draft:     { label: "Draft",          color: "#eab308", bg: "rgba(234,179,8,0.1)",   icon: FileText },
+  pending:   { label: "Pending Review", color: "#6366f1", bg: "rgba(99,102,241,0.1)",  icon: AlertCircle },
+  approved:  { label: "Published",      color: "#22c55e", bg: "rgba(34,197,94,0.1)",   icon: CheckCircle },
+  rejected:  { label: "Rejected",       color: "#ef4444", bg: "rgba(239,68,68,0.1)",   icon: XCircle },
+  scheduled: { label: "Scheduled",      color: "#f97316", bg: "rgba(249,115,22,0.1)",  icon: CalendarClock },
 };
 
 export default async function AuthorDashboardPage() {
@@ -324,7 +325,9 @@ export default async function AuthorDashboardPage() {
         ) : (
           <div className="space-y-3">
             {stories.map((story) => {
-              const cfg = STATUS_CONFIG[story.status] ?? STATUS_CONFIG.draft;
+              const isScheduled = story.status === "approved" && !story.published && !!story.scheduledAt;
+              const displayStatus = isScheduled ? "scheduled" : story.status;
+              const cfg = STATUS_CONFIG[displayStatus] ?? STATUS_CONFIG.draft;
               const StatusIcon = cfg.icon;
               const canEdit = story.status === "draft" || story.status === "rejected" || story.status === "approved";
               const isPublished = story.status === "approved" && story.published;
@@ -347,6 +350,11 @@ export default async function AuthorDashboardPage() {
                           <StatusIcon size={10} />
                           {cfg.label}
                         </span>
+                        {isScheduled && story.scheduledAt && (
+                          <span className="text-xs" style={{ color: "#f97316" }}>
+                            Publishes {new Date(story.scheduledAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        )}
                         {story.categories.map((cat) => (
                           <span
                             key={cat.id}
