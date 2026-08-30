@@ -1751,7 +1751,7 @@ export async function getPremiumStoriesPaginated({ take = 15, skip = 0 }: { take
     select: {
       id: true, title: true, slug: true, excerpt: true, coverImage: true,
       readingTime: true, views: true, createdAt: true, ratingAvg: true,
-      ratingCount: true, coinPrice: true, featured: true,
+      ratingCount: true, coinPrice: true, featured: true, series: true,
       categories: { select: { id: true, name: true, slug: true, color: true } },
       author: { select: { id: true, name: true, slug: true, image: true } },
       storyTags: { select: { name: true, slug: true, isKeyword: true } },
