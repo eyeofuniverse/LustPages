@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { revalidateTag } from "next/cache";
 
 export async function GET(req: NextRequest) {
   const auth = req.headers.get("authorization");
@@ -98,7 +97,6 @@ export async function GET(req: NextRequest) {
     where: { status: "approved", published: false, scheduledAt: { lte: new Date() } },
     data: { published: true, scheduledAt: null },
   });
-  if (published.count > 0) revalidateTag("stories");
 
   // 5. Expire featured promotions whose window has ended, then promote queued ones.
   const FEATURED_MAX = 10;
