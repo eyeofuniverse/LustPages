@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { revalidateTag } from "next/cache";
 
 export async function GET(req: NextRequest) {
   const auth = req.headers.get("authorization");
@@ -92,5 +93,39 @@ export async function GET(req: NextRequest) {
     )
   `;
 
-  return NextResponse.json({ ok: true, expiredSubs, expiredWelcome });
+  // 4. Publish any scheduled stories whose scheduledAt has passed.
+  const published = await prisma.story.updateMany({
+    where: { status: "approved", published: false, scheduledAt: { lte: new Date() } },
+    data: { published: true, scheduledAt: null },
+  });
+  if (published.count > 0) revalidateTag("stories");
+
+  // 5. Expire featured promotions whose window has ended, then promote queued ones.
+  const FEATURED_MAX = 10;
+  const FEATURED_DURATION = 7 * 24 * 60 * 60 * 1000;
+  const now2 = new Date();
+  await prisma.featuredPromotion.updateMany({
+    where: { status: "active", expiresAt: { lt: now2 } },
+    data: { status: "expired" },
+  });
+  for (const type of ["story", "series"] as const) {
+    const activeCount = await prisma.featuredPromotion.count({ where: { type, status: "active" } });
+    if (activeCount < FEATURED_MAX) {
+      const queued = await prisma.featuredPromotion.findMany({
+        where: { type, status: "queued" },
+        orderBy: { createdAt: "asc" },
+        take: FEATURED_MAX - activeCount,
+      });
+      if (queued.length > 0) {
+        await Promise.all(queued.map((p) =>
+          prisma.featuredPromotion.update({
+            where: { id: p.id },
+            data: { status: "active", startedAt: now2, expiresAt: new Date(now2.getTime() + FEATURED_DURATION) },
+          })
+        ));
+      }
+    }
+  }
+
+  return NextResponse.json({ ok: true, expiredSubs, expiredWelcome, publishedStories: published.count });
 }

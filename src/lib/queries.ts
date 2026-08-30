@@ -40,7 +40,6 @@ export async function getPublishedStories({
   maxLength?: number;
   minRating?: number;
 } = {}) {
-  await publishScheduledStories();
   const [searchWhere, tagSlugs] = await Promise.all([
     search ? buildStorySearchWhere(search) : Promise.resolve({}),
     tag    ? getTagAndChildrenSlugs(tag)   : Promise.resolve(null),
@@ -88,7 +87,6 @@ export async function getPublishedStories({
 }
 
 export async function getStoryBySlug(slug: string) {
-  await publishScheduledStories();
   return prisma.story.findUnique({
     where: { slug, published: true },
     include: {
@@ -136,6 +134,7 @@ export async function getAuthors() {
       stories: {
         where: { published: true },
         select: { views: true, _count: { select: { likes: true } } },
+        take: 500,
       },
     },
     orderBy: { name: "asc" },
@@ -170,6 +169,7 @@ export async function getAuthorBySlug(slug: string) {
       stories: {
         where: { published: true },
         select: { views: true, _count: { select: { likes: true } } },
+        take: 1000,
       },
       seriesList: {
         select: {
@@ -533,10 +533,14 @@ export async function getUserBookmarks(userId: string) {
     where: { userId },
     include: {
       story: {
-        include: {
-          categories: true,
-          author: true,
+        select: {
+          id: true, title: true, slug: true, excerpt: true, coverImage: true,
+          readingTime: true, views: true, createdAt: true, ratingAvg: true,
+          ratingCount: true, coinPrice: true,
+          categories: { select: { id: true, name: true, slug: true, color: true } },
+          author: { select: { id: true, name: true, slug: true, image: true } },
           _count: { select: { likes: true, comments: true } },
+          seriesInfo: { select: { coverImage: true } },
         },
       },
     },
@@ -545,8 +549,8 @@ export async function getUserBookmarks(userId: string) {
 }
 
 const STORY_INCLUDE = {
-  categories: true,
-  author: true,
+  categories: { select: { id: true, name: true, slug: true, color: true } },
+  author: { select: { id: true, name: true, slug: true, image: true } },
   _count: { select: { likes: true, comments: true } },
 } as const;
 
@@ -872,9 +876,14 @@ export async function getAdminStories({
   const [stories, total] = await Promise.all([
     prisma.story.findMany({
       where,
-      include: {
-        categories: true,
-        author: true,
+      select: {
+        id: true, title: true, slug: true, excerpt: true, coverImage: true,
+        readingTime: true, views: true, createdAt: true, updatedAt: true,
+        ratingAvg: true, ratingCount: true, coinPrice: true, featured: true,
+        status: true, published: true, scheduledAt: true, rejectionReason: true,
+        chapterNumber: true, seriesId: true,
+        categories: { select: { id: true, name: true, slug: true, color: true } },
+        author: { select: { id: true, name: true, slug: true } },
         storyTags: { select: { name: true, isApproved: true } },
         _count: { select: { likes: true, comments: true, bookmarks: true } },
       },
@@ -1246,32 +1255,10 @@ export type PaidFeaturedEntry = {
   author: { name: string };
 };
 
+// Expiry and activation of featured promotions is handled by the daily expire-coins cron.
+// This function is a pure read — no writes — so it's safe to cache.
 export async function getFeaturedPromotions(type: "story" | "series"): Promise<FeaturedEntry[]> {
   const MAX = 10;
-  const DURATION = 7 * 24 * 60 * 60 * 1000;
-  const now = new Date();
-
-  await prisma.featuredPromotion.updateMany({
-    where: { type, status: "active", expiresAt: { lt: now } },
-    data: { status: "expired" },
-  });
-
-  const paidCount = await prisma.featuredPromotion.count({ where: { type, status: "active" } });
-  if (paidCount < MAX) {
-    const queued = await prisma.featuredPromotion.findMany({
-      where: { type, status: "queued" },
-      orderBy: { createdAt: "asc" },
-      take: MAX - paidCount,
-    });
-    if (queued.length > 0) {
-      await Promise.all(queued.map((p) =>
-        prisma.featuredPromotion.update({
-          where: { id: p.id },
-          data: { status: "active", startedAt: now, expiresAt: new Date(now.getTime() + DURATION) },
-        })
-      ));
-    }
-  }
 
   // Always include both relations — Prisma returns null when the FK is null
   const paid = await prisma.featuredPromotion.findMany({
@@ -1761,10 +1748,14 @@ export async function getPremiumStoriesPaginated({ take = 15, skip = 0 }: { take
     orderBy: { createdAt: "desc" },
     take,
     skip,
-    include: {
-      categories: true,
-      author: true,
+    select: {
+      id: true, title: true, slug: true, excerpt: true, coverImage: true,
+      readingTime: true, views: true, createdAt: true, ratingAvg: true,
+      ratingCount: true, coinPrice: true, featured: true,
+      categories: { select: { id: true, name: true, slug: true, color: true } },
+      author: { select: { id: true, name: true, slug: true, image: true } },
       storyTags: { select: { name: true, slug: true, isKeyword: true } },
+      seriesInfo: { select: { coverImage: true } },
       _count: { select: { likes: true, comments: true, bookmarks: true } },
     },
   });
@@ -1901,6 +1892,7 @@ export async function getAuthorAnalytics(authorId: string) {
       ? prisma.storyView.findMany({
           where: { storyId: { in: storyIds }, viewedAt: { gte: eightWeeksAgo } },
           select: { viewedAt: true },
+          take: 50000,
         })
       : ([] as { viewedAt: Date }[]),
     prisma.tip.findMany({
@@ -1947,6 +1939,7 @@ export async function getAuthorAnalytics(authorId: string) {
       ? prisma.readingHistory.findMany({
           where: { storyId: { in: storyIds } },
           select: { progress: true, completedAt: true },
+          take: 10000,
         })
       : ([] as { progress: number; completedAt: Date | null }[]),
   ]);
@@ -2456,74 +2449,82 @@ export async function getTopTagsForCollections(limit = 24) {
 }
 
 export async function getTagAnalytics() {
-  const tags = await prisma.tag.findMany({
-    where: { isApproved: true },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      tier: true,
-      stories: {
-        where: { published: true },
-        select: {
-          views: true,
-          ratingAvg: true,
-          ratingCount: true,
-          _count: { select: { likes: true, comments: true } },
-        },
+  // Fetch tags and stories separately, then aggregate in JS.
+  // This avoids fetching tag×story Cartesian rows — each story is fetched exactly once.
+  const [tags, stories] = await Promise.all([
+    prisma.tag.findMany({
+      where: { isApproved: true },
+      select: { id: true, name: true, slug: true, tier: true },
+    }),
+    prisma.story.findMany({
+      where: { published: true },
+      select: {
+        views: true,
+        ratingAvg: true,
+        ratingCount: true,
+        storyTags: { select: { id: true } },
+        _count: { select: { likes: true, comments: true } },
       },
-    },
-  });
+    }),
+  ]);
+
+  type Agg = { storyCount: number; totalViews: number; totalLikes: number; totalComments: number; ratingSum: number; ratingWeightSum: number };
+  const stats = new Map<string, Agg>();
+  for (const story of stories) {
+    for (const tag of story.storyTags) {
+      if (!stats.has(tag.id)) stats.set(tag.id, { storyCount: 0, totalViews: 0, totalLikes: 0, totalComments: 0, ratingSum: 0, ratingWeightSum: 0 });
+      const s = stats.get(tag.id)!;
+      s.storyCount++;
+      s.totalViews += story.views;
+      s.totalLikes += story._count.likes;
+      s.totalComments += story._count.comments;
+      if (story.ratingCount > 0) { s.ratingSum += story.ratingAvg * story.ratingCount; s.ratingWeightSum += story.ratingCount; }
+    }
+  }
 
   return tags
     .map((tag) => {
-      const storyCount = tag.stories.length;
-      const totalViews = tag.stories.reduce((s, story) => s + story.views, 0);
-      const totalLikes = tag.stories.reduce((s, story) => s + story._count.likes, 0);
-      const totalComments = tag.stories.reduce((s, story) => s + story._count.comments, 0);
-      const rated = tag.stories.filter((s) => s.ratingCount > 0);
-      const avgRating =
-        rated.length > 0
-          ? rated.reduce((s, story) => s + story.ratingAvg * story.ratingCount, 0) /
-            rated.reduce((s, story) => s + story.ratingCount, 0)
-          : 0;
-      return { id: tag.id, name: tag.name, slug: tag.slug, tier: tag.tier, storyCount, totalViews, totalLikes, totalComments, avgRating };
+      const s = stats.get(tag.id) ?? { storyCount: 0, totalViews: 0, totalLikes: 0, totalComments: 0, ratingSum: 0, ratingWeightSum: 0 };
+      return { id: tag.id, name: tag.name, slug: tag.slug, tier: tag.tier, storyCount: s.storyCount, totalViews: s.totalViews, totalLikes: s.totalLikes, totalComments: s.totalComments, avgRating: s.ratingWeightSum > 0 ? s.ratingSum / s.ratingWeightSum : 0 };
     })
     .sort((a, b) => b.totalViews - a.totalViews);
 }
 
 export async function getCategoryAnalytics() {
-  const cats = await prisma.category.findMany({
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      color: true,
-      stories: {
-        where: { published: true },
-        select: {
-          views: true,
-          ratingAvg: true,
-          ratingCount: true,
-          _count: { select: { likes: true, comments: true } },
-        },
+  const [cats, stories] = await Promise.all([
+    prisma.category.findMany({
+      select: { id: true, name: true, slug: true, color: true },
+    }),
+    prisma.story.findMany({
+      where: { published: true },
+      select: {
+        views: true,
+        ratingAvg: true,
+        ratingCount: true,
+        categories: { select: { id: true } },
+        _count: { select: { likes: true, comments: true } },
       },
-    },
-  });
+    }),
+  ]);
+
+  type Agg = { storyCount: number; totalViews: number; totalLikes: number; totalComments: number; ratingSum: number; ratingWeightSum: number };
+  const stats = new Map<string, Agg>();
+  for (const story of stories) {
+    for (const cat of story.categories) {
+      if (!stats.has(cat.id)) stats.set(cat.id, { storyCount: 0, totalViews: 0, totalLikes: 0, totalComments: 0, ratingSum: 0, ratingWeightSum: 0 });
+      const s = stats.get(cat.id)!;
+      s.storyCount++;
+      s.totalViews += story.views;
+      s.totalLikes += story._count.likes;
+      s.totalComments += story._count.comments;
+      if (story.ratingCount > 0) { s.ratingSum += story.ratingAvg * story.ratingCount; s.ratingWeightSum += story.ratingCount; }
+    }
+  }
 
   return cats
     .map((cat) => {
-      const storyCount = cat.stories.length;
-      const totalViews = cat.stories.reduce((s, story) => s + story.views, 0);
-      const totalLikes = cat.stories.reduce((s, story) => s + story._count.likes, 0);
-      const totalComments = cat.stories.reduce((s, story) => s + story._count.comments, 0);
-      const rated = cat.stories.filter((s) => s.ratingCount > 0);
-      const avgRating =
-        rated.length > 0
-          ? rated.reduce((s, story) => s + story.ratingAvg * story.ratingCount, 0) /
-            rated.reduce((s, story) => s + story.ratingCount, 0)
-          : 0;
-      return { id: cat.id, name: cat.name, slug: cat.slug, color: cat.color, storyCount, totalViews, totalLikes, totalComments, avgRating };
+      const s = stats.get(cat.id) ?? { storyCount: 0, totalViews: 0, totalLikes: 0, totalComments: 0, ratingSum: 0, ratingWeightSum: 0 };
+      return { id: cat.id, name: cat.name, slug: cat.slug, color: cat.color, storyCount: s.storyCount, totalViews: s.totalViews, totalLikes: s.totalLikes, totalComments: s.totalComments, avgRating: s.ratingWeightSum > 0 ? s.ratingSum / s.ratingWeightSum : 0 };
     })
     .sort((a, b) => b.totalViews - a.totalViews);
 }
@@ -2531,25 +2532,37 @@ export async function getCategoryAnalytics() {
 export async function getSearchAnalytics(days = 30) {
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
   const where = { createdAt: { gte: since } };
-  const [rows, total] = await Promise.all([
-    prisma.searchQuery.findMany({ where, orderBy: { createdAt: "desc" }, take: 5000 }),
+
+  const [allGrouped, zeroGrouped, recentRows, total] = await Promise.all([
+    prisma.searchQuery.groupBy({
+      by: ["query"],
+      where,
+      _count: { query: true },
+      orderBy: { _count: { query: "desc" } },
+      take: 100,
+    }),
+    prisma.searchQuery.groupBy({
+      by: ["query"],
+      where: { ...where, results: 0 },
+      _count: { query: true },
+    }),
+    prisma.searchQuery.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      select: { query: true, results: true, createdAt: true },
+    }),
     prisma.searchQuery.count({ where }),
   ]);
 
-  const counts = new Map<string, { count: number; zeroResults: number }>();
-  for (const row of rows) {
-    const e = counts.get(row.query) ?? { count: 0, zeroResults: 0 };
-    e.count++;
-    if (row.results === 0) e.zeroResults++;
-    counts.set(row.query, e);
-  }
+  const zeroMap = new Map(zeroGrouped.map((r) => [r.query, r._count.query]));
+  const topQueries = allGrouped.map((r) => ({
+    query: r.query,
+    count: r._count.query,
+    zeroResults: zeroMap.get(r.query) ?? 0,
+  }));
 
-  const topQueries = Array.from(counts.entries())
-    .map(([query, stats]) => ({ query, ...stats }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 100);
-
-  const recentQueries = rows.slice(0, 50).map((r) => ({
+  const recentQueries = recentRows.map((r) => ({
     query: r.query,
     results: r.results,
     createdAt: r.createdAt.toISOString(),
