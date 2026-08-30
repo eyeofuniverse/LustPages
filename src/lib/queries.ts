@@ -881,7 +881,7 @@ export async function getAdminStories({
         readingTime: true, views: true, createdAt: true, updatedAt: true,
         ratingAvg: true, ratingCount: true, coinPrice: true, featured: true,
         status: true, published: true, scheduledAt: true, rejectionReason: true,
-        chapterNumber: true, seriesId: true,
+        chapterNumber: true, seriesId: true, commentsEnabled: true,
         categories: { select: { id: true, name: true, slug: true, color: true } },
         author: { select: { id: true, name: true, slug: true } },
         storyTags: { select: { name: true, isApproved: true } },
