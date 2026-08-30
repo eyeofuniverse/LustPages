@@ -79,5 +79,18 @@ export async function GET(req: NextRequest) {
     expiredWelcome++;
   }
 
+  // 3. Batch-sync Story.views from StoryView counts (only for stories viewed in last 2 days).
+  // This runs entirely on the DB server — minimal egress, replaces per-request Story.update.
+  await prisma.$executeRaw`
+    UPDATE "Story"
+    SET views = (
+      SELECT COUNT(*)::int FROM "StoryView" WHERE "StoryView"."storyId" = "Story"."id"
+    )
+    WHERE "Story"."id" IN (
+      SELECT DISTINCT "storyId" FROM "StoryView"
+      WHERE "viewedAt" >= NOW() - INTERVAL '2 days'
+    )
+  `;
+
   return NextResponse.json({ ok: true, expiredSubs, expiredWelcome });
 }

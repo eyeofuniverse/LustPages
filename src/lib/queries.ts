@@ -439,13 +439,14 @@ export async function getAllTags() {
 export async function getPopularTags(take = 24) {
   const tags = await prisma.tag.findMany({
     where: { isApproved: true, isKeyword: false },
-    include: { _count: { select: { stories: { where: { published: true } } } } },
-    orderBy: { name: "asc" },
+    select: {
+      slug: true, name: true, tier: true, id: true,
+      _count: { select: { stories: { where: { published: true } } } },
+    },
+    orderBy: { stories: { _count: "desc" } },
+    take,
   });
-  return tags
-    .sort((a, b) => b._count.stories - a._count.stories)
-    .slice(0, take)
-    .map((t) => ({ tag: t.slug, count: t._count.stories, name: t.name, tier: t.tier, id: t.id }));
+  return tags.map((t) => ({ tag: t.slug, count: t._count.stories, name: t.name, tier: t.tier, id: t.id }));
 }
 
 /** Returns approved display tags only (isKeyword=false) — for author story form tag selector. */
@@ -515,13 +516,8 @@ export async function getPendingTagRequestsCount() {
 }
 
 export async function incrementViews(storyId: string) {
-  return prisma.$transaction([
-    prisma.story.update({
-      where: { id: storyId },
-      data: { views: { increment: 1 } },
-    }),
-    prisma.storyView.create({ data: { storyId } }),
-  ]);
+  // Only record the view; Story.views is batch-synced daily by the expire-coins cron
+  return prisma.storyView.create({ data: { storyId } });
 }
 
 export async function getUserLikeAndBookmark(userId: string, storyId: string) {
@@ -1098,7 +1094,6 @@ export async function getDashboardMetrics() {
         name: true,
         color: true,
         _count: { select: { stories: { where: { published: true } } } },
-        stories: { where: { published: true }, select: { views: true } },
       },
     }),
     prisma.tag.findMany({
@@ -1106,8 +1101,9 @@ export async function getDashboardMetrics() {
       select: {
         name: true,
         _count: { select: { stories: { where: { published: true } } } },
-        stories: { where: { published: true }, select: { views: true } },
       },
+      orderBy: { stories: { _count: "desc" } },
+      take: 20,
     }),
     prisma.author.findMany({
       select: {
@@ -1132,19 +1128,18 @@ export async function getDashboardMetrics() {
     .map((cat) => ({
       name: cat.name,
       color: cat.color,
-      views: cat.stories.reduce((sum, s) => sum + s.views, 0),
+      views: cat._count.stories,
       count: cat._count.stories,
     }))
-    .sort((a, b) => b.views - a.views)
+    .sort((a, b) => b.count - a.count)
     .slice(0, 6);
 
   const topTags = tagData
     .map((t) => ({
       name: t.name,
-      views: t.stories.reduce((sum, s) => sum + s.views, 0),
+      views: t._count.stories,
       count: t._count.stories,
     }))
-    .sort((a, b) => b.views - a.views)
     .slice(0, 8);
 
   return {

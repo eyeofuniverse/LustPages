@@ -3,14 +3,14 @@ import { Footer } from "@/components/layout/Footer";
 import { NotificationPrompt } from "@/components/layout/NotificationPrompt";
 import { SignInNudge } from "@/components/layout/SignInNudge";
 import { OneSignalProvider } from "@/components/layout/OneSignalProvider";
-import { getCategories } from "@/lib/queries";
+import { getCachedCategories } from "@/lib/cached-queries";
 
 export default async function PublicLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const categories = await getCategories().catch(() => []);
+  const categories = await getCachedCategories().catch(() => []);
   return (
     <div className="flex flex-col min-h-screen">
       <Header categories={categories} />
