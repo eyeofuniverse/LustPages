@@ -168,7 +168,7 @@ export default async function AuthorPage({ params }: Props) {
                     border: "3px solid rgba(196,66,106,0.25)",
                   }}
                 >
-                  {author.name[0].toUpperCase()}
+                  {(author.name?.[0] ?? "?").toUpperCase()}
                 </div>
               )}
             </div>
@@ -233,7 +233,7 @@ export default async function AuthorPage({ params }: Props) {
             {[
               { icon: BookOpen, value: String(author._count.stories), label: "Stories" },
               { icon: Heart, value: fmt(author.totalLikes), label: "Story Likes" },
-              { icon: Heart, value: fmt(author._count.likes), label: "Followers" },
+              { icon: Users, value: fmt(author._count.likes), label: "Followers" },
             ].map(({ icon: Icon, value, label }, i) => (
               <div
                 key={label}
@@ -435,7 +435,7 @@ export default async function AuthorPage({ params }: Props) {
                         border: "2px solid rgba(196,66,106,0.25)",
                       }}
                     >
-                      {similar.name[0].toUpperCase()}
+                      {(similar.name?.[0] ?? "?").toUpperCase()}
                     </div>
                   )}
                   <h3

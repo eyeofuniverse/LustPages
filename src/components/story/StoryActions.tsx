@@ -16,7 +16,8 @@ export function StoryActions({ storyId, likeCount, bookmarkCount, userId }: Stor
   const [liked, setLiked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [likes, setLikes] = useState(likeCount);
-  const [loading, setLoading] = useState(false);
+  const [likeLoading, setLikeLoading] = useState(false);
+  const [bookmarkLoading, setBookmarkLoading] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -34,8 +35,9 @@ export function StoryActions({ storyId, likeCount, bookmarkCount, userId }: Stor
       router.push("/login");
       return;
     }
-    if (loading) return;
-    setLoading(true);
+    const isLike = type === "like";
+    if (isLike ? likeLoading : bookmarkLoading) return;
+    if (isLike) setLikeLoading(true); else setBookmarkLoading(true);
 
     try {
       const res = await fetch(`/api/stories/${storyId}/${type}`, {
@@ -44,7 +46,7 @@ export function StoryActions({ storyId, likeCount, bookmarkCount, userId }: Stor
       if (!res.ok) throw new Error();
       const data = await res.json();
 
-      if (type === "like") {
+      if (isLike) {
         setLiked(data.liked);
         setLikes((prev) => data.liked ? prev + 1 : prev - 1);
       } else {
@@ -53,7 +55,7 @@ export function StoryActions({ storyId, likeCount, bookmarkCount, userId }: Stor
     } catch {
       /* noop */
     } finally {
-      setLoading(false);
+      if (isLike) setLikeLoading(false); else setBookmarkLoading(false);
     }
   }
 

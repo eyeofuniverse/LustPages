@@ -54,6 +54,7 @@ export function CommentSection({ storyId, comments: initial, userId, storyAuthor
   const [replyText, setReplyText] = useState("");
   const [replySubmitting, setReplySubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [replyError, setReplyError] = useState<string | null>(null);
   const [reportingId, setReportingId] = useState<string | null>(null);
   const [reportReason, setReportReason] = useState("");
@@ -113,6 +114,7 @@ export function CommentSection({ storyId, comments: initial, userId, storyAuthor
   async function handleDelete(commentId: string, parentId?: string) {
     if (!confirm("Delete this comment?")) return;
     setDeletingId(commentId);
+    setDeleteError(null);
     try {
       const res = await fetch(`/api/comments/${commentId}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
@@ -124,7 +126,7 @@ export function CommentSection({ storyId, comments: initial, userId, storyAuthor
         setComments((prev) => prev.filter((c) => c.id !== commentId));
       }
     } catch {
-      // noop
+      setDeleteError("Failed to delete comment. Please try again.");
     } finally {
       setDeletingId(null);
     }
@@ -135,11 +137,12 @@ export function CommentSection({ storyId, comments: initial, userId, storyAuthor
     if (!reportReason) return;
     setReportSubmitting(true);
     try {
-      await fetch(`/api/stories/${storyId}/report`, {
+      const res = await fetch(`/api/stories/${storyId}/report`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason: reportReason, commentId, type: "comment" }),
       });
+      if (!res.ok) throw new Error();
       setReportedIds((prev) => new Set([...prev, commentId]));
       setReportingId(null);
       setReportReason("");
@@ -188,7 +191,9 @@ export function CommentSection({ storyId, comments: initial, userId, storyAuthor
 
       {/* New comment form */}
       <form onSubmit={handleSubmit} className="mb-8">
+        <label htmlFor="comment-input" className="sr-only">Your comment</label>
         <textarea
+          id="comment-input"
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={userId ? "Share your thoughts…" : "Sign in to leave a comment"}
@@ -226,6 +231,10 @@ export function CommentSection({ storyId, comments: initial, userId, storyAuthor
           )}
         </div>
       </form>
+
+      {deleteError && (
+        <p className="text-sm mb-4" style={{ color: "#ef4444" }}>{deleteError}</p>
+      )}
 
       {/* Comments list */}
       {comments.length === 0 ? (

@@ -16,9 +16,16 @@ interface Props {
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const params = await searchParams;
+  const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
   if (params.search) {
     return {
       title: `Series search: "${params.search}" — LustPages`,
+      robots: { index: false, follow: true },
+    };
+  }
+  if (page > 1) {
+    return {
+      title: `Browse Series — Page ${page} — LustPages`,
       robots: { index: false, follow: true },
     };
   }
@@ -48,7 +55,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
 export default async function SeriesPage({ searchParams }: Props) {
   const params = await searchParams;
-  const page = Math.max(1, parseInt(params.page ?? "1", 10));
+  const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
   const skip = (page - 1) * PER_PAGE;
 
   const [seriesList, total] = await Promise.all([
@@ -98,7 +105,7 @@ export default async function SeriesPage({ searchParams }: Props) {
             {params.search ? `Search: "${params.search}"` : "All Series"}
           </h1>
           <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-            {total} {total === 1 ? "series" : "series"} available
+            {total} series available
           </p>
         </div>
       </div>
@@ -142,7 +149,7 @@ export default async function SeriesPage({ searchParams }: Props) {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {seriesList.map((series) => {
-            const cover = series.stories[0]?.coverImage ?? null;
+            const cover = series.coverImage ?? series.stories[0]?.coverImage ?? null;
             const primaryCategory = series.stories[0]?.categories[0];
             const seriesRating = computeSeriesRating(
               series.stories.map((s) => ({ ratingAvg: s.ratingAvg, ratingCount: s.ratingCount }))

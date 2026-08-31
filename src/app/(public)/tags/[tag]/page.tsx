@@ -33,7 +33,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const tagRecord = await getTagBySlug(tagSlug);
   const displayName = tagRecord?.name ?? tagSlug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
   const desc = `Explore the best ${displayName} erotica and adult fiction stories on LustPages. Browse free and premium ${displayName} stories written by talented independent authors.`;
-  const page = Math.max(1, parseInt(pageParam ?? "1", 10));
+  const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
   const canonical = page > 1 ? `${BASE}/tags/${tag}?page=${page}` : `${BASE}/tags/${tag}`;
   return {
     title: page > 1 ? `${displayName} Stories — Page ${page} — LustPages` : `${displayName} Stories — LustPages`,
@@ -73,7 +73,7 @@ export default async function TagPage({ params, searchParams }: Props) {
   }
   const tagName = tagRecord?.name ?? tagSlug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
   const sp = await searchParams;
-  const page = Math.max(1, parseInt(sp.page ?? "1", 10));
+  const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
   const skip = (page - 1) * PER_PAGE;
 
   const [stories, categories, total] = await Promise.all([

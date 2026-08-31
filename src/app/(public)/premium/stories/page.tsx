@@ -16,32 +16,42 @@ interface Props {
 
 const BASE = "https://lustpages.com";
 
-export const metadata: Metadata = {
-  title: "Premium Stories & Series — LustPages",
-  description:
-    "Browse exclusive premium adult fiction stories and series on LustPages. Unlock with coins to access content from top authors.",
-  keywords: ["premium erotica", "premium adult fiction", "exclusive erotic stories", "paid erotica", "lustpages premium"],
-  alternates: { canonical: `${BASE}/premium/stories` },
-  openGraph: {
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const params = await searchParams;
+  const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
+  if (page > 1) {
+    return {
+      title: `Premium Stories — Page ${page} — LustPages`,
+      robots: { index: false, follow: true },
+    };
+  }
+  return {
     title: "Premium Stories & Series — LustPages",
     description:
-      "Browse exclusive premium adult fiction stories and series on LustPages.",
-    type: "website",
-    url: `${BASE}/premium/stories`,
-    images: [{ url: `${BASE}/og-default.jpg`, width: 1200, height: 630, alt: "Premium Stories on LustPages" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Premium Stories & Series — LustPages",
-    description:
-      "Browse exclusive premium adult fiction stories and series. Unlock with coins.",
-    images: [`${BASE}/og-default.jpg`],
-  },
-};
+      "Browse exclusive premium adult fiction stories and series on LustPages. Unlock with coins to access content from top authors.",
+    keywords: ["premium erotica", "premium adult fiction", "exclusive erotic stories", "paid erotica", "lustpages premium"],
+    alternates: { canonical: `${BASE}/premium/stories` },
+    openGraph: {
+      title: "Premium Stories & Series — LustPages",
+      description:
+        "Browse exclusive premium adult fiction stories and series on LustPages.",
+      type: "website",
+      url: `${BASE}/premium/stories`,
+      images: [{ url: `${BASE}/og-default.jpg`, width: 1200, height: 630, alt: "Premium Stories on LustPages" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Premium Stories & Series — LustPages",
+      description:
+        "Browse exclusive premium adult fiction stories and series. Unlock with coins.",
+      images: [`${BASE}/og-default.jpg`],
+    },
+  };
+}
 
 export default async function PremiumStoriesPage({ searchParams }: Props) {
   const params = await searchParams;
-  const page = Math.max(1, parseInt(params.page ?? "1", 10));
+  const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
   const skip = (page - 1) * PER_PAGE;
 
   const [stories, total, premiumSeries] = await Promise.all([

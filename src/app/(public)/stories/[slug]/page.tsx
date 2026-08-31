@@ -335,12 +335,14 @@ export default async function StoryPage({ params }: Props) {
               bookmarkCount={story._count.bookmarks}
               userId={session?.user?.id}
             />
-            <StoryRating
-              storyId={story.id}
-              avgRating={story.ratingAvg}
-              ratingCount={story.ratingCount}
-              userId={session?.user?.id}
-            />
+            {isUnlocked && (
+              <StoryRating
+                storyId={story.id}
+                avgRating={story.ratingAvg}
+                ratingCount={story.ratingCount}
+                userId={session?.user?.id}
+              />
+            )}
           </div>
           <FontSizeControl />
         </div>
@@ -554,7 +556,7 @@ export default async function StoryPage({ params }: Props) {
                   fontFamily: "var(--font-playfair), serif",
                 }}
               >
-                {story.author.name[0]}
+                {story.author.name?.[0] ?? "?"}
               </div>
             )}
             <div className="flex-1 min-w-0">

@@ -1711,7 +1711,7 @@ export async function getSeriesList({
     take,
     skip,
     select: {
-      id: true, name: true, slug: true, description: true,
+      id: true, name: true, slug: true, description: true, coverImage: true,
       author: { select: { name: true, slug: true } },
       _count: { select: { stories: { where: { published: true } } } },
       stories: {

@@ -25,10 +25,32 @@ export async function POST(
 
   const story = await prisma.story.findFirst({
     where: { id: storyId, published: true, commentsEnabled: true },
-    select: { authorId: true },
+    select: {
+      authorId: true,
+      coinPrice: true,
+      chapterNumber: true,
+      seriesId: true,
+      seriesInfo: { select: { isPremium: true, coinPrice: true, freeChapters: true } },
+    },
   });
   if (!story) {
     return NextResponse.json({ error: "Story not found or comments are disabled." }, { status: 404 });
+  }
+
+  // Access check: premium content requires an unlock record before commenting
+  const inSeries = !!story.seriesId && !!story.seriesInfo;
+  const seriesPremium = inSeries && !!story.seriesInfo!.isPremium && !!story.seriesInfo!.coinPrice;
+  const isFreeChapter = seriesPremium && (story.chapterNumber ?? 1) <= (story.seriesInfo!.freeChapters ?? 1);
+  const isPremium = inSeries ? (seriesPremium && !isFreeChapter) : !!story.coinPrice;
+
+  if (isPremium) {
+    const userId = session.user.id;
+    const hasAccess = seriesPremium
+      ? await prisma.seriesUnlock.findUnique({ where: { userId_seriesId: { userId, seriesId: story.seriesId! } } })
+      : await prisma.storyUnlock.findUnique({ where: { userId_storyId: { userId, storyId } } });
+    if (!hasAccess) {
+      return NextResponse.json({ error: "Unlock this story to comment." }, { status: 403 });
+    }
   }
 
   const comment = await prisma.comment.create({

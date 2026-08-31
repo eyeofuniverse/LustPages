@@ -22,6 +22,9 @@ export async function POST(
   if (!story) {
     return NextResponse.json({ error: "Story not found" }, { status: 404 });
   }
+  if (story.authorId === userId) {
+    return NextResponse.json({ error: "Cannot like your own story" }, { status: 403 });
+  }
 
   const existing = await prisma.like.findUnique({
     where: { userId_storyId: { userId, storyId } },

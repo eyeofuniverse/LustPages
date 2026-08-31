@@ -31,7 +31,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const category = await getCategoryBySlug(slug);
   if (!category) return { title: "Category Not Found" };
   const name = category.name;
-  const page = Math.max(1, parseInt(pageParam ?? "1", 10));
+  const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
   const metaDesc =
     category.description ??
     `Explore ${name} erotica and adult fiction on LustPages — slow-burn romance to explicit scenes, all free to read and updated regularly.`;
@@ -62,11 +62,13 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 export default async function CategoryPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const sp = await searchParams;
-  const page = Math.max(1, parseInt(sp.page ?? "1", 10));
+  const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
   const skip = (page - 1) * PER_PAGE;
 
-  const [category, stories, categories, total] = await Promise.all([
-    getCategoryBySlug(slug),
+  const category = await getCategoryBySlug(slug);
+  if (!category) notFound();
+
+  const [stories, categories, total] = await Promise.all([
     getPublishedStories({ take: PER_PAGE, skip, categorySlug: slug }).catch(() => []),
     getCachedCategories().catch(() => []),
     getStoryCount({ published: true, categorySlug: slug }).catch(() => 0),
@@ -76,8 +78,6 @@ export default async function CategoryPage({ params, searchParams }: Props) {
     page === 1 ? getTrendingStories(10).catch(() => []) : Promise.resolve([]),
     getCachedPopularTags(20).catch(() => []),
   ]);
-
-  if (!category) notFound();
 
   const totalPages = Math.ceil(total / PER_PAGE);
 
