@@ -374,7 +374,7 @@ export default async function StoryPage({ params }: Props) {
               </div>
               {second && (
                 <>
-                  <AdSlot identifier="story_detail_mid_content" />
+                  <AdSlot identifier="story_detail_mid_content" className="-mx-5 sm:-mx-8" />
                   <div className="prose-story mx-auto">
                     <div dangerouslySetInnerHTML={{ __html: second }} />
                   </div>

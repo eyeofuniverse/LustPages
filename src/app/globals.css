@@ -105,6 +105,14 @@ body {
 
 .prose-story strong { color: var(--tw-prose-bold); }
 
+/* Ad containers — prevent fixed-size network iframes from causing overflow */
+[aria-label="Advertisement"] iframe,
+[aria-label="Advertisement"] ins,
+[aria-label="Advertisement"] > div > div iframe,
+[aria-label="Advertisement"] > div > div ins {
+  max-width: 100% !important;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--background); }

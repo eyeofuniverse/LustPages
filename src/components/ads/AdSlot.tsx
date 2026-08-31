@@ -24,7 +24,7 @@ function AdWrapper({ children, className }: { children: React.ReactNode; classNa
   return (
     <div
       className={className}
-      style={{ margin: "2rem 0", padding: "0 1rem" }}
+      style={{ margin: "2rem 0", ...(className ? {} : { padding: "0 1rem" }) }}
       aria-label="Advertisement"
     >
       <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.875rem" }}>
