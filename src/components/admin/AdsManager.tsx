@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { AD_SLOTS, AdSlotId } from "@/lib/ad-slots";
+import { AD_SLOTS, AdSlotId, RevenueLevel } from "@/lib/ad-slots";
 import {
   Plus, Edit2, Trash2, X, Monitor, Link as LinkIcon,
   ToggleLeft, ToggleRight, Megaphone, Info,
@@ -24,6 +24,12 @@ interface Ad {
 }
 
 const SLOT_KEYS = Object.keys(AD_SLOTS) as AdSlotId[];
+
+const REVENUE_META: Record<RevenueLevel, { label: string; color: string; bg: string }> = {
+  very_high: { label: "Top earner", color: "#22c55e", bg: "rgba(34,197,94,0.1)" },
+  high:      { label: "Strong revenue", color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
+  medium:    { label: "Steady revenue", color: "#6366f1", bg: "rgba(99,102,241,0.1)" },
+};
 
 const EMPTY_FORM = {
   slot: SLOT_KEYS[0] as string,
@@ -345,12 +351,32 @@ export function AdsManager() {
                       ? `${activeCount} active ad${activeCount > 1 ? "s" : ""}`
                       : slotAds.length > 0 ? `${slotAds.length} inactive` : "No ads"}
                   </p>
-                  <p
-                    className="truncate mt-0.5"
-                    style={{ color: "var(--muted-foreground)", fontSize: "0.6875rem", opacity: 0.6 }}
-                  >
-                    {slotDef.recommended}
-                  </p>
+                  {slotDef.hint && (() => {
+                    const rev = REVENUE_META[slotDef.hint.revenue];
+                    return (
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                        <span
+                          style={{
+                            fontSize: "0.5625rem",
+                            fontWeight: 700,
+                            color: rev.color,
+                            background: rev.bg,
+                            padding: "0.1rem 0.4rem",
+                            borderRadius: "9999px",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {rev.label}
+                        </span>
+                        <span
+                          className="truncate"
+                          style={{ fontSize: "0.5625rem", color: "var(--muted-foreground)", opacity: 0.75 }}
+                        >
+                          {slotDef.hint.format} · {slotDef.hint.size}
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
                 <button
                   onClick={() => openCreate(id)}
@@ -654,8 +680,49 @@ export function AdsManager() {
                   {AD_SLOTS[form.slot as AdSlotId]?.description}
                 </p>
                 <p style={{ fontSize: "0.6875rem", color: "var(--muted-foreground)", opacity: 0.7 }}>
-                  Recommended: {AD_SLOTS[form.slot as AdSlotId]?.recommended}
+                  Recommended size: {AD_SLOTS[form.slot as AdSlotId]?.recommended}
                 </p>
+                {(() => {
+                  const hint = AD_SLOTS[form.slot as AdSlotId]?.hint;
+                  if (!hint) return null;
+                  const rev = REVENUE_META[hint.revenue];
+                  return (
+                    <div
+                      style={{
+                        marginTop: "0.625rem",
+                        padding: "0.625rem 0.75rem",
+                        borderRadius: "0.625rem",
+                        background: rev.bg,
+                        border: `1px solid ${rev.color}33`,
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.3rem" }}>
+                        <span
+                          style={{
+                            fontSize: "0.5625rem",
+                            fontWeight: 700,
+                            color: rev.color,
+                            background: `${rev.color}22`,
+                            padding: "0.1rem 0.45rem",
+                            borderRadius: "9999px",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {rev.label}
+                        </span>
+                        <span style={{ fontSize: "0.6875rem", fontWeight: 600, color: "var(--foreground)" }}>
+                          Best: {hint.format}
+                        </span>
+                        <span style={{ fontSize: "0.6rem", color: "var(--muted-foreground)", opacity: 0.8, whiteSpace: "nowrap" }}>
+                          {hint.size}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: "0.6875rem", color: "var(--muted-foreground)", lineHeight: 1.5, margin: 0 }}>
+                        {hint.why}
+                      </p>
+                    </div>
+                  );
+                })()}
               </Field>
 
               {/* Type selector */}
