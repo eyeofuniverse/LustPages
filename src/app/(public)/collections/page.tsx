@@ -54,11 +54,13 @@ export const metadata: Metadata = {
     url: `${SITE}/collections`,
     type: "website",
     siteName: "LustPages",
+    images: [{ url: `${SITE}/og-default.jpg`, width: 1200, height: 630, alt: "Best Of Collections on LustPages" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Best Of Collections — LustPages",
     description: "Algorithmically ranked and editorially curated adult fiction collections.",
+    images: [`${SITE}/og-default.jpg`],
   },
 };
 

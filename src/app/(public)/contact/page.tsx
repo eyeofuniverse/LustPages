@@ -1,10 +1,25 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+const BASE = "https://lustpages.com";
+
 export const metadata: Metadata = {
   title: "Contact — LustPages",
   description: "Get in touch with the LustPages team — for support, author enquiries, or copyright matters.",
-  robots: { index: true, follow: true },
+  alternates: { canonical: `${BASE}/contact` },
+  openGraph: {
+    title: "Contact — LustPages",
+    description: "Get in touch with the LustPages team — for support, author enquiries, or copyright matters.",
+    type: "website",
+    url: `${BASE}/contact`,
+    images: [{ url: `${BASE}/og-default.jpg`, width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Contact — LustPages",
+    description: "Get in touch with the LustPages team.",
+    images: [`${BASE}/og-default.jpg`],
+  },
 };
 
 export default function ContactPage() {

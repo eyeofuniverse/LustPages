@@ -66,15 +66,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       authors: [story.author.name],
       tags: story.storyTags.filter((t) => !t.isKeyword).map((t) => t.name),
       url: `${siteUrl}/stories/${slug}`,
-      ...(ogCover && {
-        images: [{ url: ogCover, width: 1200, height: 630 }],
-      }),
+      images: ogCover
+        ? [{ url: ogCover }]
+        : [{ url: `${siteUrl}/og-default.jpg`, width: 1200, height: 630 }],
     },
     twitter: {
       card: "summary_large_image",
       title: metaTitle,
       description: metaDesc,
-      ...(ogCover && { images: [ogCover] }),
+      images: [ogCover ?? `${siteUrl}/og-default.jpg`],
     },
   };
 }

@@ -46,18 +46,21 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     title: "Browse Erotica Stories — LustPages",
     description:
       "Explore thousands of free adult fiction and erotica stories across every genre. Filter by category or search by author.",
+    keywords: ["erotica stories", "adult fiction", "free erotica", "romance stories", "erotic fiction online", "lustpages"],
     alternates: { canonical: `${base}/stories` },
     openGraph: {
       title: "Browse Erotica Stories — LustPages",
       description: "Explore thousands of free adult fiction stories on LustPages.",
       type: "website",
       url: `${base}/stories`,
+      images: [{ url: `${base}/og-default.jpg`, width: 1200, height: 630, alt: "Browse Erotica Stories on LustPages" }],
     },
     twitter: {
       card: "summary_large_image",
       title: "Browse Erotica Stories — LustPages",
       description:
         "Explore thousands of free adult fiction and erotica stories across every genre.",
+      images: [`${base}/og-default.jpg`],
     },
   };
 }

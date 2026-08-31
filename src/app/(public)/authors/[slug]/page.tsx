@@ -44,19 +44,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ? `${author.name} ★ Featured Author — LustPages`
       : `${author.name} — Author on LustPages`,
     description: desc,
+    keywords: [`${author.name}`, `${author.name} erotica`, `${author.name} stories`, "lustpages author", "adult fiction author"],
     alternates: { canonical: `${siteUrl}/authors/${slug}` },
     openGraph: {
       title: `${author.name} — Author on LustPages`,
       description: desc,
       type: "profile",
       url: `${siteUrl}/authors/${slug}`,
-      ...(author.image && { images: [{ url: author.image, width: 400, height: 400 }] }),
+      images: author.image
+        ? [{ url: author.image }]
+        : [{ url: `${siteUrl}/og-default.jpg`, width: 1200, height: 630 }],
     },
     twitter: {
-      card: "summary_large_image",
+      card: author.image ? "summary" : "summary_large_image",
       title: `${author.name} — Author on LustPages`,
       description: desc,
-      ...(author.image && { images: [author.image] }),
+      images: [author.image ?? `${siteUrl}/og-default.jpg`],
     },
   };
 }

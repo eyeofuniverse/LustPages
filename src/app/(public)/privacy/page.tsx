@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description: "How LustPages collects, uses, and protects your personal data.",
-  robots: { index: true, follow: true },
+  alternates: { canonical: "https://lustpages.com/privacy" },
 };
 
 const UPDATED = "26 May 2026";

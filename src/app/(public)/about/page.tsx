@@ -1,10 +1,25 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+const BASE = "https://lustpages.com";
+
 export const metadata: Metadata = {
   title: "About LustPages",
   description: "LustPages is an independent adult fiction platform for writers and readers who love storytelling without limits.",
-  robots: { index: true, follow: true },
+  alternates: { canonical: `${BASE}/about` },
+  openGraph: {
+    title: "About LustPages",
+    description: "LustPages is an independent adult fiction platform for writers and readers who love storytelling without limits.",
+    type: "website",
+    url: `${BASE}/about`,
+    images: [{ url: `${BASE}/og-default.jpg`, width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "About LustPages",
+    description: "LustPages is an independent adult fiction platform for writers and readers.",
+    images: [`${BASE}/og-default.jpg`],
+  },
 };
 
 export default function AboutPage() {

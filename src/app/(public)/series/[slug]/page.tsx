@@ -31,19 +31,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${series.name} — Series by ${series.author.name} | LustPages`,
     description: desc,
+    keywords: [series.name, series.author.name, "erotica series", "adult fiction series", "lustpages"],
     alternates: { canonical: `${SITE}/series/${slug}` },
     openGraph: {
       title: `${series.name} — Series by ${series.author.name}`,
       description: desc,
       type: "book",
       url: `${SITE}/series/${slug}`,
-      ...(series.coverImage && { images: [{ url: series.coverImage, width: 1200, height: 630 }] }),
+      images: series.coverImage
+        ? [{ url: series.coverImage }]
+        : [{ url: `${SITE}/og-default.jpg`, width: 1200, height: 630 }],
     },
     twitter: {
       card: "summary_large_image",
       title: `${series.name} — Series by ${series.author.name}`,
       description: desc,
-      ...(series.coverImage && { images: [series.coverImage] }),
+      images: [series.coverImage ?? `${SITE}/og-default.jpg`],
     },
   };
 }

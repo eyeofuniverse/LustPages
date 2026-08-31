@@ -46,12 +46,14 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "LustPages",
     url: siteUrl,
+    images: [{ url: "/og-default.jpg", width: 1200, height: 630, alt: "LustPages — Premium Adult Fiction" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "LustPages — Premium Adult Fiction",
     description:
       "Discover thousands of premium adult fiction stories. Free to read.",
+    images: ["/og-default.jpg"],
   },
   alternates: { canonical: siteUrl },
 };

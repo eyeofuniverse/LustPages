@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   title: "Authors — LustPages",
   description:
     "Meet the talented authors writing adult fiction and erotica on LustPages. Browse profiles, discover new writers, and follow your favourites.",
+  keywords: ["erotica authors", "adult fiction writers", "lustpages authors", "erotic fiction writers"],
   alternates: { canonical: `${BASE}/authors` },
   openGraph: {
     title: "Authors — LustPages",
@@ -19,12 +20,14 @@ export const metadata: Metadata = {
       "Meet the talented authors writing adult fiction and erotica on LustPages.",
     type: "website",
     url: `${BASE}/authors`,
+    images: [{ url: `${BASE}/og-default.jpg`, width: 1200, height: 630, alt: "Authors on LustPages" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Authors — LustPages",
     description:
       "Meet the talented authors writing adult fiction and erotica on LustPages.",
+    images: [`${BASE}/og-default.jpg`],
   },
 };
 

@@ -20,6 +20,7 @@ export const metadata: Metadata = {
   title: "Premium Stories & Series — LustPages",
   description:
     "Browse exclusive premium adult fiction stories and series on LustPages. Unlock with coins to access content from top authors.",
+  keywords: ["premium erotica", "premium adult fiction", "exclusive erotic stories", "paid erotica", "lustpages premium"],
   alternates: { canonical: `${BASE}/premium/stories` },
   openGraph: {
     title: "Premium Stories & Series — LustPages",
@@ -27,12 +28,14 @@ export const metadata: Metadata = {
       "Browse exclusive premium adult fiction stories and series on LustPages.",
     type: "website",
     url: `${BASE}/premium/stories`,
+    images: [{ url: `${BASE}/og-default.jpg`, width: 1200, height: 630, alt: "Premium Stories on LustPages" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Premium Stories & Series — LustPages",
     description:
       "Browse exclusive premium adult fiction stories and series. Unlock with coins.",
+    images: [`${BASE}/og-default.jpg`],
   },
 };
 

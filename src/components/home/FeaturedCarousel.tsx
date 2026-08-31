@@ -71,8 +71,8 @@ export function FeaturedCarousel({ promotions, variant }: Props) {
           className="flex gap-4 overflow-x-auto pb-2"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" } as React.CSSProperties}
         >
-          {promotions.map((entry) => (
-            <BookCard key={entry.id} entry={entry} variant={variant} />
+          {promotions.map((entry, i) => (
+            <BookCard key={entry.id} entry={entry} variant={variant} priority={i === 0} />
           ))}
         </div>
       </div>
@@ -80,7 +80,7 @@ export function FeaturedCarousel({ promotions, variant }: Props) {
   );
 }
 
-function BookCard({ entry, variant }: { entry: FeaturedEntry; variant: "story" | "series" }) {
+function BookCard({ entry, variant, priority }: { entry: FeaturedEntry; variant: "story" | "series"; priority?: boolean }) {
   const isStory = variant === "story";
   const isSeries = variant === "series";
 
@@ -125,6 +125,7 @@ function BookCard({ entry, variant }: { entry: FeaturedEntry; variant: "story" |
             fill
             sizes="148px"
             className="object-cover group-hover:scale-105 transition-transform duration-400"
+            priority={priority}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center" style={{ background: placeholderBg }}>

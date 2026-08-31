@@ -43,7 +43,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/tags`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.7 },
     { url: `${BASE}/search`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
     { url: `${BASE}/premium/stories`, lastModified: new Date(), changeFrequency: "daily", priority: 0.6 },
-    { url: `${BASE}/store`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.4 },
     { url: `${BASE}/terms`, lastModified: new Date("2026-05-26"), changeFrequency: "monthly", priority: 0.3 },
     { url: `${BASE}/privacy`, lastModified: new Date("2026-05-26"), changeFrequency: "monthly", priority: 0.3 },
     { url: `${BASE}/content-warning`, lastModified: new Date("2026-05-26"), changeFrequency: "monthly", priority: 0.3 },
@@ -67,16 +66,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
+  // Stable weekly anchor — categories and tags change content, not structure; avoids
+  // false freshness signals from new Date() being evaluated on every sitemap request.
+  const WEEKLY_ANCHOR = new Date(Date.now() - ((new Date().getDay() + 1) % 7) * 86400000);
+  WEEKLY_ANCHOR.setUTCHours(0, 0, 0, 0);
+
   const categoryPages: MetadataRoute.Sitemap = categories.map((c) => ({
     url: `${BASE}/categories/${c.slug}`,
-    lastModified: new Date(),
+    lastModified: WEEKLY_ANCHOR,
     changeFrequency: "daily",
     priority: 0.7,
   }));
 
   const authorPages: MetadataRoute.Sitemap = authors.map((a) => ({
     url: `${BASE}/authors/${a.slug}`,
-    lastModified: new Date(),
+    lastModified: WEEKLY_ANCHOR,
     changeFrequency: "weekly",
     priority: 0.6,
   }));
@@ -90,7 +94,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const tagPages: MetadataRoute.Sitemap = tags.map((t) => ({
     url: `${BASE}/tags/${t.slug}`,
-    lastModified: new Date(),
+    lastModified: WEEKLY_ANCHOR,
     changeFrequency: "weekly" as const,
     priority: 0.6,
   }));
@@ -106,7 +110,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Category collections: best-of-[category-slug], refresh weekly (rating changes slowly)
   const categoryCollectionPages: MetadataRoute.Sitemap = categories.map((c) => ({
     url: `${BASE}/collections/${makeCategoryCollectionSlug(c.slug)}`,
-    lastModified: new Date(),
+    lastModified: WEEKLY_ANCHOR,
     changeFrequency: "weekly" as const,
     priority: 0.78,
   }));
@@ -114,7 +118,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Tag collections: best-tag-[tag-slug], refresh weekly
   const tagCollectionPages: MetadataRoute.Sitemap = tags.map((t) => ({
     url: `${BASE}/collections/${makeTagCollectionSlug(t.slug)}`,
-    lastModified: new Date(),
+    lastModified: WEEKLY_ANCHOR,
     changeFrequency: "weekly" as const,
     priority: 0.72,
   }));

@@ -3,10 +3,26 @@ import { TagsBrowser } from "@/components/story/TagsBrowser";
 import { Hash, BookOpen } from "lucide-react";
 import type { Metadata } from "next";
 
+const BASE = "https://lustpages.com";
+
 export const metadata: Metadata = {
   title: "Browse Tags — LustPages",
   description: "Explore all story tags on LustPages. Find adult fiction by theme, genre, and more.",
-  alternates: { canonical: "https://lustpages.com/tags" },
+  keywords: ["erotica tags", "adult fiction themes", "story genres", "erotic fiction categories", "lustpages tags"],
+  alternates: { canonical: `${BASE}/tags` },
+  openGraph: {
+    title: "Browse Tags — LustPages",
+    description: "Explore all story tags on LustPages. Find adult fiction by theme, genre, and more.",
+    type: "website",
+    url: `${BASE}/tags`,
+    images: [{ url: `${BASE}/og-default.jpg`, width: 1200, height: 630, alt: "Browse Tags on LustPages" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Browse Tags — LustPages",
+    description: "Explore all story tags on LustPages. Find adult fiction by theme, genre, and more.",
+    images: [`${BASE}/og-default.jpg`],
+  },
 };
 
 export const revalidate = 1800;

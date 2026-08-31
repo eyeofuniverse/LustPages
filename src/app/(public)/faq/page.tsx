@@ -1,11 +1,39 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+const BASE = "https://lustpages.com";
+
 export const metadata: Metadata = {
   title: "FAQ — LustPages",
   description: "Frequently asked questions about LustPages — accounts, coins, premium content, publishing, and more.",
-  robots: { index: true, follow: true },
+  alternates: { canonical: `${BASE}/faq` },
+  openGraph: {
+    title: "FAQ — LustPages",
+    description: "Frequently asked questions about LustPages — accounts, coins, premium content, publishing, and more.",
+    type: "website",
+    url: `${BASE}/faq`,
+    images: [{ url: `${BASE}/og-default.jpg`, width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "FAQ — LustPages",
+    description: "Frequently asked questions about LustPages.",
+    images: [`${BASE}/og-default.jpg`],
+  },
 };
+
+const FAQ_JSONLD = [
+  { q: "Is LustPages free to use?", a: "Yes. Reading most stories is completely free. Some authors publish premium stories or series that require coins to unlock, but every premium series has at least one free chapter so you can read before buying." },
+  { q: "What are coins?", a: "Coins are the in-platform currency used to unlock premium stories and send tips to authors. You can purchase coins from the Store. New accounts receive a small welcome bonus." },
+  { q: "Do I need an account to read stories?", a: "No. Free stories are accessible without an account. An account is required to like stories, leave comments, bookmark favourites, track reading progress, and unlock premium content." },
+  { q: "How old do I need to be to use LustPages?", a: "LustPages is strictly for adults. You must be at least 18 years old — or the age of majority in your jurisdiction, whichever is greater." },
+  { q: "How do I publish a story?", a: "Register for a free account, then go to your Author Dashboard and click New Story. Once submitted, a moderator will review your story before it goes live — usually within 24–48 hours." },
+  { q: "What content is not allowed?", a: "Any fictional character in a sexual situation must be depicted as an adult. We prohibit content involving minors, non-consensual scenarios presented approvingly, and content targeting real individuals without consent indicators." },
+  { q: "My story was rejected. What do I do?", a: "The rejection reason is shown in your dashboard. Fix the issues described, then resubmit. If you think the rejection was in error, contact us at authors@lustpages.com with your story title and we'll review it." },
+  { q: "How do I earn as an author?", a: "Authors earn through two routes: readers can tip you directly on any story (you keep 80% of every tip), and you can set a coin price for standalone stories or premium series." },
+  { q: "I found content that infringes my copyright. What should I do?", a: "Submit a formal DMCA notice using the procedure on our DMCA page. Do not email general support for copyright matters — only notices sent to the designated DMCA agent are processed under 17 U.S.C. § 512." },
+  { q: "How do I delete my account?", a: "You can delete your account from Account Settings. Deletion is permanent and will remove your login access. Stories you have published will remain on the platform unless you delete them individually first." },
+];
 
 const FAQS: { q: string; a: React.ReactNode }[] = [
   {
@@ -79,6 +107,21 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
 
 export default function FaqPage() {
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: FAQ_JSONLD.map((item) => ({
+              "@type": "Question",
+              name: item.q,
+              acceptedAnswer: { "@type": "Answer", text: item.a },
+            })),
+          }),
+        }}
+      />
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-14">
       <div className="mb-10">
         <p className="text-xs uppercase tracking-widest mb-2" style={{ color: "#c4426a" }}>Help</p>
@@ -119,5 +162,6 @@ export default function FaqPage() {
         <Link href="/contact" style={{ color: "#c4426a" }}>Contact us</Link>.
       </p>
     </div>
+    </>
   );
 }

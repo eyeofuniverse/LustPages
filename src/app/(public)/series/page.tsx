@@ -26,6 +26,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     title: "Browse Series — LustPages",
     description:
       "Explore all ongoing and completed adult fiction series on LustPages. Multi-part stories from talented authors — updated as new parts drop.",
+    keywords: ["erotica series", "adult fiction series", "erotic story series", "multi-part erotica", "lustpages series"],
     alternates: { canonical: `${BASE}/series` },
     openGraph: {
       title: "Browse Series — LustPages",
@@ -33,12 +34,14 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
         "Explore all ongoing and completed adult fiction series on LustPages. Updated as new parts drop.",
       type: "website",
       url: `${BASE}/series`,
+      images: [{ url: `${BASE}/og-default.jpg`, width: 1200, height: 630, alt: "Browse Series on LustPages" }],
     },
     twitter: {
       card: "summary_large_image",
       title: "Browse Series — LustPages",
       description:
         "Explore all ongoing and completed adult fiction series on LustPages.",
+      images: [`${BASE}/og-default.jpg`],
     },
   };
 }

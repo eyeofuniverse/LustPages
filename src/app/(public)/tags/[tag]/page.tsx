@@ -38,6 +38,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   return {
     title: page > 1 ? `${displayName} Stories — Page ${page} — LustPages` : `${displayName} Stories — LustPages`,
     description: desc,
+    keywords: [`${displayName} erotica`, `${displayName} stories`, `${displayName} adult fiction`, "lustpages", displayName],
     alternates: { canonical },
     ...(page > 1 && { robots: { index: false, follow: true } }),
     openGraph: {

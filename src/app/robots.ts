@@ -26,6 +26,9 @@ export default function robots(): MetadataRoute.Robots {
           "/author-dashboard/",
           "/login",
           "/register",
+          "/forgot-password",
+          "/reset-password",
+          "/author-signup",
         ],
       },
       {

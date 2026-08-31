@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "DMCA Policy — LustPages",
   description: "LustPages DMCA takedown procedure — how to report copyright-infringing content and what to expect.",
-  robots: { index: true, follow: true },
+  alternates: { canonical: "https://lustpages.com/dmca" },
 };
 
 const UPDATED = "21 Aug 2026";

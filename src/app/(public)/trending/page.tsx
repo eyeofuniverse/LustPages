@@ -7,10 +7,26 @@ import type { Metadata } from "next";
 
 export const revalidate = 1800;
 
+const BASE = "https://lustpages.com";
+
 export const metadata: Metadata = {
   title: "Trending This Week — LustPages",
   description: "Discover the hottest adult fiction stories of the past 7 days, ranked by reader engagement.",
-  alternates: { canonical: "https://lustpages.com/trending" },
+  keywords: ["trending erotica", "popular adult fiction", "hottest erotic stories", "top stories this week", "lustpages trending"],
+  alternates: { canonical: `${BASE}/trending` },
+  openGraph: {
+    title: "Trending This Week — LustPages",
+    description: "Discover the hottest adult fiction stories of the past 7 days, ranked by reader engagement.",
+    type: "website",
+    url: `${BASE}/trending`,
+    images: [{ url: `${BASE}/og-default.jpg`, width: 1200, height: 630, alt: "Trending Stories on LustPages" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Trending This Week — LustPages",
+    description: "Discover the hottest adult fiction stories of the past 7 days.",
+    images: [`${BASE}/og-default.jpg`],
+  },
 };
 
 export default async function TrendingPage() {
