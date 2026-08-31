@@ -339,6 +339,7 @@ model Ad {
   slot          String
   name          String
   type          String   @default("affiliate")
+  deviceType    String   @default("all")
   networkCode   String?
   imageUrl      String?
   linkUrl       String?
@@ -350,7 +351,7 @@ model Ad {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  @@index([slot, isActive])
+  @@index([slot, isActive, deviceType])
 }
 
 model FeaturedPromotion {

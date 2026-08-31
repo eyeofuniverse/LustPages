@@ -8,7 +8,7 @@ interface Props {
 }
 
 export async function StickyAdSidebar({ slot }: Props) {
-  const ad = await getCachedAdForSlot(slot);
+  const ad = await getCachedAdForSlot(slot, "desktop");
   const fillCode = !ad ? process.env.AD_FILL_NETWORK_CODE : null;
   if (!ad && !fillCode) return null;
 

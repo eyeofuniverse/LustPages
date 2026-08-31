@@ -1,11 +1,42 @@
-import { getCachedAdForSlot } from "@/lib/cached-queries";
+"use client";
+
+import { useEffect, useState } from "react";
 import { AdUnit } from "./AdUnit";
 import { AffiliateAd } from "./AffiliateAd";
 import { SponsoredStoryCard } from "./SponsoredStoryCard";
 
-interface Props {
-  identifier: string;
-  className?: string;
+type AdData = {
+  type: string;
+  deviceType: string;
+  networkCode: string | null;
+  imageUrl: string | null;
+  linkUrl: string | null;
+  altText: string | null;
+  adTitle: string | null;
+  adDescription: string | null;
+};
+
+// Module-level cache: one fetch per slot+device per page load across all AdSlot instances
+const fetchCache = new Map<string, Promise<AdData | null>>();
+
+function detectDevice(): "mobile" | "tablet" | "desktop" {
+  const w = window.innerWidth;
+  if (w < 768) return "mobile";
+  if (w < 1024) return "tablet";
+  return "desktop";
+}
+
+function loadAd(slot: string, device: string): Promise<AdData | null> {
+  const key = `${slot}:${device}`;
+  if (!fetchCache.has(key)) {
+    fetchCache.set(
+      key,
+      fetch(`/api/ads/active?slot=${encodeURIComponent(slot)}&device=${device}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null)
+    );
+  }
+  return fetchCache.get(key)!;
 }
 
 const LABEL_STYLE: React.CSSProperties = {
@@ -39,18 +70,21 @@ function AdWrapper({ children, className }: { children: React.ReactNode; classNa
   );
 }
 
-export async function AdSlot({ identifier, className }: Props) {
-  const ad = await getCachedAdForSlot(identifier);
+interface Props {
+  identifier: string;
+  className?: string;
+}
 
-  if (!ad) {
-    const fillCode = process.env.AD_FILL_NETWORK_CODE;
-    if (!fillCode) return null;
-    return (
-      <AdWrapper className={className}>
-        <AdUnit code={fillCode} />
-      </AdWrapper>
-    );
-  }
+export function AdSlot({ identifier, className }: Props) {
+  const [ad, setAd] = useState<AdData | null | undefined>(undefined);
+
+  useEffect(() => {
+    const device = detectDevice();
+    loadAd(identifier, device).then(setAd);
+  }, [identifier]);
+
+  // undefined = not yet fetched; null = no ad available
+  if (ad == null) return null;
 
   return (
     <AdWrapper className={className}>

@@ -12,6 +12,7 @@ interface Ad {
   slot: string;
   name: string;
   type: string;
+  deviceType: string;
   networkCode: string | null;
   imageUrl: string | null;
   linkUrl: string | null;
@@ -25,6 +26,18 @@ interface Ad {
 
 const SLOT_KEYS = Object.keys(AD_SLOTS) as AdSlotId[];
 
+const DEVICE_OPTIONS = [
+  { value: "all",     label: "All Devices",  desc: "For Native / auto-sizing formats" },
+  { value: "mobile",  label: "Mobile",       desc: "< 768px — phones" },
+  { value: "desktop", label: "Desktop",      desc: "≥ 1024px — laptops & monitors" },
+] as const;
+
+const DEVICE_COLORS: Record<string, string> = {
+  all:     "var(--muted-foreground)",
+  mobile:  "#22c55e",
+  desktop: "#6366f1",
+};
+
 const REVENUE_META: Record<RevenueLevel, { label: string; color: string; bg: string }> = {
   very_high: { label: "Top earner", color: "#22c55e", bg: "rgba(34,197,94,0.1)" },
   high:      { label: "Strong revenue", color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
@@ -35,6 +48,7 @@ const EMPTY_FORM = {
   slot: SLOT_KEYS[0] as string,
   name: "",
   type: "affiliate",
+  deviceType: "all",
   networkCode: "",
   imageUrl: "",
   linkUrl: "",
@@ -171,6 +185,7 @@ export function AdsManager() {
       slot: ad.slot,
       name: ad.name,
       type: ad.type,
+      deviceType: ad.deviceType ?? "all",
       networkCode: ad.networkCode ?? "",
       imageUrl: ad.imageUrl ?? "",
       linkUrl: ad.linkUrl ?? "",
@@ -458,7 +473,7 @@ export function AdsManager() {
               <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "560px" }}>
                 <thead>
                   <tr style={{ background: "var(--card)", borderBottom: "1px solid var(--border)" }}>
-                    {["Name", "Slot", "Type", "Status", "Priority", ""].map((h) => (
+                    {["Name", "Slot", "Type", "Device", "Status", "Priority", ""].map((h) => (
                       <th
                         key={h}
                         style={{
@@ -528,6 +543,22 @@ export function AdsManager() {
                         >
                           {ad.type === "network" ? <Monitor size={12} /> : <LinkIcon size={12} />}
                           {ad.type === "network" ? "Network" : "Affiliate"}
+                        </span>
+                      </td>
+                      <td style={{ padding: "0.75rem 1rem" }}>
+                        <span
+                          style={{
+                            fontSize: "0.6875rem",
+                            fontWeight: 600,
+                            color: DEVICE_COLORS[ad.deviceType ?? "all"],
+                            background: "var(--card)",
+                            border: "1px solid var(--border)",
+                            borderRadius: "0.5rem",
+                            padding: "0.1875rem 0.5rem",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {DEVICE_OPTIONS.find((d) => d.value === (ad.deviceType ?? "all"))?.label ?? "All Devices"}
                         </span>
                       </td>
                       <td style={{ padding: "0.75rem 1rem" }}>
@@ -753,6 +784,41 @@ export function AdsManager() {
                   ))}
                 </div>
               </Field>
+
+              {/* Device target — shown for network ads only (native/auto-sizing uses "all") */}
+              {form.type === "network" && (
+                <Field
+                  label="Target Device"
+                  hint="Choose which device this ad unit is sized for. Native / auto-sizing formats should stay on 'All Devices'. For ExoClick Banner, create two separate ads — one 728×90 targeting Desktop, one 300×250 targeting Mobile."
+                >
+                  <div style={{ display: "flex", gap: "0.5rem" }}>
+                    {DEVICE_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setForm((f) => ({ ...f, deviceType: opt.value }))}
+                        style={{
+                          flex: 1,
+                          padding: "0.5rem 0.375rem",
+                          borderRadius: "0.75rem",
+                          fontSize: "0.8125rem",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          border: "1px solid var(--border)",
+                          background: form.deviceType === opt.value ? `${DEVICE_COLORS[opt.value]}22` : "var(--background)",
+                          color: form.deviceType === opt.value ? DEVICE_COLORS[opt.value] : "var(--muted-foreground)",
+                          transition: "all 0.15s",
+                        }}
+                        title={opt.desc}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p style={{ fontSize: "0.6875rem", color: "var(--muted-foreground)", marginTop: "0.25rem" }}>
+                    {DEVICE_OPTIONS.find((d) => d.value === form.deviceType)?.desc}
+                  </p>
+                </Field>
+              )}
 
               {/* Network fields */}
               {form.type === "network" && (

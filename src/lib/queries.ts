@@ -1785,15 +1785,20 @@ export async function getPremiumSeriesList(take = 20) {
   });
 }
 
-export async function getActiveAdForSlot(slot: string) {
+export async function getActiveAdForSlot(slot: string, device: string = "all") {
   const ads = await prisma.ad.findMany({
-    where: { slot, isActive: true },
+    where: { slot, isActive: true, deviceType: { in: [device, "all"] } },
     orderBy: { priority: "desc" },
+    take: 10,
   });
   if (ads.length === 0) return null;
-  const topPriority = ads[0].priority;
-  const topAds = ads.filter((a) => a.priority === topPriority);
-  return topAds[Math.floor(Math.random() * topAds.length)];
+  // Prefer device-specific ads over "all"-device fallbacks
+  const specific = device !== "all" ? ads.filter((a) => a.deviceType === device) : [];
+  const pool = specific.length > 0 ? specific : ads.filter((a) => a.deviceType === "all");
+  if (pool.length === 0) return null;
+  const top = pool[0].priority;
+  const topPool = pool.filter((a) => a.priority === top);
+  return topPool[Math.floor(Math.random() * topPool.length)];
 }
 
 export async function getAllAds() {

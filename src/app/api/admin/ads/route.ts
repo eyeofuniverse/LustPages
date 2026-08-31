@@ -23,6 +23,7 @@ export async function POST(req: Request) {
       slot: body.slot,
       name: body.name,
       type: body.type ?? "affiliate",
+      deviceType: body.deviceType ?? "all",
       networkCode: body.networkCode ?? null,
       imageUrl: body.imageUrl ?? null,
       linkUrl: body.linkUrl ?? null,

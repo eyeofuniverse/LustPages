@@ -65,9 +65,9 @@ export const getCachedSeriesBySlug = unstable_cache(
   { revalidate: 2592000, tags: ["series"] }
 );
 
-// Ad slots — updated by admin occasionally. Cache 30 minutes.
+// Ad slots — updated by admin occasionally. Cache 30 minutes, keyed by slot + device.
 export const getCachedAdForSlot = unstable_cache(
-  async (slot: string) => getActiveAdForSlot(slot),
+  async (slot: string, device: string = "all") => getActiveAdForSlot(slot, device),
   ["ad-slot"],
   { revalidate: 1800 }
 );
