@@ -9,6 +9,7 @@ import { AnalyticsEvents } from "@/components/analytics/AnalyticsEvents";
 import { PageTracker } from "@/components/analytics/PageTracker";
 import { Suspense } from "react";
 import { Analytics } from "@vercel/analytics/next";
+import { GlobalPopUnder } from "@/components/ads/GlobalPopUnder";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -92,6 +93,7 @@ export default async function RootLayout({
     <html lang="en" className={`${geist.variable} ${playfair.variable}`} suppressHydrationWarning>
       <body suppressHydrationWarning>
         <GoogleAnalytics />
+        <GlobalPopUnder />
         <Suspense fallback={null}>
           <AnalyticsEvents />
         </Suspense>

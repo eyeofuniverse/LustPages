@@ -244,6 +244,17 @@ export const AD_SLOTS = {
       why: "Series browsers are long-form readers looking for their next commitment. Native story ads are indistinguishable from organic recommendations — highest CTR for this page.",
     },
   },
+  global_popunder: {
+    label: "Global — Pop-Under",
+    description: "Fires once per hour on first user click across the entire site. Not a visual slot — paste the ExoClick Pop-Under zone script here.",
+    recommended: "Pop-Under script only",
+    hint: {
+      revenue: "very_high" as RevenueLevel,
+      format: "Pop-Under",
+      size: "Full page (opens behind current tab)",
+      why: "Pop-under is the single highest RPM format on adult networks. ExoClick enforces the frequency cap (set to 1/hour in your zone settings). Set Ad Type to 'Ad Network' and paste the zone script.",
+    },
+  },
 } as const;
 
 export type AdSlotId = keyof typeof AD_SLOTS;
