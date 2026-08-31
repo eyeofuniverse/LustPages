@@ -19,6 +19,9 @@ export function AdUnit({ code }: Props) {
       next.textContent = old.textContent;
       old.parentNode?.replaceChild(next, old);
     });
+    return () => {
+      if (ref.current) ref.current.innerHTML = "";
+    };
   }, [code]);
 
   if (!code) return null;

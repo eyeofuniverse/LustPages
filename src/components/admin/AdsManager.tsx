@@ -700,7 +700,15 @@ export function AdsManager() {
               >
                 <select
                   value={form.slot}
-                  onChange={(e) => setForm((f) => ({ ...f, slot: e.target.value }))}
+                  onChange={(e) => {
+                    const slot = e.target.value;
+                    setForm((f) => ({
+                      ...f,
+                      slot,
+                      // pop-under is always served device=all; reset to avoid invisible ads
+                      ...(slot === "global_popunder" ? { deviceType: "all" } : {}),
+                    }));
+                  }}
                   style={inputStyle}
                 >
                   {SLOT_KEYS.map((id) => (
@@ -785,8 +793,8 @@ export function AdsManager() {
                 </div>
               </Field>
 
-              {/* Device target — shown for network ads only (native/auto-sizing uses "all") */}
-              {form.type === "network" && (
+              {/* Device target — shown for network ads only, and not for pop-under (always "all") */}
+              {form.type === "network" && form.slot !== "global_popunder" && (
                 <Field
                   label="Target Device"
                   hint="Choose which device this ad unit is sized for. Native / auto-sizing formats should stay on 'All Devices'. For ExoClick Banner, create two separate ads — one 728×90 targeting Desktop, one 300×250 targeting Mobile."

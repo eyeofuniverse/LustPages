@@ -16,8 +16,11 @@ type AdData = {
   adDescription: string | null;
 };
 
-// Module-level cache: one fetch per slot+device per page load across all AdSlot instances
-const fetchCache = new Map<string, Promise<AdData | null>>();
+// Module-level cache: deduplicates simultaneous fetches for the same slot+device.
+// TTL of 5 minutes matches the API's Cache-Control max-age so SPA navigation
+// after that window re-fetches fresh ad data.
+const CACHE_TTL = 5 * 60 * 1000;
+const fetchCache = new Map<string, { promise: Promise<AdData | null>; ts: number }>();
 
 function detectDevice(): "mobile" | "tablet" | "desktop" {
   const w = window.innerWidth;
@@ -28,15 +31,13 @@ function detectDevice(): "mobile" | "tablet" | "desktop" {
 
 function loadAd(slot: string, device: string): Promise<AdData | null> {
   const key = `${slot}:${device}`;
-  if (!fetchCache.has(key)) {
-    fetchCache.set(
-      key,
-      fetch(`/api/ads/active?slot=${encodeURIComponent(slot)}&device=${device}`)
-        .then((r) => (r.ok ? r.json() : null))
-        .catch(() => null)
-    );
-  }
-  return fetchCache.get(key)!;
+  const entry = fetchCache.get(key);
+  if (entry && Date.now() - entry.ts < CACHE_TTL) return entry.promise;
+  const promise = fetch(`/api/ads/active?slot=${encodeURIComponent(slot)}&device=${device}`)
+    .then((r) => (r.ok ? r.json() : null))
+    .catch(() => null);
+  fetchCache.set(key, { promise, ts: Date.now() });
+  return promise;
 }
 
 const LABEL_STYLE: React.CSSProperties = {
