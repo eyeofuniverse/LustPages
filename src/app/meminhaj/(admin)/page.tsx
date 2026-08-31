@@ -111,10 +111,10 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 export default async function AdminDashboard() {
   const m = await getDashboardMetrics();
 
-  const maxTagViews    = m.topTags[0]?.views ?? 1;
-  const maxCatViews    = m.topCategories[0]?.views ?? 1;
-  const maxStoryViews  = m.topStoriesByViews[0]?.views ?? 1;
-  const maxCoinEarnings = m.topAuthors[0]?.coinEarnings ?? 1;
+  const maxTagCount     = m.topTags[0]?.storyCount || 1;
+  const maxCatCount     = m.topCategories[0]?.storyCount || 1;
+  const maxStoryViews   = m.topStoriesByViews[0]?.views || 1;
+  const maxCoinEarnings = m.topAuthors[0]?.coinEarnings || 1;
 
   const actionItems = [
     m.pendingStories > 0    && { label: `${m.pendingStories} pending ${m.pendingStories === 1 ? "story" : "stories"}`, href: "/meminhaj/approvals", color: "#6366f1", bg: "rgba(99,102,241,0.12)" },
@@ -307,7 +307,7 @@ export default async function AdminDashboard() {
                       <span className="flex items-center gap-0.5"><Heart size={10} />{fmt(story._count.likes)}</span>
                     </div>
                     <div className="mt-1 h-1 rounded-full overflow-hidden" style={{ background: "var(--muted)" }}>
-                      <div className="h-full rounded-full" style={{ width: `${Math.max(3, (story.views / maxStoryViews) * 100)}%`, background: "#c4426a" }} />
+                      <div className="h-full rounded-full" style={{ width: `${Math.max(3, (story.views / Math.max(1, maxStoryViews)) * 100)}%`, background: "#c4426a" }} />
                     </div>
                   </div>
                 </div>
@@ -316,19 +316,19 @@ export default async function AdminDashboard() {
           )}
         </Panel>
 
-        <Panel title="Top Categories" icon={BarChart2}>
+        <Panel title="Top Categories by Stories" icon={BarChart2}>
           {m.topCategories.length === 0 ? (
             <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>No categories yet.</p>
           ) : (
             <div className="space-y-3">
-              {m.topCategories.map(({ name, color, views, count }) => (
+              {m.topCategories.map(({ name, color, storyCount }) => (
                 <BarRow
                   key={name}
                   label={name}
-                  value={views}
-                  max={maxCatViews}
+                  value={storyCount}
+                  max={maxCatCount}
                   color={color}
-                  sub={`${fmt(views)} views · ${count} ${count === 1 ? "story" : "stories"}`}
+                  sub={`${fmt(storyCount)} ${storyCount === 1 ? "story" : "stories"}`}
                 />
               ))}
             </div>
@@ -369,7 +369,7 @@ export default async function AdminDashboard() {
                       </span>
                     </div>
                     <div className="mt-1 h-1 rounded-full overflow-hidden" style={{ background: "var(--muted)" }}>
-                      <div className="h-full rounded-full" style={{ width: `${Math.max(3, (author.coinEarnings / maxCoinEarnings) * 100)}%`, background: "#f59e0b" }} />
+                      <div className="h-full rounded-full" style={{ width: `${Math.max(3, (author.coinEarnings / Math.max(1, maxCoinEarnings)) * 100)}%`, background: "#f59e0b" }} />
                     </div>
                     <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)" }}>
                       {author._count.stories} {author._count.stories === 1 ? "story" : "stories"}
@@ -381,19 +381,19 @@ export default async function AdminDashboard() {
           )}
         </Panel>
 
-        <Panel title="Top Tags by Views" icon={Tag} action={{ label: "All tags", href: "/meminhaj/tags" }}>
+        <Panel title="Top Tags by Stories" icon={Tag} action={{ label: "All tags", href: "/meminhaj/tags" }}>
           {m.topTags.length === 0 ? (
             <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>No tags yet.</p>
           ) : (
             <div className="space-y-3">
-              {m.topTags.map(({ name, views, count }) => (
+              {m.topTags.map(({ name, storyCount }) => (
                 <BarRow
                   key={name}
                   label={`#${name}`}
-                  value={views}
-                  max={maxTagViews}
+                  value={storyCount}
+                  max={maxTagCount}
                   color="#c4426a"
-                  sub={`${fmt(views)} views · ${count} ${count === 1 ? "story" : "stories"}`}
+                  sub={`${fmt(storyCount)} ${storyCount === 1 ? "story" : "stories"}`}
                 />
               ))}
             </div>

@@ -39,7 +39,7 @@ interface Props {
 export default async function AnalyticsPage({ searchParams }: Props) {
   const sp = await searchParams;
   const activeTab = (TABS.some((t) => t.key === sp.tab) ? sp.tab : "visitors") as TabKey;
-  const searchDays = Math.min(90, Math.max(7, parseInt(sp.days ?? "30", 10)));
+  const searchDays = Math.min(90, Math.max(7, parseInt(sp.days ?? "30", 10) || 30));
 
   const [visitorData, trafficData, tagData, categoryData, searchData] = await Promise.all([
     activeTab === "visitors" ? getVisitorData(7)          : Promise.resolve(null),

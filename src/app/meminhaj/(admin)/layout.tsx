@@ -9,6 +9,7 @@ import {
   Layers, Library, UserCircle, Users, UserRound, BarChart2, SearchCode, Star, Wallet,
 } from "lucide-react";
 import { MobileAdminNav } from "@/components/admin/MobileAdminNav";
+import { AdminNavLink } from "@/components/admin/AdminNavLink";
 import { Toaster } from "sonner";
 import type { Metadata } from "next";
 import type { AdminPermissionKey } from "@/lib/admin-permissions";
@@ -170,7 +171,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                 )}
                 <div className="space-y-0.5">
                   {visible.map((item) => (
-                    <AdminLink key={item.href} {...item} />
+                    <AdminNavLink key={item.href} {...item} />
                   ))}
                 </div>
               </div>
@@ -187,14 +188,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                 Admin
               </p>
               <div className="space-y-0.5">
-                <AdminLink href="/meminhaj/admins" icon={<Users size={16} />} label="Admin Team" permission={null} />
+                <AdminNavLink href="/meminhaj/admins" icon={<Users size={16} />} label="Admin Team" />
               </div>
             </div>
           )}
 
           {/* View Site */}
           <div className="pt-4 mt-2" style={{ borderTop: "1px solid var(--border)" }}>
-            <AdminLink href="/" icon={<Home size={16} />} label="View Site" permission={null} />
+            <AdminNavLink href="/" icon={<Home size={16} />} label="View Site" />
           </div>
         </nav>
 
@@ -234,23 +235,3 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   );
 }
 
-function AdminLink({ href, icon, label, badge }: NavItem) {
-  return (
-    <Link
-      href={href}
-      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all hover:opacity-75"
-      style={{ color: "var(--muted-foreground)" }}
-    >
-      {icon}
-      <span className="flex-1">{label}</span>
-      {badge != null && badge > 0 && (
-        <span
-          className="text-xs font-bold px-1.5 py-0.5 rounded-full"
-          style={{ background: "rgba(99,102,241,0.15)", color: "#6366f1" }}
-        >
-          {badge}
-        </span>
-      )}
-    </Link>
-  );
-}

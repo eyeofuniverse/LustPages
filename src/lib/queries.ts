@@ -1137,17 +1137,15 @@ export async function getDashboardMetrics() {
     .map((cat) => ({
       name: cat.name,
       color: cat.color,
-      views: cat._count.stories,
-      count: cat._count.stories,
+      storyCount: cat._count.stories,
     }))
-    .sort((a, b) => b.count - a.count)
+    .sort((a, b) => b.storyCount - a.storyCount)
     .slice(0, 6);
 
   const topTags = tagData
     .map((t) => ({
       name: t.name,
-      views: t._count.stories,
-      count: t._count.stories,
+      storyCount: t._count.stories,
     }))
     .slice(0, 8);
 
