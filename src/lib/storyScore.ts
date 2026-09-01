@@ -32,7 +32,6 @@ export interface StoryScoreInput {
   noIndex: boolean;
   genderPairing: string;
   pov: string;
-  contentWarnings: string[];
   maturityRating: string;
   series: string;
   authorNote: string;
@@ -63,25 +62,25 @@ export function computeStoryScore(input: StoryScoreInput): StoryScoreResult {
   const {
     title, slug, excerpt, content, coverImage, tags: tagsRaw,
     categoryIds, metaTitle, metaDescription, noIndex,
-    genderPairing, pov, contentWarnings, maturityRating,
+    genderPairing, pov, maturityRating,
     series, authorNote, status, visibility,
   } = input;
 
   const tags = parseTags(tagsRaw);
   const wc = wordCount(content);
-  const titleKeywords = title.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
+  const titleWords = title.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
   const tagString = tags.join(" ").toLowerCase();
-  const kwMatches = titleKeywords.filter((w) => tagString.includes(w)).length;
+  const kwMatches = titleWords.filter((w) => tagString.includes(w)).length;
   const paraCount = (content.match(/<\/p>/g) || []).length;
 
-  // ── SEO (max ~86 points → normalized to 100) ─────────────────
+  // ── SEO (weight 30%) ──────────────────────────────────────────
   const seoItems: ScoreItem[] = [
     {
       label: "Title length",
-      earned: title.length >= 25 && title.length <= 70 ? 10 : title.length >= 10 ? 5 : 0,
+      earned: title.length >= 10 && title.length <= 70 ? 10 : title.length >= 5 ? 5 : 0,
       max: 10,
-      tip: "Aim for 25–70 characters — long enough to include keywords, short enough to display fully in search results",
-      status: title.length >= 25 && title.length <= 70 ? "good" : title.length >= 10 ? "warn" : "bad",
+      tip: "Aim for 10–70 characters — long enough for keywords, short enough to display fully in search results",
+      status: title.length >= 10 && title.length <= 70 ? "good" : title.length >= 5 ? "warn" : "bad",
     },
     {
       label: "Custom meta title",
@@ -141,14 +140,14 @@ export function computeStoryScore(input: StoryScoreInput): StoryScoreResult {
     },
   ];
 
-  // ── Content (max ~90 points → normalized) ────────────────────
+  // ── Content (weight 45%) ──────────────────────────────────────
   const contentItems: ScoreItem[] = [
     {
       label: "Word count",
-      earned: wc >= 3000 ? 28 : wc >= 1500 ? 22 : wc >= 800 ? 14 : wc >= 300 ? 6 : 0,
+      earned: wc >= 3000 ? 28 : wc >= 1500 ? 20 : wc >= 800 ? 12 : wc >= 300 ? 4 : 0,
       max: 28,
-      tip: `${wc.toLocaleString()} words — 1,500+ is a satisfying read; 3,000+ performs best`,
-      status: wc >= 1500 ? "good" : wc >= 500 ? "warn" : "bad",
+      tip: `${wc.toLocaleString()} words — 1,500+ is a satisfying read; 3,000+ performs best in recommendations`,
+      status: wc >= 1500 ? "good" : wc >= 800 ? "warn" : "bad",
     },
     {
       label: "Story structure",
@@ -166,8 +165,8 @@ export function computeStoryScore(input: StoryScoreInput): StoryScoreResult {
     },
     {
       label: "Author's note",
-      earned: authorNote.trim().length >= 30 ? 12 : authorNote.trim().length > 0 ? 6 : 0,
-      max: 12,
+      earned: authorNote.trim().length >= 30 ? 8 : authorNote.trim().length > 0 ? 4 : 0,
+      max: 8,
       tip: "An author's note personalises the experience and builds reader loyalty",
       status: authorNote.trim().length >= 30 ? "good" : authorNote.trim().length > 0 ? "warn" : "bad",
     },
@@ -178,63 +177,49 @@ export function computeStoryScore(input: StoryScoreInput): StoryScoreResult {
       tip: "Draft stories are invisible to readers — publish or schedule to go live",
       status: status === "published" ? "good" : status === "scheduled" ? "warn" : "bad",
     },
-    {
-      label: "Part of a series",
-      earned: series.trim().length > 0 ? 6 : 0,
-      max: 6,
-      tip: "Series entries get repeat readers — link this story to a series if applicable",
-      status: series.trim().length > 0 ? "good" : "warn",
-    },
   ];
 
-  // ── Discoverability (max ~90 points → normalized) ─────────────
+  // ── Discoverability (weight 25%) ──────────────────────────────
   const discoveryItems: ScoreItem[] = [
     {
       label: "Category assigned",
-      earned: categoryIds.length > 0 ? 22 : 0,
-      max: 22,
+      earned: categoryIds.length > 0 ? 25 : 0,
+      max: 25,
       tip: "A category is required — readers browse and filter by category",
       status: categoryIds.length > 0 ? "good" : "bad",
     },
     {
       label: "Tags (5+)",
-      earned: tags.length >= 7 ? 20 : tags.length >= 5 ? 16 : tags.length >= 3 ? 10 : tags.length >= 1 ? 4 : 0,
-      max: 20,
+      earned: tags.length >= 7 ? 22 : tags.length >= 5 ? 18 : tags.length >= 3 ? 10 : tags.length >= 1 ? 4 : 0,
+      max: 22,
       tip: "Use 5–10 specific tags — each tag is a discovery surface for readers",
       status: tags.length >= 5 ? "good" : tags.length >= 3 ? "warn" : "bad",
     },
     {
       label: "Gender pairing",
-      earned: genderPairing ? 14 : 0,
-      max: 14,
+      earned: genderPairing ? 18 : 0,
+      max: 18,
       tip: "Readers heavily filter by gender pairing — fill this in to appear in those results",
-      status: genderPairing ? "good" : "warn",
+      status: genderPairing ? "good" : "bad",
     },
     {
       label: "POV",
-      earned: pov ? 10 : 0,
-      max: 10,
-      tip: "Many readers prefer a specific POV — setting this helps them find your story",
-      status: pov ? "good" : "warn",
-    },
-    {
-      label: "Content warnings",
-      earned: contentWarnings.length >= 2 ? 12 : contentWarnings.length >= 1 ? 8 : 0,
+      earned: pov ? 12 : 0,
       max: 12,
-      tip: "Content warnings build trust and help readers self-select appropriately",
-      status: contentWarnings.length >= 2 ? "good" : contentWarnings.length >= 1 ? "warn" : "bad",
+      tip: "Many readers prefer a specific POV — setting this helps them find your story",
+      status: pov ? "good" : "bad",
     },
     {
       label: "Maturity rating",
-      earned: maturityRating ? 8 : 0,
-      max: 8,
+      earned: maturityRating ? 10 : 0,
+      max: 10,
       tip: "Always set a maturity rating — it's a required filter on browse pages",
       status: maturityRating ? "good" : "bad",
     },
     {
       label: "Cover image",
-      earned: coverImage ? 14 : 0,
-      max: 14,
+      earned: coverImage ? 13 : 0,
+      max: 13,
       tip: "Stories with covers get significantly more clicks from listing pages",
       status: coverImage ? "good" : "bad",
     },
@@ -244,8 +229,8 @@ export function computeStoryScore(input: StoryScoreInput): StoryScoreResult {
   const contentScore = normalize(contentItems);
   const discoveryScore = normalize(discoveryItems);
 
-  // Weighted overall: SEO 40%, Content 40%, Discovery 20%
-  const overall = Math.round(seoScore * 0.4 + contentScore * 0.4 + discoveryScore * 0.2);
+  // Weighted overall: Content 45%, SEO 30%, Discovery 25%
+  const overall = Math.round(contentScore * 0.45 + seoScore * 0.30 + discoveryScore * 0.25);
 
   return {
     categories: [

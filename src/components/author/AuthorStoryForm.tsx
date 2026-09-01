@@ -14,10 +14,6 @@ import { calculateReadingTime } from "@/lib/utils";
 import { SeriesCombobox } from "@/components/series/SeriesCombobox";
 import { PAYMENTS_ENABLED } from "@/lib/feature-flags";
 
-const CONTENT_WARNINGS = [
-  "Non-con", "Dubcon", "Age Gap", "BDSM", "Cheating",
-  "Dark Themes", "Violence", "Humiliation", "Forced", "Power Dynamics",
-];
 const MATURITY_RATINGS = ["Mild", "Explicit", "Hardcore"] as const;
 const POV_OPTIONS = ["First Person", "Second Person", "Third Person"] as const;
 const GENDER_PAIRINGS = ["M/F", "M/M", "F/F", "M/F/M", "F/M/F", "Multiple", "Other"] as const;
@@ -145,9 +141,6 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
   const [accessLevel, setAccessLevel] = useState(
     initialData?.coinPrice != null ? "Premium" : "Free"
   );
-  const [contentWarnings, setContentWarnings] = useState<string[]>(
-    parseJsonArray(initialData?.contentWarnings ?? "[]")
-  );
   const [language, setLanguage] = useState(initialData?.language ?? "English");
   const [pov, setPov] = useState(initialData?.pov ?? "Third Person");
   const [genderPairing, setGenderPairing] = useState(initialData?.genderPairing ?? "");
@@ -167,12 +160,6 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
     setReadingTime(calculateReadingTime(content));
   }, [content]);
 
-  function toggleWarning(w: string) {
-    setContentWarnings((prev) =>
-      prev.includes(w) ? prev.filter((x) => x !== w) : [...prev, w]
-    );
-  }
-
   function toggleCategory(id: string) {
     setCategoryIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
@@ -191,7 +178,7 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
       categoryIds,
       readingTime,
       maturityRating,
-      contentWarnings: JSON.stringify(contentWarnings),
+      contentWarnings: "[]",
       language,
       pov,
       genderPairing: genderPairing || null,
@@ -703,29 +690,6 @@ export function AuthorStoryForm({ categories, availableTags, authorId, initialDa
               </div>
             )}
 
-            <div>
-              <label style={labelStyle}>Content Warnings <FieldInfo text="Flag specific content types so readers can decide what they're comfortable with. Recommended for non-consent, BDSM, age gap, and dark themes." /></label>
-              <div className="flex flex-wrap gap-1.5">
-                {CONTENT_WARNINGS.map((w) => {
-                  const active = contentWarnings.includes(w);
-                  return (
-                    <button
-                      key={w}
-                      type="button"
-                      onClick={() => toggleWarning(w)}
-                      className="px-2 py-0.5 rounded-full text-xs transition-all"
-                      style={{
-                        background: active ? "rgba(234,179,8,0.15)" : "var(--muted)",
-                        color: active ? "#eab308" : "var(--muted-foreground)",
-                        border: active ? "1px solid rgba(234,179,8,0.4)" : "1px solid transparent",
-                      }}
-                    >
-                      {w}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
           </div>
         </Panel>
 

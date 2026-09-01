@@ -15,10 +15,6 @@ import { FieldInfo } from "@/components/ui/FieldInfo";
 import { calculateReadingTime } from "@/lib/utils";
 import { SeriesCombobox } from "@/components/series/SeriesCombobox";
 
-const CONTENT_WARNINGS = [
-  "Non-con", "Dubcon", "Age Gap", "BDSM", "Cheating",
-  "Dark Themes", "Violence", "Humiliation", "Forced", "Power Dynamics",
-];
 const MATURITY_RATINGS = ["Mild", "Explicit", "Hardcore"] as const;
 const ACCESS_LEVELS = ["Free", "Premium"] as const;
 const VISIBILITIES = ["Public", "Unlisted", "Members Only"] as const;
@@ -197,10 +193,6 @@ export function StoryForm({ categories, authors, availableTags, siteUrl, initial
   const [coinPrice, setCoinPrice] = useState(
     initialData?.coinPrice != null ? String(initialData.coinPrice) : ""
   );
-  const [contentWarnings, setContentWarnings] = useState<string[]>(
-    initialData?.contentWarnings ? parseJsonArray(initialData.contentWarnings) : []
-  );
-
   const [metaTitle, setMetaTitle] = useState(initialData?.metaTitle ?? "");
   const [metaDescription, setMetaDescription] = useState(initialData?.metaDescription ?? "");
   const [canonicalUrl, setCanonicalUrl] = useState(initialData?.canonicalUrl ?? "");
@@ -266,10 +258,6 @@ export function StoryForm({ categories, authors, availableTags, siteUrl, initial
     setCategoryIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   }
 
-  function toggleWarning(w: string) {
-    setContentWarnings((prev) => prev.includes(w) ? prev.filter((x) => x !== w) : [...prev, w]);
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title || !excerpt || !content || categoryIds.length === 0 || !authorId) {
@@ -310,7 +298,7 @@ export function StoryForm({ categories, authors, availableTags, siteUrl, initial
       language,
       pov,
       genderPairing: genderPairing || null,
-      contentWarnings: JSON.stringify(contentWarnings),
+      contentWarnings: "[]",
       maturityRating,
       accessLevel,
       coinPrice: coinPrice ? parseInt(coinPrice, 10) : null,
@@ -390,7 +378,7 @@ export function StoryForm({ categories, authors, availableTags, siteUrl, initial
       ...customTags.map(t => t.name),
     ].join(", "),
     categoryIds, metaTitle, metaDescription, canonicalUrl, noIndex,
-    genderPairing, pov, contentWarnings, maturityRating,
+    genderPairing, pov, maturityRating,
     series, authorNote, status, visibility,
   };
 
@@ -1030,29 +1018,6 @@ export function StoryForm({ categories, authors, availableTags, siteUrl, initial
                 <option value="">— Select —</option>
                 {GENDER_PAIRINGS.map((g) => <option key={g} value={g}>{g}</option>)}
               </select>
-            </div>
-            <div>
-              <label style={labelStyle}>Content Warnings <FieldInfo text="Flag specific content types so readers can make informed choices before reading. Strongly recommended for non-consent, BDSM, age gap, and dark themes." /></label>
-              <div className="flex flex-wrap gap-1.5">
-                {CONTENT_WARNINGS.map((w) => {
-                  const active = contentWarnings.includes(w);
-                  return (
-                    <button
-                      key={w}
-                      type="button"
-                      onClick={() => toggleWarning(w)}
-                      className="px-2.5 py-1 rounded-full text-xs font-medium transition-all"
-                      style={{
-                        background: active ? "rgba(196,66,106,0.2)" : "var(--muted)",
-                        color: active ? "#c4426a" : "var(--muted-foreground)",
-                        border: active ? "1px solid rgba(196,66,106,0.4)" : "1px solid transparent",
-                      }}
-                    >
-                      {w}
-                    </button>
-                  );
-                })}
-              </div>
             </div>
           </Card>
 
