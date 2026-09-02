@@ -50,6 +50,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/about`, lastModified: new Date("2026-08-21"), changeFrequency: "monthly", priority: 0.4 },
     { url: `${BASE}/contact`, lastModified: new Date("2026-08-21"), changeFrequency: "monthly", priority: 0.4 },
     { url: `${BASE}/faq`, lastModified: new Date("2026-08-21"), changeFrequency: "monthly", priority: 0.5 },
+    { url: `${BASE}/publish`, lastModified: new Date("2026-09-01"), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/alternatives`, lastModified: new Date("2026-07-26"), changeFrequency: "monthly", priority: 0.7 },
     ...allAlternativeSlugs.map((slug) => ({
       url: `${BASE}/alternatives/${slug}`,

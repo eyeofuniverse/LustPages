@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { applyKeywordRulesToTag } from "@/lib/tags-db";
 
 async function requireAdmin() {
   const session = await auth();
@@ -23,6 +24,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const newTag = await prisma.tag.create({
       data: { name: request.requestedName, slug: request.slug, tier: request.tier, isApproved: true },
     });
+    await applyKeywordRulesToTag(newTag.id, newTag.name);
     const updated = await prisma.tagRequest.update({
       where: { id },
       data: { status: "approved", adminNote, mergedIntoTagId: newTag.id, updatedAt: new Date() },
