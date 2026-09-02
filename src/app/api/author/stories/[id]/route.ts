@@ -3,16 +3,19 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sanitizeStoryContent } from "@/lib/sanitize";
 import { resolveNewTags } from "@/lib/tags-db";
+import { revalidateStory } from "@/lib/revalidate";
 
 async function requireStoryOwner(storyId: string) {
   const session = await auth();
   if (!session?.user?.id) return null;
   const author = await prisma.author.findUnique({
     where: { userId: session.user.id },
+    select: { id: true, slug: true },
   });
   if (!author) return null;
   const story = await prisma.story.findFirst({
     where: { id: storyId, authorId: author.id },
+    select: { id: true, slug: true, status: true, coinPrice: true, seriesId: true, rejectionReason: true, submittedAt: true },
   });
   return story ? { author, story } : null;
 }
@@ -40,12 +43,15 @@ export async function PATCH(
     const { categoryIds, tagIds, authorKeywords, action, coinPrice: incomingCoinPrice } = body;
 
     const ALLOWED_FIELDS = new Set([
-      "title", "slug", "excerpt", "content", "coverImage", "language", "pov",
+      "title", "excerpt", "content", "coverImage", "language", "pov",
       "genderPairing", "contentWarnings", "maturityRating", "accessLevel",
       "scheduledAt", "visibility", "commentsEnabled", "metaTitle", "metaDescription",
       "canonicalUrl", "noIndex", "seriesId", "chapterNumber", "authorNote", "tags",
       "readingTime",
+      // slug is intentionally excluded for published stories (see check below)
     ]);
+    // Allow slug changes only for unpublished stories — changing a live slug breaks SEO
+    if (currentStatus !== "approved") ALLOWED_FIELDS.add("slug");
     const rest: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(body)) {
       if (ALLOWED_FIELDS.has(key)) rest[key] = value;
@@ -106,6 +112,8 @@ export async function PATCH(
         },
       },
     });
+    // Bust story page cache so live readers and search engines see updated content
+    if (isPublished) revalidateStory(ownership.story.slug, ownership.author.slug);
     return NextResponse.json(story);
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Error";
