@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useEffect, useState } from "react";
 
 interface CoverItem {
   slug: string;
@@ -49,6 +49,7 @@ function MosaicColumn({
               alt=""
               style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
               loading="lazy"
+              decoding="async"
             />
           </div>
         ))}
@@ -57,7 +58,19 @@ function MosaicColumn({
   );
 }
 
-export function HeroCoverMosaic({ covers }: { covers: CoverItem[] }) {
+export function HeroCoverMosaic() {
+  const [covers, setCovers] = useState<CoverItem[]>([]);
+
+  useEffect(() => {
+    // Only fetch on desktop — no point loading 21 images on mobile
+    if (window.innerWidth < 1024) return;
+
+    fetch("/api/stories/hero-covers")
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setCovers)
+      .catch(() => null);
+  }, []);
+
   if (covers.length < 6) return null;
 
   const col1 = covers.filter((_, i) => i % 3 === 0);
@@ -73,7 +86,6 @@ export function HeroCoverMosaic({ covers }: { covers: CoverItem[] }) {
         }
       `}</style>
 
-      {/* Absolutely positioned on the right half of the hero — desktop only */}
       <div
         className="hidden lg:flex"
         aria-hidden="true"
@@ -100,7 +112,7 @@ export function HeroCoverMosaic({ covers }: { covers: CoverItem[] }) {
             pointerEvents: "none",
           }}
         />
-        {/* Left fade (blends into hero text) */}
+        {/* Left fade — blends into hero text */}
         <div
           style={{
             position: "absolute",

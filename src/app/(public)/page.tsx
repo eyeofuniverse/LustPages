@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getLatestStories, getLatestSeries, getSpotlightAuthors, getFeaturedPromotions, getPremiumStories, getTrendingStories, getHeroCoverStories } from "@/lib/queries";
+import { getLatestStories, getLatestSeries, getSpotlightAuthors, getFeaturedPromotions, getPremiumStories, getTrendingStories } from "@/lib/queries";
 import { getCachedPublicStats, getCachedCategoriesWithStories } from "@/lib/cached-queries";
 import { FeaturedCarousel } from "@/components/home/FeaturedCarousel";
 import { PremiumCarousel } from "@/components/home/PremiumCarousel";
@@ -61,12 +61,11 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   // Batch 1: above-the-fold content
-  const [featuredStoryPromos, featuredSeriesPromos, latestStories, latestSeries, heroCoverStories] = await Promise.all([
+  const [featuredStoryPromos, featuredSeriesPromos, latestStories, latestSeries] = await Promise.all([
     getFeaturedPromotions("story").catch(() => [] as Awaited<ReturnType<typeof getFeaturedPromotions>>),
     getFeaturedPromotions("series").catch(() => [] as Awaited<ReturnType<typeof getFeaturedPromotions>>),
     getLatestStories(10).catch(() => []),
     getLatestSeries(10).catch(() => []),
-    getHeroCoverStories(30).catch(() => []),
   ]);
 
   // Batch 2: below-the-fold content
@@ -144,8 +143,8 @@ export default async function HomePage() {
           aria-hidden="true"
         />
 
-        {/* Animated cover mosaic — right half, desktop only */}
-        <HeroCoverMosaic covers={heroCoverStories} />
+        {/* Animated cover mosaic — right half, desktop only (self-fetching, non-blocking) */}
+        <HeroCoverMosaic />
 
         {/* Hero text — centred on mobile, left-aligned on desktop */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-28 sm:py-36 relative w-full">
