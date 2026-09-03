@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getLatestStories, getLatestSeries, getSpotlightAuthors, getFeaturedPromotions, getPremiumStories, getTrendingStories } from "@/lib/queries";
+import { getLatestStories, getLatestSeries, getSpotlightAuthors, getFeaturedPromotions, getPremiumStories, getTrendingStories, getHeroCoverStories } from "@/lib/queries";
 import { getCachedPublicStats, getCachedCategoriesWithStories } from "@/lib/cached-queries";
 import { FeaturedCarousel } from "@/components/home/FeaturedCarousel";
 import { PremiumCarousel } from "@/components/home/PremiumCarousel";
@@ -9,6 +9,7 @@ import { HomeCollectionsSection } from "@/components/home/HomeCollectionsSection
 import { CategoryCarousel } from "@/components/home/CategoryCarousel";
 import { AdSlot } from "@/components/ads/AdSlot";
 import { HeroJoinButton, HomeBottomCTA } from "@/components/home/HomeCTAButtons";
+import { HeroCoverMosaic } from "@/components/home/HeroCoverMosaic";
 import { formatStatCount } from "@/lib/utils";
 import {
   BookOpen,
@@ -60,11 +61,12 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   // Batch 1: above-the-fold content
-  const [featuredStoryPromos, featuredSeriesPromos, latestStories, latestSeries] = await Promise.all([
+  const [featuredStoryPromos, featuredSeriesPromos, latestStories, latestSeries, heroCoverStories] = await Promise.all([
     getFeaturedPromotions("story").catch(() => [] as Awaited<ReturnType<typeof getFeaturedPromotions>>),
     getFeaturedPromotions("series").catch(() => [] as Awaited<ReturnType<typeof getFeaturedPromotions>>),
     getLatestStories(10).catch(() => []),
     getLatestSeries(10).catch(() => []),
+    getHeroCoverStories(30).catch(() => []),
   ]);
 
   // Batch 2: below-the-fold content
@@ -132,15 +134,6 @@ export default async function HomePage() {
           }}
           aria-hidden="true"
         />
-        {/* Tertiary accent — bottom-right */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(ellipse 45% 40% at 105% 90%, rgba(168,49,90,0.08) 0%, transparent 60%)",
-          }}
-          aria-hidden="true"
-        />
         {/* Bottom fade */}
         <div
           className="absolute bottom-0 left-0 right-0 h-48 pointer-events-none"
@@ -151,122 +144,127 @@ export default async function HomePage() {
           aria-hidden="true"
         />
 
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-28 sm:py-36 relative w-full text-center">
-          {/* Badge */}
-          <div className="flex justify-center mb-8">
-            <div
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.18em]"
-              style={{
-                background: "rgba(196,66,106,0.12)",
-                color: "#c4426a",
-                border: "1px solid rgba(196,66,106,0.28)",
-                boxShadow: "0 0 20px rgba(196,66,106,0.12)",
-              }}
-            >
-              <Sparkles size={11} />
-              Premium Adult Fiction
+        {/* Animated cover mosaic — right half, desktop only */}
+        <HeroCoverMosaic covers={heroCoverStories} />
+
+        {/* Hero text — centred on mobile, left-aligned on desktop */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-28 sm:py-36 relative w-full">
+          <div className="max-w-[540px] mx-auto lg:mx-0 text-center lg:text-left">
+            {/* Badge */}
+            <div className="flex justify-center lg:justify-start mb-8">
+              <div
+                className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.18em]"
+                style={{
+                  background: "rgba(196,66,106,0.12)",
+                  color: "#c4426a",
+                  border: "1px solid rgba(196,66,106,0.28)",
+                  boxShadow: "0 0 20px rgba(196,66,106,0.12)",
+                }}
+              >
+                <Sparkles size={11} />
+                Premium Adult Fiction
+              </div>
             </div>
-          </div>
 
-          {/* Headline */}
-          <h1
-            id="hero-heading"
-            className="font-bold leading-[1.06] mb-6 mx-auto"
-            style={{
-              fontFamily: "var(--font-playfair), serif",
-              color: "var(--foreground)",
-              fontSize: "clamp(2.6rem, 6.5vw, 5.25rem)",
-              letterSpacing: "-0.025em",
-              maxWidth: "860px",
-            }}
-          >
-            Stories That{" "}
-            <em
-              className="not-italic"
+            {/* Headline */}
+            <h1
+              id="hero-heading"
+              className="font-bold leading-[1.06] mb-6"
               style={{
-                background:
-                  "linear-gradient(135deg, #e8547a 0%, #c4426a 45%, #a8315a 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
+                fontFamily: "var(--font-playfair), serif",
+                color: "var(--foreground)",
+                fontSize: "clamp(2.6rem, 6.5vw, 5.25rem)",
+                letterSpacing: "-0.025em",
               }}
             >
-              Ignite
-            </em>{" "}
-            Your Imagination
-          </h1>
+              Stories That{" "}
+              <em
+                className="not-italic"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #e8547a 0%, #c4426a 45%, #a8315a 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                Ignite
+              </em>{" "}
+              Your Imagination
+            </h1>
 
-          {/* Ornamental divider */}
-          <div
-            className="flex items-center justify-center gap-3 mb-7"
-            aria-hidden="true"
-          >
+            {/* Ornamental divider */}
             <div
-              style={{
-                width: "64px",
-                height: "1px",
-                background:
-                  "linear-gradient(to right, transparent, rgba(196,66,106,0.45))",
-              }}
-            />
-            <div
-              style={{
-                width: "5px",
-                height: "5px",
-                background: "#c4426a",
-                transform: "rotate(45deg)",
-                opacity: 0.7,
-              }}
-            />
-            <div
-              style={{
-                width: "64px",
-                height: "1px",
-                background:
-                  "linear-gradient(to left, transparent, rgba(196,66,106,0.45))",
-              }}
-            />
-          </div>
-
-          <p
-            className="text-base sm:text-lg mb-10 max-w-lg mx-auto leading-relaxed"
-            style={{ color: "var(--muted-foreground)" }}
-          >
-            Thousands of premium adult fiction stories — romance, fantasy,
-            contemporary, and more. Written by talented authors. Completely free
-            to read.
-          </p>
-
-          {/* CTAs */}
-          <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
-            <Link
-              href="/stories"
-              className="flex items-center gap-2 px-8 py-3.5 rounded-xl font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98] text-sm sm:text-base"
-              style={{
-                background: "linear-gradient(135deg, #d44d77 0%, #a8315a 100%)",
-                boxShadow:
-                  "0 0 32px rgba(196,66,106,0.40), 0 4px 16px rgba(196,66,106,0.28)",
-              }}
+              className="flex items-center justify-center lg:justify-start gap-3 mb-7"
+              aria-hidden="true"
             >
-              <BookOpen size={17} />
-              Start Reading Free
-            </Link>
-            <HeroJoinButton />
-          </div>
+              <div
+                style={{
+                  width: "64px",
+                  height: "1px",
+                  background:
+                    "linear-gradient(to right, transparent, rgba(196,66,106,0.45))",
+                }}
+              />
+              <div
+                style={{
+                  width: "5px",
+                  height: "5px",
+                  background: "#c4426a",
+                  transform: "rotate(45deg)",
+                  opacity: 0.7,
+                }}
+              />
+              <div
+                style={{
+                  width: "64px",
+                  height: "1px",
+                  background:
+                    "linear-gradient(to left, transparent, rgba(196,66,106,0.45))",
+                }}
+              />
+            </div>
 
-          {/* Trust strip */}
-          <div
-            className="flex items-center justify-center flex-wrap gap-x-5 gap-y-1.5 text-xs"
-            style={{ color: "var(--muted-foreground)" }}
-          >
-            {["100% Free Forever", "New Stories Daily", "No Credit Card"].map(
-              (item) => (
-                <span key={item} className="flex items-center gap-1.5">
-                  <span style={{ color: "#c4426a", fontWeight: 700 }}>✓</span>
-                  {item}
-                </span>
-              )
-            )}
+            <p
+              className="text-base sm:text-lg mb-10 leading-relaxed"
+              style={{ color: "var(--muted-foreground)" }}
+            >
+              Thousands of premium adult fiction stories — romance, fantasy,
+              contemporary, and more. Written by talented authors. Completely free
+              to read.
+            </p>
+
+            {/* CTAs */}
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 mb-8">
+              <Link
+                href="/stories"
+                className="flex items-center gap-2 px-8 py-3.5 rounded-xl font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98] text-sm sm:text-base"
+                style={{
+                  background: "linear-gradient(135deg, #d44d77 0%, #a8315a 100%)",
+                  boxShadow:
+                    "0 0 32px rgba(196,66,106,0.40), 0 4px 16px rgba(196,66,106,0.28)",
+                }}
+              >
+                <BookOpen size={17} />
+                Start Reading Free
+              </Link>
+              <HeroJoinButton />
+            </div>
+
+            {/* Trust strip */}
+            <div
+              className="flex items-center justify-center lg:justify-start flex-wrap gap-x-5 gap-y-1.5 text-xs"
+              style={{ color: "var(--muted-foreground)" }}
+            >
+              {["100% Free Forever", "New Stories Daily", "No Credit Card"].map(
+                (item) => (
+                  <span key={item} className="flex items-center gap-1.5">
+                    <span style={{ color: "#c4426a", fontWeight: 700 }}>✓</span>
+                    {item}
+                  </span>
+                )
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -313,6 +311,7 @@ export default async function HomePage() {
               <div
                 key={stat.label}
                 className={`flex flex-col items-center gap-1 px-4${i === 0 ? "" : i % 2 === 0 ? " sm:border-l" : " border-l"}`}
+                style={{ borderColor: "var(--border)" }}
               >
                 <div
                   className="text-2xl sm:text-3xl font-bold"
@@ -423,41 +422,81 @@ export default async function HomePage() {
                 <Link
                   key={author.id}
                   href={`/authors/${author.slug}`}
-                  className="group flex flex-col items-center text-center p-5 sm:p-7 rounded-2xl transition-all duration-200 hover:translate-y-[-3px]"
+                  className="group relative flex flex-col overflow-hidden rounded-2xl transition-all duration-200 hover:translate-y-[-3px]"
                   style={{
-                    background: "var(--background)",
                     border: "1px solid var(--border)",
+                    background: author.latestCover ? "var(--muted)" : "var(--card)",
+                    aspectRatio: "2/3",
                   }}
                 >
-                  {/* Avatar */}
-                  <div
-                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-2xl sm:text-3xl font-bold mb-4 shrink-0 group-hover:scale-105 transition-transform duration-300"
-                    style={{
-                      background: "rgba(196,66,106,0.15)",
-                      color: "#c4426a",
-                      fontFamily: "var(--font-playfair), serif",
-                      border: "2px solid rgba(196,66,106,0.25)",
-                    }}
-                  >
-                    {author.name[0].toUpperCase()}
-                  </div>
-                  <h3
-                    className="font-bold text-sm sm:text-base mb-1 line-clamp-1 group-hover:opacity-80 transition-opacity"
-                    style={{
-                      color: "var(--foreground)",
-                      fontFamily: "var(--font-playfair), serif",
-                    }}
-                  >
-                    {author.name}
-                  </h3>
-                  <p
-                    className="text-xs flex items-center gap-1"
-                    style={{ color: "var(--muted-foreground)" }}
-                  >
-                    <Star size={10} style={{ color: "#c4426a" }} />
-                    {author._count.stories}{" "}
-                    {author._count.stories === 1 ? "story" : "stories"}
-                  </p>
+                  {author.latestCover ? (
+                    <>
+                      {/* Story cover as background */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={author.latestCover}
+                        alt=""
+                        aria-hidden="true"
+                        className="group-hover:scale-105 transition-transform duration-500"
+                        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                      {/* Gradient overlay — readable text at bottom */}
+                      <div
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          background: "linear-gradient(to top, rgba(0,0,0,0.90) 0%, rgba(0,0,0,0.2) 55%, transparent 100%)",
+                        }}
+                      />
+                      {/* Author info at bottom */}
+                      <div style={{ position: "relative", zIndex: 1, marginTop: "auto", padding: "0.875rem 1rem 1.125rem" }}>
+                        <h3
+                          className="font-bold text-sm mb-1 leading-tight"
+                          style={{
+                            color: "white",
+                            fontFamily: "var(--font-playfair), serif",
+                            overflow: "hidden",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 1,
+                            WebkitBoxOrient: "vertical",
+                          } as React.CSSProperties}
+                        >
+                          {author.name}
+                        </h3>
+                        <p className="text-xs flex items-center gap-1" style={{ color: "rgba(255,255,255,0.65)" }}>
+                          <Star size={10} style={{ color: "#c4426a" }} />
+                          {author._count.stories}{" "}
+                          {author._count.stories === 1 ? "story" : "stories"}
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    /* Fallback — no cover photo */
+                    <div className="flex flex-col items-center justify-center text-center p-5 sm:p-7 h-full">
+                      <div
+                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-2xl sm:text-3xl font-bold mb-4 shrink-0 group-hover:scale-105 transition-transform duration-300"
+                        style={{
+                          background: "rgba(196,66,106,0.15)",
+                          color: "#c4426a",
+                          fontFamily: "var(--font-playfair), serif",
+                          border: "2px solid rgba(196,66,106,0.25)",
+                        }}
+                      >
+                        {author.name[0].toUpperCase()}
+                      </div>
+                      <h3
+                        className="font-bold text-sm sm:text-base mb-1 line-clamp-1 group-hover:opacity-80 transition-opacity"
+                        style={{ color: "var(--foreground)", fontFamily: "var(--font-playfair), serif" }}
+                      >
+                        {author.name}
+                      </h3>
+                      <p className="text-xs flex items-center gap-1" style={{ color: "var(--muted-foreground)" }}>
+                        <Star size={10} style={{ color: "#c4426a" }} />
+                        {author._count.stories}{" "}
+                        {author._count.stories === 1 ? "story" : "stories"}
+                      </p>
+                    </div>
+                  )}
                 </Link>
               ))}
             </div>

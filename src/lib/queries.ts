@@ -148,17 +148,37 @@ export async function getAuthors() {
 }
 
 export async function getSpotlightAuthors(limit: number) {
-  return prisma.author.findMany({
+  const authors = await prisma.author.findMany({
     where: { stories: { some: { published: true } } },
     select: {
       id: true,
       name: true,
       slug: true,
       _count: { select: { stories: { where: { published: true } } } },
+      stories: {
+        where: { published: true, coverImage: { not: null } },
+        select: { coverImage: true },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      },
     },
     orderBy: { stories: { _count: "desc" } },
     take: limit,
   });
+  return authors.map(({ stories: s, ...a }) => ({
+    ...a,
+    latestCover: s[0]?.coverImage ?? null,
+  }));
+}
+
+export async function getHeroCoverStories(take = 30): Promise<{ slug: string; title: string; coverImage: string }[]> {
+  const stories = await prisma.story.findMany({
+    where: { published: true, coverImage: { not: null } },
+    select: { slug: true, title: true, coverImage: true },
+    orderBy: { views: "desc" },
+    take,
+  });
+  return stories.filter((s): s is typeof s & { coverImage: string } => s.coverImage !== null);
 }
 
 export async function getAuthorBySlug(slug: string) {
