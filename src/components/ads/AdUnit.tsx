@@ -8,9 +8,14 @@ interface Props {
 
 export function AdUnit({ code }: Props) {
   const ref = useRef<HTMLDivElement>(null);
+  // Track the last-injected code so React Strict Mode double-invoke
+  // and parent re-renders don't run the same network script twice.
+  const injectedRef = useRef<string>("");
 
   useEffect(() => {
-    if (!ref.current || !code) return;
+    if (!ref.current || !code || injectedRef.current === code) return;
+    injectedRef.current = code;
+
     ref.current.innerHTML = code;
     const scripts = ref.current.querySelectorAll("script");
     scripts.forEach((old) => {
@@ -19,9 +24,7 @@ export function AdUnit({ code }: Props) {
       next.textContent = old.textContent;
       old.parentNode?.replaceChild(next, old);
     });
-    return () => {
-      if (ref.current) ref.current.innerHTML = "";
-    };
+    // No cleanup — removing scripts breaks ad network lifecycle.
   }, [code]);
 
   if (!code) return null;

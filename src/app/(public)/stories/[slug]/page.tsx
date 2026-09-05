@@ -205,8 +205,8 @@ export default async function StoryPage({ params }: Props) {
       />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
-        <div className="xl:flex xl:gap-8">
-          <article className="min-w-0 flex-1 max-w-4xl mx-auto xl:mx-0">
+        <div className="lg:flex lg:gap-8">
+          <article className="min-w-0 flex-1 max-w-4xl mx-auto lg:mx-0">
         {/* Back */}
         <Link
           href="/stories"
@@ -617,7 +617,7 @@ export default async function StoryPage({ params }: Props) {
           isAdmin={(session?.user as { role?: string })?.role === "admin"}
         />
           </article>
-          <aside className="hidden xl:block w-72 shrink-0">
+          <aside className="hidden lg:block w-72 shrink-0">
             <StickyAdSidebar slot="story_sidebar_rectangle" />
           </aside>
         </div>
