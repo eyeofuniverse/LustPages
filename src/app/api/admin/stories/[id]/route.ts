@@ -60,7 +60,7 @@ export async function PATCH(
       }
     }
 
-    const prev = await prisma.story.findUnique({ where: { id }, select: { published: true, status: true } });
+    const prev = await prisma.story.findUnique({ where: { id }, select: { slug: true, published: true, status: true, author: { select: { slug: true } } } });
 
     // Don't silently overwrite "pending" or "rejected" with "draft" when admin just edits content
     const resolvedStatusUpdate =
@@ -91,8 +91,19 @@ export async function PATCH(
         url: `/stories/${story.slug}`,
       }).catch(console.error);
     }
-    // Bust caches for any published story that was touched
-    if (story.published) revalidateStory(story.slug, story.author.slug);
+    // Bust story page cache:
+    // - If still published: revalidate the (possibly new) slug
+    // - If just unpublished (was published → now not): revalidate the old slug so the cached page clears
+    // - If slug changed: also revalidate the old slug so it stops serving stale content
+    const authorSlug = story.author.slug;
+    if (story.published) {
+      revalidateStory(story.slug, authorSlug);
+    } else if (prev?.published) {
+      revalidateStory(prev.slug, prev.author?.slug ?? authorSlug);
+    }
+    if (prev?.published && data.slug && prev.slug !== data.slug) {
+      revalidateStory(prev.slug, prev.author?.slug ?? authorSlug);
+    }
     return NextResponse.json(story);
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Error";
