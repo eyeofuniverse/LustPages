@@ -7,6 +7,7 @@ import { useState, useRef, useEffect } from "react";
 import {
   BookOpen, Search, Menu, X, User, LogOut, Heart, Library,
   LayoutDashboard, ChevronDown, PenSquare, Coins, Lock, Layers, Tag, TrendingUp, Settings,
+  ExternalLink, Play,
 } from "lucide-react";
 import { CoinBadge } from "@/components/coins/CoinBadge";
 
@@ -228,6 +229,18 @@ export function Header({ categories }: HeaderProps) {
               >
                 Get Coins
               </Link>
+
+              <a
+                href="https://lusthentai.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                style={{ color: "var(--muted-foreground)" }}
+              >
+                <Play size={13} />
+                LustHentai
+                <ExternalLink size={11} style={{ opacity: 0.5 }} />
+              </a>
             </nav>
 
             {/* Right side */}
@@ -418,6 +431,20 @@ export function Header({ categories }: HeaderProps) {
           <NavItem href="/premium/stories" label="Premium" icon={<Lock size={16} />} onClick={closeMobile} active={pathname.startsWith("/premium")} />
           <NavItem href="/authors" label="Authors" icon={<User size={16} />} onClick={closeMobile} active={pathname === "/authors"} />
           <NavItem href="/store" label="Get Coins" icon={<Coins size={16} />} onClick={closeMobile} active={pathname === "/store"} />
+
+          <a
+            href="https://lusthentai.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-75"
+            style={{ color: "var(--muted-foreground)" }}
+          >
+            <span className="flex items-center gap-2.5">
+              <Play size={16} />
+              LustHentai
+            </span>
+            <ExternalLink size={13} style={{ opacity: 0.5 }} />
+          </a>
 
           {/* Browse by genre accordion */}
           <div className="mt-1">
