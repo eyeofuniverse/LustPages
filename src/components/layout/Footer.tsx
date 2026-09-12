@@ -177,7 +177,19 @@ export function Footer({ categories = [] }: FooterProps) {
             color: "var(--muted-foreground)",
           }}
         >
-          <p>© {new Date().getFullYear()} LustPages. All rights reserved.</p>
+          <p>
+            © {new Date().getFullYear()} LustPages. All rights reserved. · Partner
+            site:{" "}
+            <a
+              href="https://lusthentai.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-opacity hover:opacity-75"
+              style={{ color: "var(--foreground)" }}
+            >
+              LustHentai
+            </a>
+          </p>
           <div className="flex items-center gap-4">
             <span
               className="px-2 py-0.5 rounded text-xs font-bold"
